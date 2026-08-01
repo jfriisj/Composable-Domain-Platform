@@ -12,44 +12,53 @@ Event management is expected to become the first reference capability, but it is
 
 ## Current phase
 
-**Repository and architecture foundation**
+**Build foundation**
 
-The current phase establishes the rules, architecture model, documentation structure, and technical boundaries that future implementation must follow.
+The repository and architecture foundation has been accepted. The current phase establishes the smallest executable build foundation required to enforce future module boundaries consistently.
 
 ## In scope
 
-- Define platform vision and architectural principles.
-- Define authoritative project governance and sources of truth.
-- Define the approved baseline technology stack.
-- Define the repository and Gradle project structure conceptually.
-- Define allowed module types and their responsibilities.
-- Define hard bounded-context and Hexagonal Architecture rules.
-- Define cross-boundary traceability semantics for correlation and causation identifiers.
-- Define Git branching and pull-request workflow.
-- Define architecture diagrams as version-controlled authoritative artifacts.
-- Establish the Structurizr workspace foundation.
-- Define the ADR process.
-- Define how scope changes are proposed and accepted.
-- Define what the first reference implementation must prove.
+- Add the Gradle Wrapper.
+- Use Gradle Kotlin DSL for project build configuration.
+- Establish a Java 21+ toolchain policy.
+- Establish a Gradle Version Catalog for centrally managed dependency/plugin coordinates.
+- Establish `build-logic` as an included build for convention plugins.
+- Establish only the minimum convention-plugin infrastructure needed by later module types.
+- Establish a deterministic root `./gradlew check` command that succeeds on the build foundation.
+- Keep build configuration compatible with the accepted modular-monolith and hard-boundary architecture.
+- Update authoritative documentation when the implemented build shape differs from current architectural intent.
+
+## Acceptance criteria
+
+The phase is complete when:
+
+1. A fresh checkout can run the committed Gradle Wrapper without relying on a globally installed Gradle version.
+2. The project uses Kotlin DSL.
+3. Java toolchain configuration targets the accepted Java baseline.
+4. Version Catalog and convention-plugin infrastructure are present and buildable.
+5. `./gradlew check` succeeds from the repository root.
+6. No business module, framework runtime, persistence, external contract, or deployment concern is introduced.
 
 ## Explicitly out of scope
 
-The following are intentionally excluded from the current phase:
+The following remain intentionally excluded from the current phase:
 
-- Java implementation code.
+- Business-domain implementation.
+- Event or any other reference capability implementation.
 - Spring Boot application bootstrap.
-- Gradle module implementation.
-- Database schemas and migrations.
-- OpenAPI implementation.
+- Spring Modulith configuration.
+- ArchUnit architecture rules.
+- PostgreSQL schemas and Flyway migrations.
+- jOOQ configuration.
+- OpenAPI contracts or generation.
 - Frontend implementation.
-- Event domain implementation.
-- Registration, ticketing, booking, membership, survey, payment, accounting, or other future business capabilities.
-- External provider integrations.
+- Docker or deployment configuration.
+- GitHub Actions or other CI/CD automation.
+- External integrations.
 - Kafka, RabbitMQ, Redis, Kubernetes, or other infrastructure without a demonstrated requirement.
 - Multi-model development workflow automation.
-- Deployment automation.
 
-These items may become future scope only through an explicit scope decision.
+These items may enter a later phase only through an explicit scope decision.
 
 ## Business capability admission rule
 
