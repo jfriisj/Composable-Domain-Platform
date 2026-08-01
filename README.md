@@ -21,7 +21,7 @@ The platform is not tied to a single business domain. Event management is intend
 - [`docs/governance.md`](docs/governance.md) — governance, branching, change control, and sources of truth.
 - [`docs/architecture.md`](docs/architecture.md) — architectural principles and hard boundaries.
 - [`docs/modules.md`](docs/modules.md) — allowed module types and ownership rules.
-- [`docs/tech-stack.md`](docs/tech-stack.md) — approved baseline technology stack.
+- [`docs/tech-stack.md`](docs/tech-stack.md) — accepted technology directions and candidates.
 - [`docs/architecture/workspace.dsl`](docs/architecture/workspace.dsl) — authoritative architecture model.
 - [`docs/adr/`](docs/adr/) — architectural decision records.
 
