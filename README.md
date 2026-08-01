@@ -2,7 +2,7 @@
 
 Composable Domain Platform is a modular application platform for composing independently bounded business capabilities through explicit contracts, integrations, and compositions.
 
-The platform is not tied to a single business domain. Event management is intended to become the first reference capability, but it is not the center of the platform.
+The platform is not tied to a single business domain. Event management is the first reference capability, but it is not the center of the platform.
 
 ## Principles
 
@@ -27,4 +27,4 @@ The platform is not tied to a single business domain. Event management is intend
 
 ## Current state
 
-The project is in the repository and architecture foundation phase. No business capability is considered implemented yet.
+The repository, architecture, and executable Gradle build foundations are established. The current phase is the Event reference module foundation; no business capability is considered implemented until that reference-module change is accepted into `development`.

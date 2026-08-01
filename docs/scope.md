@@ -8,53 +8,89 @@ This document is the authoritative source for the current accepted project scope
 
 Composable Domain Platform provides a reliable foundation for composing independently bounded business capabilities. It is not tied to one business domain.
 
-Event management is expected to become the first reference capability, but it is not the platform core and does not define the platform's general model.
+Event management is the first reference capability, but it is not the platform core and does not define the platform's general model.
 
 ## Current phase
 
-**Build foundation**
+**Event reference module foundation**
 
-The repository and architecture foundation has been accepted. The current phase establishes the smallest executable build foundation required to enforce future module boundaries consistently.
+The repository, architecture, and executable Gradle build foundations have been accepted. The current phase introduces the first concrete bounded context to validate the platform's physical module boundary and Hexagonal Architecture direction with real business code.
+
+## Concrete use case
+
+A platform operator can define an Event with explicit identity, name, slug, scheduled start/end, and timezone, and obtain the resulting Event state through an application-level contract.
+
+The initial Event model must enforce only invariants required by this use case, including that required textual identity fields are not blank and the scheduled end is after the scheduled start.
+
+Durable persistence, HTTP exposure, runtime bootstrapping, publication workflows, and external integration are not required in this phase.
+
+## Event ownership
+
+The Event bounded context owns:
+
+- Event identity.
+- Event name and slug.
+- Scheduled start and end.
+- Event timezone.
+- The invariants required to create a valid Event definition.
+
+The Event bounded context does not own:
+
+- Registration.
+- Ticketing.
+- Booking.
+- Membership.
+- Speakers or program management.
+- Content management.
+- Payments or accounting.
+- Notifications.
+- Identity-provider concerns.
 
 ## In scope
 
-- Add the Gradle Wrapper.
-- Use Gradle Kotlin DSL for project build configuration.
-- Establish a Java 21+ toolchain policy.
-- Establish a Gradle Version Catalog for centrally managed dependency/plugin coordinates.
-- Establish `build-logic` as an included build for convention plugins.
-- Establish only the minimum convention-plugin infrastructure needed by later module types.
-- Establish a deterministic root `./gradlew check` command that succeeds on the build foundation.
-- Keep build configuration compatible with the accepted modular-monolith and hard-boundary architecture.
-- Update authoritative documentation when the implemented build shape differs from current architectural intent.
+- Add `modules/event/api` and `modules/event/impl` as separate Gradle projects.
+- Add an authoritative Event `module.md` describing ownership, non-ownership, public API, and allowed dependencies.
+- Expose the smallest application-level public contract required by the concrete Event use case.
+- Keep Event domain and application implementation inside the private implementation project.
+- Keep domain code free of Spring, HTTP, persistence, generated contract types, and provider SDKs.
+- Use the existing Java 21 `java-library` convention and Gradle API/implementation semantics to enforce the physical boundary.
+- Add JUnit 5 tests required to prove the Event invariants and application use case.
+- Add only dependency versions required by this phase to the Gradle Version Catalog.
+- Update the authoritative architecture model and documentation to reflect the implemented Event reference module.
+- Keep root `./gradlew check` green.
 
 ## Acceptance criteria
 
 The phase is complete when:
 
-1. A fresh checkout can run the committed Gradle Wrapper without relying on a globally installed Gradle version.
-2. The project uses Kotlin DSL.
-3. Java toolchain configuration targets the accepted Java baseline.
-4. Version Catalog and convention-plugin infrastructure are present and buildable.
-5. `./gradlew check` succeeds from the repository root.
-6. No business module, framework runtime, persistence, external contract, or deployment concern is introduced.
+1. `modules/event/api` and `modules/event/impl` build as separate Gradle projects.
+2. The API project does not depend on the implementation project.
+3. Event domain and application implementation remain private to `impl`.
+4. The concrete Event creation use case is covered by tests.
+5. Required Event invariants are covered by tests.
+6. No Spring, persistence, HTTP/OpenAPI, external integration, or deployment concern is introduced.
+7. Event ownership and non-ownership are explicit in `module.md`.
+8. The authoritative architecture model reflects the current Event reference module.
+9. `./gradlew check` succeeds from the repository root.
 
 ## Explicitly out of scope
 
 The following remain intentionally excluded from the current phase:
 
-- Business-domain implementation.
-- Event or any other reference capability implementation.
 - Spring Boot application bootstrap.
 - Spring Modulith configuration.
 - ArchUnit architecture rules.
 - PostgreSQL schemas and Flyway migrations.
 - jOOQ configuration.
 - OpenAPI contracts or generation.
+- HTTP controllers or other external interfaces.
+- Durable persistence adapters.
+- Event publication or messaging infrastructure.
+- Registration, ticketing, booking, membership, speaker/program, content, payment, accounting, notification, or other business capabilities.
 - Frontend implementation.
 - Docker or deployment configuration.
 - GitHub Actions or other CI/CD automation.
-- External integrations.
+- External provider integrations.
 - Kafka, RabbitMQ, Redis, Kubernetes, or other infrastructure without a demonstrated requirement.
 - Multi-model development workflow automation.
 
@@ -92,6 +128,6 @@ Hidden scope expansion inside implementation pull requests is not accepted.
 
 Potential future capabilities may be recorded as deferred ideas, but a deferred idea is not planned scope and must not create implementation, module, infrastructure, or API commitments.
 
-Examples currently include event management, content management, registration, ticketing, booking, membership, surveys, payment integrations, and accounting integrations.
+Examples currently include content management, registration, ticketing, booking, membership, surveys, payment integrations, and accounting integrations.
 
 Their eventual bounded-context boundaries must be determined from real use cases rather than assumed in advance.
