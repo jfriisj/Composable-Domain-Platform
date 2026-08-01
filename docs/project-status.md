@@ -20,6 +20,8 @@ This document is the authoritative concise statement of where the project curren
 - Continuous Integration Foundation scope accepted into `development` through PR #7.
 - Minimum GitHub Actions continuous integration accepted into `development` through PR #8.
 - Continuous Integration Foundation completion recorded through PR #10.
+- Architecture Verification Foundation scope accepted into `development` through PR #11.
+- Minimum ArchUnit architecture verification accepted into `development` through PR #12.
 - Authoritative scope, status, governance, workflow, architecture, module-model, and technology-direction documents established.
 - Structurizr DSL established as the authoritative architecture model.
 - ADR process established.
@@ -31,15 +33,17 @@ This document is the authoritative concise statement of where the project curren
 - GitHub Actions runs `./gradlew --no-daemon check` with JDK 21 for pull requests targeting `development` and `production`.
 - The `validate` GitHub Actions check is required by the active rulesets for both permanent branches.
 - The CI trigger and required check have been verified successfully for pull requests targeting both `development` and `production`.
+- ArchUnit verifies the accepted Event domain/application dependency direction through the existing `event-impl` JUnit test task.
+- Event domain production classes are prevented from depending on Event application implementation classes or the public Event API.
+- Event application implementation dependencies are constrained to the current application, domain, public API, and Java platform packages.
+- A deliberate architecture violation has been demonstrated to fail both the architecture test and the root validation gate, while the compliant implementation passes the required CI check.
 
 ## In progress
 
-- Define executable architecture verification for the current Event domain/application dependency direction.
-- Integrate the architecture verification into the existing root validation gate without introducing runtime infrastructure.
+- Define the next project phase through an explicit scope decision.
 
 ## Known gaps
 
-- Event package-level architecture rules are documented but not yet automatically enforced.
 - No application runtime exists yet.
 - No durable persistence exists yet.
 - No external HTTP contract exists yet.
@@ -47,6 +51,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Implement the minimum ArchUnit verification authorized by `docs/scope.md`, prove that a deliberate dependency-direction violation fails the root validation gate, and keep the compliant implementation under the required CI check.
+Define the next project phase through a dedicated scope pull request.
 
-Do not introduce Spring Boot, Spring Modulith, persistence, HTTP/OpenAPI, external integrations, additional architectural layers, or new business capabilities in this phase.
+No further implementation is authorized until that scope change is accepted.
