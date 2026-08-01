@@ -12,83 +12,89 @@ Event management is the first reference capability, but it is not the platform c
 
 ## Current phase
 
-**Continuous integration foundation**
+**Architecture verification foundation**
 
-The repository, architecture, executable Gradle build, project workflow, and first Event reference module have been accepted.
+The repository, architecture, executable Gradle build, project workflow, first Event reference module, and continuous-integration foundation have been accepted.
 
-The current phase makes the existing repository validation gate automatically visible and enforceable on GitHub pull requests before additional runtime, persistence, transport, integration, or business capability work is admitted.
+The current phase makes the already accepted internal architecture rules executable so structural violations fail the same root validation gate that CI requires before merge.
 
 ## Concrete requirement
 
-Every pull request targeting `development` or `production` must automatically execute the repository's root Gradle validation gate in a clean CI environment using JDK 21.
+The current Event implementation must have automated build-time verification of its accepted dependency direction.
 
-The resulting GitHub status check must be suitable for use as a required merge condition so a pull request cannot be accepted when the repository validation gate fails or has not completed successfully.
+A pull request must fail `./gradlew check` when production code in the Event domain depends on the Event application implementation or public API, or when Event application implementation code violates the currently accepted application-to-domain/API dependency direction.
 
-This phase automates an existing validation rule. It does not add product behavior.
+The verification must operate on the existing Event package structure and must not require an application runtime.
+
+This phase automates existing architecture rules. It does not add product behavior, new bounded contexts, runtime infrastructure, or new architectural layers.
 
 ## Technology decision
 
 ### Problem
 
-The repository has an accepted local validation gate, `./gradlew check`, but pull request acceptance still depends on locally reported validation because no CI system executes the gate on GitHub.
+Gradle currently enforces the physical `event-api` / `event-impl` project boundary, but the accepted Hexagonal Architecture dependency direction inside `event-impl` is documented rather than executable.
+
+CI now executes the root validation gate automatically, but that gate cannot yet detect package-level dependency-direction violations inside the implementation project.
 
 ### Requirement
 
-The accepted root validation gate must run automatically for pull requests and expose a GitHub-native status that can be required by repository rulesets.
+The existing Event domain/application dependency rules must be expressed as automated tests that run under the normal JUnit/Gradle validation path and therefore under the required CI check.
 
 ### Alternatives considered
 
-- **GitHub Actions** — native to the existing GitHub repository and pull request workflow, with direct status-check integration.
-- **External CI service** — capable, but introduces an additional service, integration, credential, and operational surface without a demonstrated need.
-- **Local validation only** — already available, but cannot provide an independently executed required pull request status.
+- **ArchUnit** — verifies Java package/class dependencies directly under JUnit without requiring an application runtime and is already an accepted technology direction.
+- **Spring Modulith verification** — useful for Spring application-module verification, but the repository has no accepted Spring runtime or application bootstrap and introducing one only for verification would expand scope unnecessarily.
+- **Gradle project boundaries only** — continue to protect `api` versus `impl`, but cannot express dependency direction between packages inside `event-impl`.
+- **Manual architecture review only** — can identify violations during review but does not make the rule independently executable or part of the required CI gate.
 
 ### Decision
 
-Use GitHub Actions for the minimum continuous-integration workflow required by this phase.
+Use ArchUnit for the minimum package-level architecture verification required by this phase.
 
-The decision is limited to repository validation. It does not authorize deployment, release automation, artifact publication, environment management, or broader DevOps infrastructure.
+ArchUnit is introduced only as a test dependency for architecture verification of the current Event implementation. This decision does not authorize Spring Boot, Spring Modulith, additional modules, runtime wiring, adapters, persistence, HTTP, or broader static-analysis tooling.
 
 ## In scope
 
-- Add the minimum GitHub Actions workflow required to execute the accepted repository validation gate.
-- Run the CI workflow for pull requests targeting `development` and `production`.
-- Use JDK 21 in CI.
-- Use the committed Gradle Wrapper as the build entry point.
-- Execute `./gradlew --no-daemon check` as the authoritative CI build/test gate.
-- Keep workflow permissions at the minimum required for repository checkout and validation.
-- Produce one stable GitHub status check that can be required by repository rulesets.
-- Configure the `development` and `production` rulesets to require the successful CI status check before merge.
-- Keep the existing pull-request, conversation-resolution, force-push, and deletion protections intact.
-- Update authoritative workflow, governance, technology, or status documentation if implementation details make an accepted process statement inaccurate.
-- Keep the CI workflow independent of application runtime, persistence, HTTP, deployment, and external providers.
+- Add ArchUnit as a test-scoped dependency using the repository version catalog.
+- Add architecture tests to the existing `event-impl` test suite.
+- Verify that Event domain production classes do not depend on Event application implementation classes.
+- Verify that Event domain production classes do not depend on the public Event API.
+- Verify the current application implementation dependency direction: application implementation may depend on Event domain, Event public API, and Java platform types, but not on a newly invented infrastructure or adapter layer.
+- Import and evaluate production classes only; architecture-test fixtures and ordinary test classes must not redefine the production architecture.
+- Run the architecture tests through the existing JUnit test task.
+- Keep root `./gradlew check` as the single authoritative validation gate.
+- Make an intentional dependency-direction violation fail the architecture test and root validation gate during implementation validation.
+- Keep the existing GitHub Actions workflow and required `validate` status check unchanged unless an implementation detail proves a documentation correction necessary.
+- Update `docs/project-status.md` after the architecture verification is accepted.
 
 ## Acceptance criteria
 
 The phase is complete when:
 
-1. A pull request targeting `development` automatically starts the CI validation.
-2. A pull request targeting `production` automatically starts the same CI validation.
-3. CI provisions JDK 21 and invokes the committed Gradle Wrapper.
-4. CI executes `./gradlew --no-daemon check`.
-5. A successful root check produces a successful, stable GitHub status check.
-6. A failing root check produces a failing GitHub status check.
-7. Repository rulesets require that CI check before merge to both `development` and `production`.
-8. Existing repository protections remain in place.
-9. No deployment, release automation, publishing, product runtime, persistence, HTTP, external integration, or new business capability is introduced.
-10. `docs/project-status.md` reflects completion of the CI foundation after implementation is accepted.
+1. ArchUnit is pinned through the version catalog and available only in the relevant test scope.
+2. `event-impl` contains automated architecture tests for the accepted Event domain/application dependency direction.
+3. Event domain production classes are verified not to depend on Event application implementation classes.
+4. Event domain production classes are verified not to depend on the Event public API.
+5. The accepted current application implementation dependency direction is executable without introducing new runtime or adapter packages.
+6. The architecture tests execute as part of the existing `event-impl` JUnit test task.
+7. Root `./gradlew --no-daemon check` executes the architecture verification.
+8. A deliberate dependency-direction violation is demonstrated to make the architecture verification and root validation gate fail, and the accepted branch contains no such violation.
+9. The existing required `validate` CI check remains the merge gate and succeeds for the compliant implementation.
+10. No Spring runtime, Spring Modulith, persistence, HTTP, deployment, external integration, new business capability, or additional architectural layer is introduced.
+11. `docs/project-status.md` reflects completion after implementation is accepted.
 
 ## Explicitly out of scope
 
 The following remain intentionally excluded from the current phase:
 
 - Spring Boot application bootstrap.
-- Spring Modulith configuration.
-- ArchUnit architecture rules.
+- Spring Modulith configuration or verification.
 - PostgreSQL schemas and Flyway migrations.
 - jOOQ configuration.
 - OpenAPI contracts or generation.
 - HTTP controllers or other external interfaces.
 - Durable persistence adapters.
+- Creation of adapter, infrastructure, interface, composition, integration, core, or application-runtime modules merely to exercise architecture rules.
 - Event publication or messaging infrastructure.
 - Registration, ticketing, booking, membership, speaker/program, content, payment, accounting, notification, or other business capabilities.
 - Frontend implementation.
@@ -98,7 +104,7 @@ The following remain intentionally excluded from the current phase:
 - Docker image builds or registry publication.
 - Multi-platform or multi-JDK CI matrices.
 - Code coverage services or quality dashboards.
-- Broad static-analysis or security-scanning suites.
+- Broad static-analysis or security-scanning suites beyond the scoped ArchUnit rules.
 - External CI services.
 - Dependency-update automation.
 - External provider integrations.
