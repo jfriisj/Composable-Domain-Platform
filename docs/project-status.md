@@ -21,12 +21,10 @@ This document is the authoritative concise statement of where the project curren
 
 ## In progress
 
-- Prepare the project for the first executable Gradle foundation change.
+- Complete review and acceptance of the Build Foundation implementation.
 
 ## Known gaps
 
-- No Gradle Wrapper or build exists yet.
-- No executable `./gradlew check` gate exists yet.
 - No automated architecture checks exist yet.
 - No CI automation exists yet.
 - No business module has been implemented.
@@ -34,6 +32,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Implement only the approved Gradle foundation on a dedicated topic branch.
+After the Build Foundation is accepted into `development`, define the next project phase through an explicit scope decision.
 
-The first implementation goal is a reproducible Gradle/Kotlin DSL build with Java toolchain policy, Version Catalog, convention-plugin infrastructure, and a deterministic root `./gradlew check` — without introducing Spring, business modules, persistence, CI, or deployment concerns.
+Do not begin business-module, Spring runtime, persistence, external contract, deployment, or other currently excluded implementation until the corresponding scope change has been accepted.

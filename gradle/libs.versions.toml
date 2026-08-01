@@ -1,0 +1,3 @@
+# Dependency and plugin versions are added only when their implementation enters scope.
+
+[versions]
