@@ -27,4 +27,4 @@ The platform is not tied to a single business domain. Event management is the fi
 
 ## Current state
 
-The repository, architecture, and executable Gradle build foundations are established. The current phase is the Event reference module foundation; no business capability is considered implemented until that reference-module change is accepted into `development`.
+The repository, architecture, and executable Gradle build foundations are established. Event is the first implemented reference bounded context, with separate public API and private implementation Gradle projects. No application runtime, persistence, or external HTTP contract is implemented.

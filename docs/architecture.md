@@ -85,6 +85,20 @@ module A API <- composition -> module B API
 
 A composition owns the cross-capability workflow; neither participating bounded context owns the other's business rules.
 
+## Current reference module
+
+Event is the first implemented bounded context used to validate the module architecture.
+
+Its current physical shape is:
+
+```text
+modules/event/
+├── api/
+└── impl/
+```
+
+The API project contains only the application-level contract required to define an Event and return its state. The implementation project contains the Event domain model and application implementation. No persistence, HTTP adapter, runtime framework, or event publication mechanism is part of the current reference slice.
+
 ## Persistence ownership
 
 The intended persistence baseline is PostgreSQL with schema ownership aligned to bounded contexts.
@@ -105,37 +119,36 @@ Public and administrative frontends are clients of stable contracts, not owners 
 
 Dynamic page composition may be introduced when a concrete use case requires it. Its contracts must remain separate from business-domain internals.
 
-## Conceptual repository layout
+## Repository layout
 
-This layout is architectural intent, not yet implemented project state:
+The currently implemented architectural structure includes:
 
 ```text
-platform/
-├── apps/
-├── core/
+.
+├── build-logic/
 ├── modules/
-├── compositions/
-├── integrations/
-├── interfaces/
-├── contracts/
-├── docs/
-└── build-logic/
+│   └── event/
+│       ├── api/
+│       ├── impl/
+│       └── module.md
+└── docs/
 ```
 
-Business domain modules are expected to use public API and private implementation separation when implementation enters scope.
+Additional top-level architectural areas such as `core/`, `compositions/`, `integrations/`, `interfaces/`, `contracts/`, and `apps/` remain architectural intent and must not be created until accepted scope requires them.
 
 ## Architecture enforcement
 
-Once implementation begins, boundaries are intended to be enforced at multiple levels:
+Current build-time enforcement includes:
 
-1. Gradle multi-project dependencies.
-2. `java-library` API/implementation separation.
-3. Spring Modulith module verification.
-4. ArchUnit architecture tests.
-5. PostgreSQL schema ownership and permissions where appropriate.
-6. Automated checks through `./gradlew check`.
+1. Separate Gradle projects for the Event public API and private implementation.
+2. `java-library` dependency semantics.
+3. Root `./gradlew check` aggregation across build logic and current projects.
 
-These enforcement mechanisms are planned architecture, not yet implemented project state.
+Additional enforcement remains deferred until explicitly scoped:
+
+- Spring Modulith module verification.
+- ArchUnit architecture tests.
+- PostgreSQL schema ownership and permissions.
 
 ## Architecture model
 
