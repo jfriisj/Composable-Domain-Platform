@@ -17,6 +17,8 @@ This document is the authoritative concise statement of where the project curren
 - Build Foundation accepted into `development` through PR #3.
 - Event reference module accepted into `development` through PR #5.
 - Project workflow accepted into `development` through PR #6.
+- Continuous Integration Foundation scope accepted into `development` through PR #7.
+- Minimum GitHub Actions continuous integration accepted into `development` through PR #8.
 - Authoritative scope, status, governance, workflow, architecture, module-model, and technology-direction documents established.
 - Structurizr DSL established as the authoritative architecture model.
 - ADR process established.
@@ -25,11 +27,13 @@ This document is the authoritative concise statement of where the project curren
 - Event reference module established with separate public API and private implementation Gradle projects.
 - Event ownership, application contract, domain invariants, and reference-module tests established.
 - The authoritative architecture model reflects the Event API/implementation boundary.
+- GitHub Actions runs `./gradlew --no-daemon check` with JDK 21 for pull requests targeting `development` and `production`.
+- The `validate` GitHub Actions check is required by the active rulesets for both permanent branches.
+- The CI trigger and required check have been verified successfully for pull requests targeting both `development` and `production`.
 
 ## In progress
 
-- Establish minimum GitHub Actions continuous integration for the accepted root Gradle validation gate.
-- Make the resulting CI status a required merge condition for `development` and `production`.
+- Define the next project phase through an explicit scope decision.
 
 ## Known gaps
 
@@ -37,11 +41,10 @@ This document is the authoritative concise statement of where the project curren
 - No application runtime exists yet.
 - No durable persistence exists yet.
 - No external HTTP contract exists yet.
-- CI automation is authorized by the current phase but not yet implemented.
 - No release has been produced from `production`.
 
 ## Next priority
 
-Implement the minimum CI workflow authorized by `docs/scope.md`, validate it on a pull request, and require its successful status in the permanent-branch rulesets.
+Define the next project phase through a dedicated scope pull request.
 
-Do not introduce deployment, release automation, application runtime, persistence, HTTP/OpenAPI, external integrations, or additional business capabilities in this phase.
+No further implementation is authorized until that scope change is accepted.
