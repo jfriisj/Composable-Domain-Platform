@@ -58,6 +58,7 @@ Domain and application implementation types are not part of the published Event 
 - `event-api`.
 - Java standard library.
 - JUnit 5 for tests.
+- ArchUnit for architecture tests.
 
 No dependency on another business module is currently allowed.
 
