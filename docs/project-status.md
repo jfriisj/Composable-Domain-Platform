@@ -21,7 +21,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## In progress
 
-- Define and approve the Build Foundation phase.
 - Prepare the project for the first executable Gradle foundation change.
 
 ## Known gaps
@@ -35,6 +34,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Accept the Build Foundation scope, then implement only the approved Gradle foundation on a dedicated topic branch.
+Implement only the approved Gradle foundation on a dedicated topic branch.
 
 The first implementation goal is a reproducible Gradle/Kotlin DSL build with Java toolchain policy, Version Catalog, convention-plugin infrastructure, and a deterministic root `./gradlew check` — without introducing Spring, business modules, persistence, CI, or deployment concerns.
