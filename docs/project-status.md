@@ -33,6 +33,7 @@ This document is the authoritative concise statement of where the project curren
 - GitHub Actions runs `./gradlew --no-daemon check` with JDK 21 for pull requests targeting `development` and `production`.
 - The `validate` GitHub Actions check is required by the active rulesets for both permanent branches.
 - The CI trigger and required check have been verified successfully for pull requests targeting both `development` and `production`.
+- Controlled negative CI verification through draft PR #14 confirmed that a failing root `./gradlew --no-daemon check` produces a failing `validate` GitHub status; the validation PR was closed without merge.
 - ArchUnit verifies the accepted Event domain/application dependency direction through the existing `event-impl` JUnit test task.
 - Event domain production classes are prevented from depending on Event application implementation classes or the public Event API.
 - Event application implementation dependencies are constrained to the current application, domain, public API, and Java platform packages.
