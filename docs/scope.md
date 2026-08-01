@@ -24,6 +24,7 @@ The current phase establishes the rules, architecture model, documentation struc
 - Define the repository and Gradle project structure conceptually.
 - Define allowed module types and their responsibilities.
 - Define hard bounded-context and Hexagonal Architecture rules.
+- Define cross-boundary traceability semantics for correlation and causation identifiers.
 - Define Git branching and pull-request workflow.
 - Define architecture diagrams as version-controlled authoritative artifacts.
 - Establish the Structurizr workspace foundation.

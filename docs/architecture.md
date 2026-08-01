@@ -59,6 +59,22 @@ Potential core responsibilities include module identity/description, capability 
 
 Business concepts such as Event, Ticket, Registration, Payment, Invoice, Speaker, or Booking must not move into core merely to make them reusable.
 
+## Execution context and traceability
+
+Cross-boundary operations must carry explicit execution metadata so a logical flow can be followed through modules, asynchronous work, integrations, and logs.
+
+- **Correlation ID** identifies the complete logical flow. It is preserved when work crosses synchronous or asynchronous boundaries.
+- **Causation ID** identifies the immediate operation, command, event, or message that caused a new asynchronous action or message.
+- A new entry point without an existing correlation context creates a new Correlation ID.
+- Boundary adapters propagate the correlation context when calling another module or external system where the protocol supports it.
+- Published messages and events carry correlation metadata in their envelope rather than embedding it in business-domain state.
+- Structured logs include the Correlation ID and, where applicable, the Causation ID.
+- Correlation and causation identifiers are opaque technical identifiers. They must not contain personal data or business meaning and must not be used for business decisions.
+
+The exact wire representation for HTTP, events, and other protocols belongs to the relevant contract work. The architecture requires the semantics and propagation behavior, not a specific identifier format at this stage.
+
+Correlation is independent of distributed tracing. W3C trace/span context or OpenTelemetry may later complement correlation, but adopting an observability technology is not required to preserve the platform-level Correlation ID.
+
 ## Composition over coupling
 
 When two independent capabilities need to cooperate, prefer a composition that depends on their public APIs rather than making either capability depend on the other's implementation.

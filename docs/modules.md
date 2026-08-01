@@ -12,6 +12,8 @@ It does not define future business capabilities in advance.
 
 Core must remain business-domain neutral and must not become a shared dumping ground.
 
+Cross-boundary execution metadata such as Correlation ID and Causation ID may be represented by small core primitives because their semantics apply uniformly across module boundaries. Business modules must not place business meaning in those identifiers.
+
 ## 2. Domain module
 
 **Responsibility:** one bounded business capability with its own language, rules, lifecycle, ownership, and persistence boundary.
@@ -52,7 +54,7 @@ An integration must not leak provider-specific models into domain code.
 
 Examples may eventually include public HTTP APIs, administrative APIs, or other delivery mechanisms.
 
-Interface modules translate transport contracts into application contracts and must not contain business rules.
+Interface modules translate transport contracts into application contracts and must not contain business rules. They are responsible for establishing or accepting correlation context at external entry points and propagating it into the platform execution context.
 
 ## Contracts are not bounded contexts
 
