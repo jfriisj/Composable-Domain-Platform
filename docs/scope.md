@@ -12,66 +12,70 @@ Event management is the first reference capability, but it is not the platform c
 
 ## Current phase
 
-**Event reference module foundation**
+**Continuous integration foundation**
 
-The repository, architecture, and executable Gradle build foundations have been accepted. The current phase introduces the first concrete bounded context to validate the platform's physical module boundary and Hexagonal Architecture direction with real business code.
+The repository, architecture, executable Gradle build, project workflow, and first Event reference module have been accepted.
 
-## Concrete use case
+The current phase makes the existing repository validation gate automatically visible and enforceable on GitHub pull requests before additional runtime, persistence, transport, integration, or business capability work is admitted.
 
-A platform operator can define an Event with explicit identity, name, slug, scheduled start/end, and timezone, and obtain the resulting Event state through an application-level contract.
+## Concrete requirement
 
-The initial Event model must enforce only invariants required by this use case, including that required textual identity fields are not blank and the scheduled end is after the scheduled start.
+Every pull request targeting `development` or `production` must automatically execute the repository's root Gradle validation gate in a clean CI environment using JDK 21.
 
-Durable persistence, HTTP exposure, runtime bootstrapping, publication workflows, and external integration are not required in this phase.
+The resulting GitHub status check must be suitable for use as a required merge condition so a pull request cannot be accepted when the repository validation gate fails or has not completed successfully.
 
-## Event ownership
+This phase automates an existing validation rule. It does not add product behavior.
 
-The Event bounded context owns:
+## Technology decision
 
-- Event identity.
-- Event name and slug.
-- Scheduled start and end.
-- Event timezone.
-- The invariants required to create a valid Event definition.
+### Problem
 
-The Event bounded context does not own:
+The repository has an accepted local validation gate, `./gradlew check`, but pull request acceptance still depends on locally reported validation because no CI system executes the gate on GitHub.
 
-- Registration.
-- Ticketing.
-- Booking.
-- Membership.
-- Speakers or program management.
-- Content management.
-- Payments or accounting.
-- Notifications.
-- Identity-provider concerns.
+### Requirement
+
+The accepted root validation gate must run automatically for pull requests and expose a GitHub-native status that can be required by repository rulesets.
+
+### Alternatives considered
+
+- **GitHub Actions** — native to the existing GitHub repository and pull request workflow, with direct status-check integration.
+- **External CI service** — capable, but introduces an additional service, integration, credential, and operational surface without a demonstrated need.
+- **Local validation only** — already available, but cannot provide an independently executed required pull request status.
+
+### Decision
+
+Use GitHub Actions for the minimum continuous-integration workflow required by this phase.
+
+The decision is limited to repository validation. It does not authorize deployment, release automation, artifact publication, environment management, or broader DevOps infrastructure.
 
 ## In scope
 
-- Add `modules/event/api` and `modules/event/impl` as separate Gradle projects.
-- Add an authoritative Event `module.md` describing ownership, non-ownership, public API, and allowed dependencies.
-- Expose the smallest application-level public contract required by the concrete Event use case.
-- Keep Event domain and application implementation inside the private implementation project.
-- Keep domain code free of Spring, HTTP, persistence, generated contract types, and provider SDKs.
-- Use the existing Java 21 `java-library` convention and Gradle API/implementation semantics to enforce the physical boundary.
-- Add JUnit 5 tests required to prove the Event invariants and application use case.
-- Add only dependency versions required by this phase to the Gradle Version Catalog.
-- Update the authoritative architecture model and documentation to reflect the implemented Event reference module.
-- Keep root `./gradlew check` green.
+- Add the minimum GitHub Actions workflow required to execute the accepted repository validation gate.
+- Run the CI workflow for pull requests targeting `development` and `production`.
+- Use JDK 21 in CI.
+- Use the committed Gradle Wrapper as the build entry point.
+- Execute `./gradlew --no-daemon check` as the authoritative CI build/test gate.
+- Keep workflow permissions at the minimum required for repository checkout and validation.
+- Produce one stable GitHub status check that can be required by repository rulesets.
+- Configure the `development` and `production` rulesets to require the successful CI status check before merge.
+- Keep the existing pull-request, conversation-resolution, force-push, and deletion protections intact.
+- Update authoritative workflow, governance, technology, or status documentation if implementation details make an accepted process statement inaccurate.
+- Keep the CI workflow independent of application runtime, persistence, HTTP, deployment, and external providers.
 
 ## Acceptance criteria
 
 The phase is complete when:
 
-1. `modules/event/api` and `modules/event/impl` build as separate Gradle projects.
-2. The API project does not depend on the implementation project.
-3. Event domain and application implementation remain private to `impl`.
-4. The concrete Event creation use case is covered by tests.
-5. Required Event invariants are covered by tests.
-6. No Spring, persistence, HTTP/OpenAPI, external integration, or deployment concern is introduced.
-7. Event ownership and non-ownership are explicit in `module.md`.
-8. The authoritative architecture model reflects the current Event reference module.
-9. `./gradlew check` succeeds from the repository root.
+1. A pull request targeting `development` automatically starts the CI validation.
+2. A pull request targeting `production` automatically starts the same CI validation.
+3. CI provisions JDK 21 and invokes the committed Gradle Wrapper.
+4. CI executes `./gradlew --no-daemon check`.
+5. A successful root check produces a successful, stable GitHub status check.
+6. A failing root check produces a failing GitHub status check.
+7. Repository rulesets require that CI check before merge to both `development` and `production`.
+8. Existing repository protections remain in place.
+9. No deployment, release automation, publishing, product runtime, persistence, HTTP, external integration, or new business capability is introduced.
+10. `docs/project-status.md` reflects completion of the CI foundation after implementation is accepted.
 
 ## Explicitly out of scope
 
@@ -88,8 +92,15 @@ The following remain intentionally excluded from the current phase:
 - Event publication or messaging infrastructure.
 - Registration, ticketing, booking, membership, speaker/program, content, payment, accounting, notification, or other business capabilities.
 - Frontend implementation.
-- Docker or deployment configuration.
-- GitHub Actions or other CI/CD automation.
+- Deployment automation.
+- Release automation or automatic version/tag creation.
+- Artifact or package publication.
+- Docker image builds or registry publication.
+- Multi-platform or multi-JDK CI matrices.
+- Code coverage services or quality dashboards.
+- Broad static-analysis or security-scanning suites.
+- External CI services.
+- Dependency-update automation.
 - External provider integrations.
 - Kafka, RabbitMQ, Redis, Kubernetes, or other infrastructure without a demonstrated requirement.
 - Multi-model development workflow automation.

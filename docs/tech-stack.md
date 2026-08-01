@@ -18,6 +18,7 @@ Status meanings:
 | Build | Gradle with Kotlin DSL | Accepted direction | Multi-project build, dependency boundaries, testing, and automation. |
 | Build conventions | Gradle convention plugins / `build-logic` | Accepted direction | Centralize build and architecture rules without copy/paste configuration. |
 | Module dependency boundary | Gradle `java-library` | Accepted direction | Separate public `api` dependencies from internal `implementation` dependencies. |
+| Continuous integration | GitHub Actions | Accepted direction | Execute repository validation gates and expose required pull request status checks. |
 | Application runtime | Spring Boot | Accepted direction | Bootstrap, dependency injection, HTTP/runtime configuration, and technical adapters. |
 | Modular verification | Spring Modulith | Accepted direction | Verify application-module boundaries and cycles. |
 | Architecture verification | ArchUnit | Accepted direction | Enforce Hexagonal Architecture and forbidden dependency rules. |
