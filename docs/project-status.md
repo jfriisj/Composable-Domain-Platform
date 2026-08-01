@@ -20,14 +20,16 @@ This document is the authoritative concise statement of where the project curren
 - ADR process established.
 - Initial architecture decisions accepted for modular-monolith bounded contexts, Gradle multi-project boundaries, architecture-as-code, and correlation/causation traceability.
 - Gradle Wrapper, Kotlin DSL, Java 21 toolchain convention, Version Catalog foundation, `build-logic`, and root `./gradlew check` established.
+- Event reference module established with separate public API and private implementation Gradle projects.
+- Event ownership, application contract, domain invariants, and reference-module tests established.
+- The authoritative architecture model reflects the Event API/implementation boundary.
 
 ## In progress
 
-- Prepare the first concrete Event bounded-context implementation within the accepted reference-module scope.
+- Define the next project phase through an explicit scope decision.
 
 ## Known gaps
 
-- No business module has been implemented yet.
 - No automated architecture checks beyond Gradle project boundaries exist yet.
 - No application runtime exists yet.
 - No durable persistence exists yet.
@@ -37,6 +39,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Implement the smallest Event reference slice using separate `api` and `impl` Gradle projects, explicit module ownership, pure Java domain/application code, and tests.
+Define the next project phase through a dedicated scope pull request.
 
-Do not introduce Spring, persistence, HTTP/OpenAPI, external integrations, deployment, or additional business capabilities in this phase.
+No further implementation is authorized until that scope change is accepted.

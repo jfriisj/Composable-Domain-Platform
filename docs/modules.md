@@ -18,7 +18,7 @@ Cross-boundary execution metadata such as Correlation ID and Causation ID may be
 
 **Responsibility:** one bounded business capability with its own language, rules, lifecycle, ownership, and persistence boundary.
 
-The intended Gradle shape, when implementation begins, is:
+The standard Gradle shape for a domain module is:
 
 ```text
 modules/<name>/
@@ -31,6 +31,8 @@ The public API may expose only concepts deliberately intended for collaboration,
 The implementation owns domain, application services, outbound ports, persistence, and internal adapters.
 
 Other modules may depend on the public API but not on the implementation.
+
+The Event reference module is the first implemented instance of this shape.
 
 ## 3. Composition module
 
