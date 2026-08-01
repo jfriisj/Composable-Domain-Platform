@@ -19,6 +19,7 @@ The platform is not tied to a single business domain. Event management is the fi
 - [`docs/scope.md`](docs/scope.md) — current accepted scope and explicit exclusions.
 - [`docs/project-status.md`](docs/project-status.md) — current project state and next priority.
 - [`docs/governance.md`](docs/governance.md) — governance, branching, change control, and sources of truth.
+- [`docs/workflow.md`](docs/workflow.md) — operational development workflow from accepted scope to merge and next scope gate.
 - [`docs/architecture.md`](docs/architecture.md) — architectural principles and hard boundaries.
 - [`docs/modules.md`](docs/modules.md) — allowed module types and ownership rules.
 - [`docs/tech-stack.md`](docs/tech-stack.md) — accepted technology directions and candidates.
