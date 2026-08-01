@@ -1,5 +1,6 @@
 package composable.domain.platform.event.domain;
 
+import composable.domain.platform.event.api.DefineEventCommand;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Objects;
@@ -11,6 +12,8 @@ public record Event(
         Instant startsAt,
         Instant endsAt,
         ZoneId timezone) {
+
+    private static final Class<?> CI_FAILURE_PROBE = DefineEventCommand.class;
 
     public Event {
         id = requireText(id, "id");
