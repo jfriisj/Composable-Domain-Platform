@@ -12,17 +12,20 @@ Each type of information has one authoritative owner:
 | --- | --- |
 | Accepted scope | `docs/scope.md` |
 | Current project state | `docs/project-status.md` |
+| Development workflow | `docs/workflow.md` |
 | Architecture model and diagrams | `docs/architecture/workspace.dsl` |
 | Architecture principles and boundary rules | `docs/architecture.md` |
-| Module responsibilities | `docs/modules.md` and each future module's `module.md` |
+| Module responsibilities | `docs/modules.md` and each implemented module's `module.md` |
 | Architecture rationale | `docs/adr/` |
 | Approved baseline technologies | `docs/tech-stack.md` |
 | External HTTP contract | Future OpenAPI contracts |
 | Database schema | Future Flyway migrations |
-| Build dependencies and module wiring | Future Gradle build files |
+| Build dependencies and module wiring | Gradle build files |
 | Implementation behavior | Source code and automated tests |
 
 Other documents may reference these sources but must not redefine competing versions of the same truth.
+
+The operational sequence for applying these governance rules is defined in [`workflow.md`](workflow.md).
 
 ## Git branches
 
@@ -41,6 +44,7 @@ Allowed topic prefixes are:
 - `chore/`
 - `refactor/`
 - `test/`
+- `hotfix/`
 
 Emergency production fixes may use `hotfix/`, branch from `production`, merge to `production`, and then be reconciled back into `development`.
 
@@ -97,13 +101,16 @@ Do not introduce infrastructure in anticipation of hypothetical scale or future 
 
 ## Definition of done
 
-The definition of done will become executable as the build foundation is introduced. Until then, every change must at minimum satisfy:
+Every accepted change must satisfy the applicable definition of done:
 
 - The change is inside accepted scope or explicitly changes scope.
 - Ownership is placed in the correct architectural area.
 - Relevant authoritative documentation is updated.
 - Architecture diagrams are updated when architecture changes.
+- Automated tests cover behavior and invariants introduced or changed by implementation work.
+- `./gradlew check` succeeds for implementation changes and other changes that affect the executable build.
 - No unrelated feature or technology is introduced.
 - The pull request is reviewable as one coherent decision.
+- Review conversations are resolved before merge.
 
-Later, `./gradlew check` will become the final automated implementation gate.
+The detailed validation and merge sequence is defined in [`workflow.md`](workflow.md).
