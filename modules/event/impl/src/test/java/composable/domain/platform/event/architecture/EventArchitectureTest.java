@@ -11,6 +11,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 class EventArchitectureTest {
 
     private static final String EVENT_ROOT = "composable.domain.platform.event";
+    private static final String CORE_EXECUTION_PACKAGE =
+            "composable.domain.platform.core.execution..";
     private static final String APPLICATION_PACKAGE = EVENT_ROOT + ".application..";
     private static final String DOMAIN_PACKAGE = EVENT_ROOT + ".domain..";
     private static final String API_PACKAGE = EVENT_ROOT + ".api..";
@@ -62,6 +64,7 @@ class EventArchitectureTest {
                         APPLICATION_PACKAGE,
                         DOMAIN_PACKAGE,
                         API_PACKAGE,
+                        CORE_EXECUTION_PACKAGE,
                         "java..")
                 .check(PRODUCTION_CLASSES);
     }

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import composable.domain.platform.core.execution.CorrelationId;
+import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.domain.Event;
 import java.time.Instant;
@@ -12,6 +14,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class FindEventServiceTest {
+
+    private static final ExecutionContext CONTEXT =
+            new ExecutionContext(new CorrelationId("test-correlation"));
 
     @Test
     void findsExistingEventByIdentity() {
@@ -27,7 +32,8 @@ class FindEventServiceTest {
                 endsAt,
                 timezone));
 
-        Optional<EventView> result = new FindEventService(repository).findById("event-1");
+        Optional<EventView> result =
+                new FindEventService(repository).findById(CONTEXT, "event-1");
 
         assertEquals(
                 Optional.of(new EventView(
@@ -43,7 +49,8 @@ class FindEventServiceTest {
     @Test
     void returnsEmptyForUnknownIdentity() {
         Optional<EventView> result =
-                new FindEventService(new InMemoryEventRepository()).findById("missing-event");
+                new FindEventService(new InMemoryEventRepository())
+                        .findById(CONTEXT, "missing-event");
 
         assertTrue(result.isEmpty());
     }
@@ -52,6 +59,13 @@ class FindEventServiceTest {
     void rejectsBlankIdentity() {
         FindEventService service = new FindEventService(new InMemoryEventRepository());
 
-        assertThrows(IllegalArgumentException.class, () -> service.findById(" "));
+        assertThrows(IllegalArgumentException.class, () -> service.findById(CONTEXT, " "));
+    }
+
+    @Test
+    void rejectsMissingExecutionContextAsProgrammingError() {
+        FindEventService service = new FindEventService(new InMemoryEventRepository());
+
+        assertThrows(NullPointerException.class, () -> service.findById(null, "event-1"));
     }
 }

@@ -33,11 +33,13 @@ Other business modules must not:
 
 Collaboration happens only through explicit public module APIs, published events, or composition modules.
 
+The executable application composition root may depend on private implementation types only for explicit technical wiring authorized by scope. That exception does not permit business logic or cross-module implementation collaboration.
+
 ## Hexagonal rule
 
 Dependencies point inward:
 
-```text
+~~~text
 adapter -> application -> domain
              |
              v
@@ -45,7 +47,7 @@ adapter -> application -> domain
              ^
              |
         outbound adapter
-```
+~~~
 
 Domain code must not depend on Spring, HTTP, database frameworks, generated OpenAPI types, provider SDKs, or other infrastructure technologies.
 
@@ -55,9 +57,9 @@ Application code orchestrates use cases and declares required outbound ports. Ad
 
 Platform core must remain small and contain platform mechanisms rather than business concepts.
 
-Potential core responsibilities include module identity/description, capability discovery, shared execution context primitives, and event-dispatch mechanisms when concrete implementation requires them.
+The current `core` project contains the minimum business-neutral `CorrelationId` and `ExecutionContext` primitives required to propagate correlation context from the HTTP boundary into Event application calls.
 
-Business concepts such as Event, Ticket, Registration, Payment, Invoice, Speaker, or Booking must not move into core merely to make them reusable.
+Potential additional core responsibilities require their own concrete accepted need. Business concepts such as Event, Ticket, Registration, Payment, Invoice, Speaker, or Booking must not move into core merely to make them reusable.
 
 ## Execution context and traceability
 
@@ -71,7 +73,7 @@ Cross-boundary operations must carry explicit execution metadata so a logical fl
 - Structured logs include the Correlation ID and, where applicable, the Causation ID.
 - Correlation and causation identifiers are opaque technical identifiers. They must not contain personal data or business meaning and must not be used for business decisions.
 
-The exact wire representation for HTTP, events, and other protocols belongs to the relevant contract work. The architecture requires the semantics and propagation behavior, not a specific identifier format at this stage.
+The current HTTP boundary represents correlation as `X-Correlation-Id`, preserves a supplied nonblank value, creates one when absent, and passes the resulting value through `ExecutionContext` into the Event public application boundary.
 
 Correlation is independent of distributed tracing. W3C trace/span context or OpenTelemetry may later complement correlation, but adopting an observability technology is not required to preserve the platform-level Correlation ID.
 
@@ -79,9 +81,9 @@ Correlation is independent of distributed tracing. W3C trace/span context or Ope
 
 When two independent capabilities need to cooperate, prefer a composition that depends on their public APIs rather than making either capability depend on the other's implementation.
 
-```text
+~~~text
 module A API <- composition -> module B API
-```
+~~~
 
 A composition owns the cross-capability workflow; neither participating bounded context owns the other's business rules.
 
@@ -89,17 +91,48 @@ A composition owns the cross-capability workflow; neither participating bounded 
 
 Event is the first implemented bounded context used to validate the module architecture.
 
-Its current physical shape is:
+Its physical shape remains:
 
-```text
+~~~text
 modules/event/
 ├── api/
 └── impl/
-```
+~~~
 
-The API project contains the application-level contracts required to define an Event, retrieve it by identity, return Event state, and report duplicate identity without persistence-specific types.
+The API project contains application-level contracts for defining and retrieving Event state, explicit duplicate and invalid-definition failures, and the shared execution context carried by the current use-case signatures.
 
-The implementation project contains the Event domain model, application implementation and outbound persistence port, and a private jOOQ PostgreSQL persistence adapter. Event-owned Flyway migrations define its durable schema. No HTTP adapter, application runtime framework, event publication mechanism, or external integration is part of the current reference slice.
+The implementation project contains the Event domain model, application implementation and outbound persistence port, and a private jOOQ PostgreSQL persistence adapter. Event-owned Flyway migrations define its durable schema.
+
+The HTTP adapter and executable application runtime are outside the Event bounded context. They use the Event public API and composition-only implementation wiring without moving Spring, HTTP, generated OpenAPI, or database runtime concepts into Event domain/application code.
+
+## Current runtime boundary
+
+The first executable vertical slice is:
+
+~~~text
+external HTTP caller
+        |
+        v
+contracts/http/v1/event.yaml
+        |
+        v
+interfaces/http
+        |
+        | Event public API + ExecutionContext
+        v
+modules/event/api
+        ^
+        |
+modules/event/impl ----> event.events
+        ^
+        |
+apps/platform
+  Spring Boot composition root
+  PostgreSQL configuration
+  Event Flyway startup migration
+~~~
+
+`apps/platform` starts the Spring Boot process and wires `interfaces/http`, the Event application services, `JooqEventRepository`, and the runtime `DataSource`. Event-owned Flyway migrations run during application context construction before the Event repository/application beans become available to serve requests.
 
 ## Persistence ownership
 
@@ -113,9 +146,11 @@ Database permission enforcement remains deferred until operational scope require
 
 ## External contracts
 
-OpenAPI is intended to be the authoritative HTTP contract between platform interfaces and external clients.
+`contracts/http/v1/event.yaml` is the authoritative external HTTP contract for the current Event define/retrieve surface.
 
-Generated transport models are adapter-layer types and must not become the domain model.
+OpenAPI Generator derives the server interface and transport models during the build. Generated sources are adapter-layer build output and must not become Event domain or application models.
+
+The HTTP interface owns transport mapping, structural HTTP validation, contract-defined error responses, and correlation establishment. Event continues to own business validation and result semantics.
 
 ## Dynamic interfaces
 
@@ -127,28 +162,39 @@ Dynamic page composition may be introduced when a concrete use case requires it.
 
 The currently implemented architectural structure includes:
 
-```text
+~~~text
 .
+├── apps/
+│   └── platform/
 ├── build-logic/
+├── contracts/
+│   └── http/
+│       └── v1/
+│           └── event.yaml
+├── core/
+├── interfaces/
+│   └── http/
 ├── modules/
 │   └── event/
 │       ├── api/
 │       ├── impl/
 │       └── module.md
 └── docs/
-```
+~~~
 
-Additional top-level architectural areas such as `core/`, `compositions/`, `integrations/`, `interfaces/`, `contracts/`, and `apps/` remain architectural intent and must not be created until accepted scope requires them.
+`compositions/` and `integrations/` remain architectural categories only and must not be created until accepted scope requires them.
 
 ## Architecture enforcement
 
 Current build-time enforcement includes:
 
-1. Separate Gradle projects for the Event public API and private implementation.
-2. `java-library` dependency semantics.
-3. ArchUnit architecture tests for the accepted Event domain/application/persistence-adapter dependency direction.
-4. Event-owned Flyway migrations and PostgreSQL integration tests through Testcontainers.
-5. Root `./gradlew check` aggregation across build logic and current projects, including Event architecture and persistence verification.
+1. Separate Gradle projects for core, Event API/implementation, HTTP interface, and executable platform runtime.
+2. `java-library` dependency semantics for library boundaries.
+3. Event ArchUnit tests for domain/application/persistence-adapter dependency direction.
+4. Platform ArchUnit tests for core, Event API, HTTP interface, and application-runtime dependency boundaries.
+5. Event-owned Flyway migrations and PostgreSQL persistence integration tests through Testcontainers.
+6. Running Spring Boot HTTP end-to-end tests against real PostgreSQL through Testcontainers, including contract success/error behavior and correlation handling.
+7. Root `./gradlew --no-daemon check` aggregation across all current projects.
 
 Additional enforcement remains deferred until explicitly scoped:
 

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import composable.domain.platform.core.execution.CorrelationId;
+import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.DefineEventCommand;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
 import composable.domain.platform.event.api.EventView;
@@ -22,6 +24,8 @@ class EventPersistenceIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRESQL =
             new PostgreSQLContainer("postgres:18.4");
+    private static final ExecutionContext CONTEXT =
+            new ExecutionContext(new CorrelationId("persistence-test-correlation"));
 
     private static DataSource dataSource;
 
@@ -62,11 +66,12 @@ class EventPersistenceIntegrationTest {
                 timezone);
 
         EventView defined =
-                new DefineEventService(new JooqEventRepository(dataSource)).define(command);
+                new DefineEventService(new JooqEventRepository(dataSource))
+                        .define(CONTEXT, command);
 
         EventView retrieved =
                 new FindEventService(new JooqEventRepository(dataSource))
-                        .findById("persistent-event-1")
+                        .findById(CONTEXT, "persistent-event-1")
                         .orElseThrow();
 
         assertEquals(defined, retrieved);
@@ -86,7 +91,7 @@ class EventPersistenceIntegrationTest {
         DefineEventService service =
                 new DefineEventService(new JooqEventRepository(dataSource));
 
-        service.define(new DefineEventCommand(
+        service.define(CONTEXT, new DefineEventCommand(
                 "persistent-duplicate-1",
                 "Original Persistent Event",
                 "original-persistent-event",
@@ -97,7 +102,7 @@ class EventPersistenceIntegrationTest {
         EventAlreadyDefinedException error = assertThrows(
                 EventAlreadyDefinedException.class,
                 () -> new DefineEventService(new JooqEventRepository(dataSource))
-                        .define(new DefineEventCommand(
+                        .define(CONTEXT, new DefineEventCommand(
                                 "persistent-duplicate-1",
                                 "Replacement Persistent Event",
                                 "replacement-persistent-event",
@@ -107,7 +112,7 @@ class EventPersistenceIntegrationTest {
 
         EventView persisted =
                 new FindEventService(new JooqEventRepository(dataSource))
-                        .findById("persistent-duplicate-1")
+                        .findById(CONTEXT, "persistent-duplicate-1")
                         .orElseThrow();
 
         assertEquals("persistent-duplicate-1", error.eventId());
@@ -119,7 +124,7 @@ class EventPersistenceIntegrationTest {
     void returnsEmptyForUnknownPersistentIdentity() {
         assertTrue(
                 new FindEventService(new JooqEventRepository(dataSource))
-                        .findById("persistent-missing")
+                        .findById(CONTEXT, "persistent-missing")
                         .isEmpty());
     }
 }

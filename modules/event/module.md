@@ -18,12 +18,15 @@ A platform operator can define an Event with explicit identity, name, slug, sche
 - Scheduled start and end.
 - Event timezone.
 - Invariants required to define a valid Event.
+- Event application result semantics, including duplicate identity and invalid definition.
 - The Event application persistence port.
 - Event-owned PostgreSQL schema and Flyway migration history.
 - Mapping between Event domain state and private persistence records.
 
 ## Does not own
 
+- HTTP transport contracts or status/error mapping.
+- Application runtime/bootstrap or runtime database configuration.
 - Registration.
 - Ticketing.
 - Booking.
@@ -44,12 +47,15 @@ The `event-api` Gradle project publishes only the current application-level cont
 - `FindEvent`
 - `EventView`
 - `EventAlreadyDefinedException`
+- `InvalidEventDefinitionException`
+
+`DefineEvent` and `FindEvent` accept the business-neutral `ExecutionContext` from `core` so correlation can be propagated explicitly across the application boundary without introducing HTTP types into Event.
 
 `FindEvent` returns `Optional<EventView>` for retrieval by Event identity. An unknown identity returns an empty result.
 
-Defining an Event whose identity already exists is rejected with `EventAlreadyDefinedException`; the existing persisted Event remains unchanged.
+Defining an Event whose identity already exists is rejected with `EventAlreadyDefinedException`; the existing persisted Event remains unchanged. A domain-invalid definition is represented at the public application boundary by `InvalidEventDefinitionException`.
 
-The public API does not expose Event domain or persistence implementation types.
+The public API does not expose Event domain, persistence implementation, Spring, HTTP, or generated OpenAPI types.
 
 ## Implementation
 
@@ -69,11 +75,13 @@ Domain, application implementation, persistence implementation, and persistence-
 
 `event-api`:
 
-- Java standard library only.
+- `core` execution-context contract.
+- Java standard library.
 
 `event-impl` production:
 
 - `event-api`.
+- `core` execution-context contract through the public application boundary.
 - Java standard library.
 - jOOQ inside the persistence adapter.
 
@@ -99,7 +107,7 @@ Integration tests execute the migration and persistence adapter against real Pos
 
 ## Explicitly absent
 
-The current Event module has no:
+The Event module itself has no:
 
 - Spring runtime dependency.
 - Spring Data, Hibernate, or JPA dependency.
@@ -107,3 +115,5 @@ The current Event module has no:
 - event publication or messaging infrastructure.
 - external provider integration.
 - application runtime/bootstrap or production database configuration.
+
+Those runtime and HTTP responsibilities live outside the bounded context in `apps/platform` and `interfaces/http`.
