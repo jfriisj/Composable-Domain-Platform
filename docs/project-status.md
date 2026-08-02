@@ -50,9 +50,10 @@ This document is the authoritative concise statement of where the project curren
 - Running HTTP-to-Event-to-PostgreSQL end-to-end tests validate success, duplicate, unknown, invalid-input, internal-failure, durability, and correlation behavior against real PostgreSQL through Testcontainers.
 - Executable ArchUnit verification covers the accepted core, Event, HTTP interface, and application-runtime dependency boundaries.
 - The authoritative architecture model reflects the current core, contract, HTTP interface, runtime, Event API/implementation, and Event persistence boundaries.
-- GitHub Actions runs `./gradlew --no-daemon check` with JDK 21 for pull requests targeting `development` and `production`.
-- The `validate` GitHub Actions check is required by the active rulesets for both permanent branches.
-- The CI trigger and required check have been verified successfully for pull requests targeting both `development` and `production`.
+- GitHub Actions registers the `validate` job for pull requests targeting both `development` and `production` so the existing required check remains present on both permanent branches.
+- For pull requests targeting `development`, `validate` is skipped before runner allocation; implementation and build-affecting changes use the mandatory local `./gradlew --no-daemon check` integration gate.
+- For pull requests targeting `production`, GitHub Actions executes `./gradlew --no-daemon check` with JDK 21 and `validate` acts as the independent release gate.
+- The `validate` GitHub Actions check remains required by the active rulesets for both permanent branches.
 - Controlled negative CI verification through draft PR #14 confirmed that a failing root `./gradlew --no-daemon check` produces a failing `validate` GitHub status; the validation PR was closed without merge.
 - PR #20 passed the required `validate` check before the Event runtime and HTTP implementation was accepted into `development`.
 - Release PR #23 passed the required `validate` check before the `v0.1.0` state was accepted into `production`.
