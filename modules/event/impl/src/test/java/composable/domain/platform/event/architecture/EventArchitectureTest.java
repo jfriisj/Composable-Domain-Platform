@@ -14,6 +14,7 @@ class EventArchitectureTest {
     private static final String APPLICATION_PACKAGE = EVENT_ROOT + ".application..";
     private static final String DOMAIN_PACKAGE = EVENT_ROOT + ".domain..";
     private static final String API_PACKAGE = EVENT_ROOT + ".api..";
+    private static final String PERSISTENCE_PACKAGE = EVENT_ROOT + ".persistence..";
 
     private static final JavaClasses PRODUCTION_CLASSES = new ClassFileImporter()
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -36,6 +37,24 @@ class EventArchitectureTest {
     }
 
     @Test
+    void domain_must_not_depend_on_persistence_adapter() {
+        noClasses()
+                .that().resideInAPackage(DOMAIN_PACKAGE)
+                .should().dependOnClassesThat().resideInAPackage(PERSISTENCE_PACKAGE)
+                .check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void domain_may_only_depend_on_domain_and_java_platform() {
+        classes()
+                .that().resideInAPackage(DOMAIN_PACKAGE)
+                .should().onlyDependOnClassesThat().resideInAnyPackage(
+                        DOMAIN_PACKAGE,
+                        "java..")
+                .check(PRODUCTION_CLASSES);
+    }
+
+    @Test
     void application_implementation_may_only_depend_on_current_allowed_packages() {
         classes()
                 .that().resideInAPackage(APPLICATION_PACKAGE)
@@ -44,6 +63,20 @@ class EventArchitectureTest {
                         DOMAIN_PACKAGE,
                         API_PACKAGE,
                         "java..")
+                .check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void persistence_adapter_may_only_depend_on_current_allowed_packages() {
+        classes()
+                .that().resideInAPackage(PERSISTENCE_PACKAGE)
+                .should().onlyDependOnClassesThat().resideInAnyPackage(
+                        PERSISTENCE_PACKAGE,
+                        APPLICATION_PACKAGE,
+                        DOMAIN_PACKAGE,
+                        "java..",
+                        "javax.sql..",
+                        "org.jooq..")
                 .check(PRODUCTION_CLASSES);
     }
 }

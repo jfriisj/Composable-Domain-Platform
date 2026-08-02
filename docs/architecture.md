@@ -97,15 +97,19 @@ modules/event/
 └── impl/
 ```
 
-The API project contains only the application-level contract required to define an Event and return its state. The implementation project contains the Event domain model and application implementation. No persistence, HTTP adapter, runtime framework, or event publication mechanism is part of the current reference slice.
+The API project contains the application-level contracts required to define an Event, retrieve it by identity, return Event state, and report duplicate identity without persistence-specific types.
+
+The implementation project contains the Event domain model, application implementation and outbound persistence port, and a private jOOQ PostgreSQL persistence adapter. Event-owned Flyway migrations define its durable schema. No HTTP adapter, application runtime framework, event publication mechanism, or external integration is part of the current reference slice.
 
 ## Persistence ownership
 
-The intended persistence baseline is PostgreSQL with schema ownership aligned to bounded contexts.
+Event implements the persistence baseline through an Event-owned PostgreSQL schema and versioned Flyway migrations.
+
+The Event application layer owns the persistence port. The private jOOQ adapter depends inward on that port and Event domain concepts; domain and application code do not depend on database technologies or persistence-adapter implementation.
 
 One PostgreSQL server does not imply one shared data model. Cross-module joins and direct cross-schema persistence access are prohibited unless a later explicit architecture decision changes this rule.
 
-Database permissions should eventually reinforce ownership where operationally practical.
+Database permission enforcement remains deferred until operational scope requires it.
 
 ## External contracts
 
@@ -142,13 +146,14 @@ Current build-time enforcement includes:
 
 1. Separate Gradle projects for the Event public API and private implementation.
 2. `java-library` dependency semantics.
-3. ArchUnit architecture tests for the accepted Event domain/application dependency direction.
-4. Root `./gradlew check` aggregation across build logic and current projects, including the Event architecture verification.
+3. ArchUnit architecture tests for the accepted Event domain/application/persistence-adapter dependency direction.
+4. Event-owned Flyway migrations and PostgreSQL integration tests through Testcontainers.
+5. Root `./gradlew check` aggregation across build logic and current projects, including Event architecture and persistence verification.
 
 Additional enforcement remains deferred until explicitly scoped:
 
 - Spring Modulith module verification.
-- PostgreSQL schema ownership and permissions.
+- PostgreSQL permission enforcement.
 
 ## Architecture model
 

@@ -6,9 +6,9 @@ Current reference bounded context.
 
 ## Purpose
 
-Own the smallest Event definition lifecycle required by the current reference use case.
+Own the smallest Event definition and durable retrieval lifecycle required by the current reference use case.
 
-A platform operator can define an Event with explicit identity, name, slug, scheduled start/end, and timezone and receive the resulting Event state.
+A platform operator can define an Event with explicit identity, name, slug, scheduled start/end, and timezone, persist that state durably, and retrieve it later by Event identity.
 
 ## Owns
 
@@ -18,6 +18,9 @@ A platform operator can define an Event with explicit identity, name, slug, sche
 - Scheduled start and end.
 - Event timezone.
 - Invariants required to define a valid Event.
+- The Event application persistence port.
+- Event-owned PostgreSQL schema and Flyway migration history.
+- Mapping between Event domain state and private persistence records.
 
 ## Does not own
 
@@ -30,6 +33,7 @@ A platform operator can define an Event with explicit identity, name, slug, sche
 - Payments or accounting.
 - Notifications.
 - Identity-provider concerns.
+- Shared business schemas or persistence for another bounded context.
 
 ## Public API
 
@@ -37,15 +41,29 @@ The `event-api` Gradle project publishes only the current application-level cont
 
 - `DefineEvent`
 - `DefineEventCommand`
+- `FindEvent`
 - `EventView`
+- `EventAlreadyDefinedException`
 
-The public API does not expose Event domain implementation types.
+`FindEvent` returns `Optional<EventView>` for retrieval by Event identity. An unknown identity returns an empty result.
+
+Defining an Event whose identity already exists is rejected with `EventAlreadyDefinedException`; the existing persisted Event remains unchanged.
+
+The public API does not expose Event domain or persistence implementation types.
 
 ## Implementation
 
-The `event-impl` Gradle project contains the Event domain model and the application implementation of the public contract.
+The `event-impl` Gradle project contains:
 
-Domain and application implementation types are not part of the published Event API.
+- the Event domain model;
+- application implementations and the application-owned `EventRepository` outbound port;
+- the private jOOQ PostgreSQL persistence adapter;
+- Event-owned Flyway migrations;
+- unit, architecture, and PostgreSQL integration tests.
+
+The persistence adapter uses atomic insert-if-absent semantics for Event identity and reconstructs the existing Event domain state on retrieval.
+
+Domain, application implementation, persistence implementation, and persistence-record details are not part of the published Event API.
 
 ## Allowed dependencies
 
@@ -53,21 +71,39 @@ Domain and application implementation types are not part of the published Event 
 
 - Java standard library only.
 
-`event-impl`:
+`event-impl` production:
 
 - `event-api`.
 - Java standard library.
-- JUnit 5 for tests.
-- ArchUnit for architecture tests.
+- jOOQ inside the persistence adapter.
+
+`event-impl` tests:
+
+- JUnit 5.
+- ArchUnit.
+- Flyway.
+- PostgreSQL JDBC driver.
+- Testcontainers PostgreSQL.
 
 No dependency on another business module is currently allowed.
+
+## Persistence
+
+Event owns schema `event`.
+
+Flyway migration `V1__create_event_schema.sql` defines the current Event table. Event identity is the primary key.
+
+The persistence representation preserves the full Java `Instant` value as epoch-second plus nanosecond components and stores the timezone identifier explicitly.
+
+Integration tests execute the migration and persistence adapter against real PostgreSQL through Testcontainers.
 
 ## Explicitly absent
 
 The current Event module has no:
 
 - Spring runtime dependency.
-- persistence adapter or database schema.
+- Spring Data, Hibernate, or JPA dependency.
 - HTTP/OpenAPI adapter.
 - event publication or messaging infrastructure.
 - external provider integration.
+- application runtime/bootstrap or production database configuration.
