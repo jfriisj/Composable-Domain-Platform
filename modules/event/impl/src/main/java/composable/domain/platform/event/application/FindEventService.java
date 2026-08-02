@@ -7,11 +7,11 @@ import composable.domain.platform.event.domain.Event;
 import java.util.Objects;
 import java.util.Optional;
 
-final class FindEventService implements FindEvent {
+public final class FindEventService implements FindEvent {
 
     private final EventRepository repository;
 
-    FindEventService(EventRepository repository) {
+    public FindEventService(EventRepository repository) {
         this.repository = Objects.requireNonNull(repository, "repository must not be null");
     }
 

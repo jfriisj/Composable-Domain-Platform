@@ -19,7 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public final class EventHttpAdapter implements EventApi {
+public class EventHttpAdapter implements EventApi {
 
     private final DefineEvent defineEvent;
     private final FindEvent findEvent;

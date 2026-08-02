@@ -9,11 +9,11 @@ import composable.domain.platform.event.api.InvalidEventDefinitionException;
 import composable.domain.platform.event.domain.Event;
 import java.util.Objects;
 
-final class DefineEventService implements DefineEvent {
+public final class DefineEventService implements DefineEvent {
 
     private final EventRepository repository;
 
-    DefineEventService(EventRepository repository) {
+    public DefineEventService(EventRepository repository) {
         this.repository = Objects.requireNonNull(repository, "repository must not be null");
     }
 
