@@ -23,6 +23,7 @@ dependencies {
     implementation(libs.spring.boot.starter.web)
 
     testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.archunit)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.testcontainers.postgresql)
     testRuntimeOnly(libs.junit.platform.launcher)
