@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Architecture verification foundation**
+**Event durable persistence**
 
 ## Completed
 
@@ -22,6 +22,7 @@ This document is the authoritative concise statement of where the project curren
 - Continuous Integration Foundation completion recorded through PR #10.
 - Architecture Verification Foundation scope accepted into `development` through PR #11.
 - Minimum ArchUnit architecture verification accepted into `development` through PR #12.
+- Architecture Verification Foundation completion recorded through PR #13.
 - Authoritative scope, status, governance, workflow, architecture, module-model, and technology-direction documents established.
 - Structurizr DSL established as the authoritative architecture model.
 - ADR process established.
@@ -41,7 +42,10 @@ This document is the authoritative concise statement of where the project curren
 
 ## In progress
 
-- Define the next project phase through an explicit scope decision.
+- Add Event-owned durable PostgreSQL persistence for the existing Event state.
+- Add the smallest public application contract required to retrieve a persisted Event by identity.
+- Introduce the persistence adapter through an application-owned outbound port while preserving the accepted Hexagonal dependency direction.
+- Validate Flyway migrations and jOOQ persistence against real PostgreSQL through Testcontainers and the existing root validation gate.
 
 ## Known gaps
 
@@ -52,6 +56,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Define the next project phase through a dedicated scope pull request.
+Implement the minimum Event durable-persistence slice authorized by `docs/scope.md`, including Event-owned PostgreSQL/Flyway schema management, jOOQ persistence access, real PostgreSQL integration validation, and retrieval by Event identity.
 
-No further implementation is authorized until that scope change is accepted.
+Do not introduce Spring Boot/runtime bootstrap, HTTP/OpenAPI, messaging, external integrations, additional bounded contexts, or unrelated Event lifecycle behavior in this phase.
