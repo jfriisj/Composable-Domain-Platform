@@ -28,6 +28,16 @@ Use one of:
 
 Accepted ADRs are not silently rewritten to change historical rationale. A later decision supersedes an earlier ADR and links to it.
 
+## Records
+
+- [ADR-0001: Modular monolith with bounded contexts](0001-modular-monolith-with-bounded-contexts.md)
+- [ADR-0002: Gradle multi-project boundaries](0002-gradle-multi-project-boundaries.md)
+- [ADR-0003: Architecture model as code](0003-architecture-model-as-code.md)
+- [ADR-0004: Correlation and causation traceability](0004-correlation-and-causation-traceability.md)
+- [ADR-0005: Event-owned PostgreSQL persistence](0005-event-owned-postgresql-persistence.md)
+- [ADR-0006: Spring Boot and OpenAPI runtime boundary](0006-spring-boot-openapi-runtime-boundary.md)
+- [ADR-0007: Registration capability and cross-capability composition](0007-registration-capability-and-cross-capability-composition.md)
+
 ## Template
 
 ```markdown

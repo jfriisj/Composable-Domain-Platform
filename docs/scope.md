@@ -10,17 +10,224 @@ Composable Domain Platform provides a reliable foundation for composing independ
 
 Event management is the first reference capability, but it is not the platform core and does not define the platform's general model.
 
+## Current accepted phase
+
+**Registration composition proof**
+
+The next implementation phase proves a second independently owned business capability and an explicit cross-capability workflow through the minimum participant-registration use case identified through issues #28, #31, and #32.
+
+### Concrete requirement
+
+A participant must be able to register participation in an Event that already exists and later retrieve the resulting Registration.
+
+The complete workflow preserves separate ownership of business truth:
+
+- Event owns whether an Event exists.
+- Registration owns Registration state and Registration-specific invariants.
+- An Event-Registration composition owns the workflow coordinating the two capabilities through public application contracts.
+
+### Registration state and invariants
+
+Registration owns only:
+
+- `registrationId`
+- `eventId`
+- `participantReference`
+
+`participantReference` is an opaque caller-supplied business reference for this phase. It does not establish participant profiles, accounts, authentication, authorization, or identity-provider integration.
+
+Registration owns these rules:
+
+1. `registrationId`, `eventId`, and `participantReference` must be nonblank.
+2. `registrationId` must be unique.
+3. `(eventId, participantReference)` must be unique.
+4. A uniqueness conflict must not replace or mutate existing Registration state.
+
+Whether an Event exists is not a Registration-internal invariant. Event existence is Event-owned truth and is checked by the cross-capability composition through the Event public API.
+
+### Registration ownership
+
+Create Registration as an independently bounded domain capability using the established shape:
+
+~~~text
+modules/registration/
+├── api/
+└── impl/
+~~~
+
+The Registration public API owns the minimum transport-independent application contracts required to:
+
+- register Registration state;
+- retrieve Registration state by `registrationId`;
+- expose Registration state containing only `registrationId`, `eventId`, and `participantReference`;
+- represent invalid Registration definition explicitly;
+- represent Registration uniqueness conflict explicitly;
+- carry the existing `ExecutionContext`.
+
+The Registration implementation owns Registration domain rules, application services, an application-owned persistence port, Registration persistence, and private persistence adapters.
+
+Registration must not depend on Event API, Event implementation, Event persistence, HTTP transport types, or Spring runtime concepts.
+
+### Event ownership
+
+Event continues to own Event identity, definition, name, slug, schedule, timezone, existence, application behavior, persistence, and schema.
+
+Event must not depend on Registration or the Event-Registration composition. No Event lifecycle behavior is added by this phase.
+
+### Cross-capability composition
+
+Create one composition project:
+
+`compositions/event-registration`
+
+The composition owns only the workflow spanning Event and Registration. Its registration operation must:
+
+1. receive `ExecutionContext`, `registrationId`, `eventId`, and `participantReference`;
+2. resolve the Event through the Event public API;
+3. return an explicit transport-independent unknown-Event workflow outcome when the Event does not exist;
+4. otherwise invoke the Registration public API;
+5. propagate Registration success or explicit Registration failure as a transport-independent workflow outcome.
+
+The composition may depend on `core`, Event public API, and Registration public API only. It must not depend on either capability implementation or persistence, HTTP, Spring Web, jOOQ, Flyway, or PostgreSQL APIs.
+
+A separate API/implementation split is not required for this first composition because it owns orchestration only and has no independent domain or persistence model.
+
+### Dependency direction
+
+~~~text
+event-impl -> event-api -> core
+
+registration-impl -> registration-api -> core
+
+event-registration composition -> event-api
+event-registration composition -> registration-api
+event-registration composition -> core
+
+http-interface -> event-registration composition
+http-interface -> registration-api
+http-interface -> event-api
+http-interface -> core
+
+platform-app -> http-interface
+platform-app -> event-registration composition
+platform-app -> event-impl
+platform-app -> registration-impl
+~~~
+
+Runtime dependencies on private implementation types remain technical-wiring exceptions only.
+
+### External HTTP contract
+
+Add a separate authoritative contract at `contracts/http/v1/registration.yaml`. Registration operations must not be added to `event.yaml`.
+
+The minimum external surface is:
+
+- `POST /api/v1/registrations`
+- `GET /api/v1/registrations/{registrationId}`
+
+POST input contains only `registrationId`, `eventId`, and `participantReference`.
+
+POST behavior:
+
+- `201` — Registration created;
+- `400` — structurally invalid input or explicit Registration invalid-definition failure;
+- `404` — referenced Event does not exist;
+- `409` — Registration uniqueness conflict;
+- `500` — sanitized unexpected failure.
+
+GET behavior:
+
+- `200` — Registration found;
+- `404` — Registration unknown;
+- `500` — sanitized unexpected failure.
+
+POST maps to the Event-Registration composition. GET may call the Registration public retrieval API directly because retrieval does not span Event and Registration truth.
+
+Every response preserves the accepted `X-Correlation-Id` behavior, and the resulting `ExecutionContext` is propagated through composition and Registration application calls.
+
+### Registration persistence
+
+Registration owns PostgreSQL schema `registration` and table `registration.registrations` with only:
+
+- `registration_id`
+- `event_id`
+- `participant_reference`
+
+Registration migrations belong under `modules/registration/impl/src/main/resources/db/migration/registration/`.
+
+Registration follows the accepted persistence pattern: application-owned persistence port, private jOOQ adapter, Registration-owned Flyway migrations, and PostgreSQL integration validation through Testcontainers.
+
+The database must enforce atomically:
+
+- unique `registration_id`;
+- unique `(event_id, participant_reference)`.
+
+A duplicate must preserve existing durable state.
+
+There must be no foreign key from Registration persistence to `event.events`, no cross-schema join used to validate Event existence, and no direct cross-capability table access. Event existence is validated through the Event public API before Registration creation.
+
+The absence of a database foreign key is intentional bounded-context isolation.
+
+### Architecture verification
+
+Executable architecture verification must prove at least:
+
+1. Registration API depends only on allowed business-neutral platform contracts.
+2. Registration domain/application code does not depend on Event, HTTP, Spring runtime, generated OpenAPI types, or database technologies.
+3. Registration persistence adapters remain private implementation details.
+4. Event production code does not depend on Registration or the Event-Registration composition.
+5. The composition depends only on `core`, Event API, and Registration API.
+6. The composition does not depend on either capability implementation or persistence, HTTP, Spring Web, jOOQ, Flyway, or PostgreSQL APIs.
+7. The HTTP interface does not depend on Event or Registration implementation/persistence.
+8. The application runtime remains technical wiring only.
+9. Registration persistence is validated against real PostgreSQL through Testcontainers.
+10. End-to-end HTTP validation proves the Event-to-composition-to-Registration workflow against real PostgreSQL.
+
+Root `./gradlew --no-daemon check` remains the executable repository validation gate.
+
+### Acceptance criteria
+
+The phase is complete when:
+
+1. Registration exists as a separately owned API/implementation domain module.
+2. Registration exposes only the accepted state and application contracts.
+3. Registration for an existing Event succeeds.
+4. Registration for an unknown Event returns the accepted unknown-Event outcome and creates no Registration.
+5. Duplicate `registrationId` is rejected without replacing existing state.
+6. Duplicate `(eventId, participantReference)` is rejected atomically without replacing existing state.
+7. Different participant references may register for the same Event.
+8. The same participant reference may register for different Events.
+9. Registration can be retrieved by `registrationId`.
+10. Registration owns its PostgreSQL schema, migrations, persistence port, and private persistence adapter.
+11. Registration does not access Event persistence.
+12. Event does not depend on Registration.
+13. The Event-Registration composition coordinates the workflow using public capability contracts only.
+14. `POST /api/v1/registrations` exposes the complete cross-capability workflow.
+15. `GET /api/v1/registrations/{registrationId}` retrieves Registration state.
+16. HTTP responses preserve the accepted correlation behavior.
+17. Unexpected failures remain sanitized.
+18. Executable architecture tests enforce the new capability and composition boundaries.
+19. Unit, persistence, adapter, and end-to-end tests cover the accepted behavior.
+20. Root `./gradlew --no-daemon check` succeeds.
+21. No explicitly excluded adjacent capability is introduced.
+
+### Explicitly out of scope
+
+This phase does not authorize registration cancellation, registration status or approval, waitlists, Event capacity, registration opening or closing periods, participant profiles, user accounts, authentication or authorization, Spring Security, tickets, pricing, payment, invoices, email, notifications, messaging or event publication, asynchronous processing, frontend implementation, external-provider integration, deployment or hosting changes, Docker or OCI packaging, observability infrastructure, unrelated Event lifecycle expansion, Event deletion, or cross-capability deletion consistency behavior.
+
+No new technology is admitted by this phase. The implementation reuses the established technology baseline where applicable.
+
 ## Accepted implementation baseline
 
 **Event runtime and HTTP interface — completed**
 
-This document retains the most recently accepted implementation scope as the baseline until a later scope decision is accepted into `development`. Current project activity and whether an implementation phase is active are owned by [`project-status.md`](project-status.md).
-
-No later implementation phase is currently accepted. Until a later scope decision is accepted, capabilities and technologies excluded below remain outside implementation authority.
+The Event runtime and HTTP interface phase remains the completed implementation baseline on which the current Registration composition proof builds.
 
 The repository, architecture, executable Gradle build, project workflow, continuous-integration foundation, executable architecture verification, Event reference module, and Event-owned durable PostgreSQL persistence have been accepted.
 
 The completed phase established the first externally callable vertical slice through the existing Event capability without adding new Event lifecycle behavior or another bounded context.
+
+The detailed Event runtime and HTTP sections below record that accepted baseline and do not expand the current Registration composition phase.
 
 ## Concrete requirement
 
@@ -205,9 +412,9 @@ The phase is complete when:
 21. No Event update/delete/status/visibility/publication behavior, authentication/authorization, messaging, frontend, additional bounded context, deployment, or external-provider integration is introduced.
 22. Current-state documentation and the authoritative architecture model reflect the accepted runtime and HTTP implementation after completion.
 
-## Explicitly out of scope
+## Explicitly out of scope for the completed Event phase
 
-The following were intentionally excluded from the accepted Event runtime and HTTP phase and remain outside accepted implementation scope until an explicit later scope decision:
+The following were intentionally excluded from the completed Event runtime and HTTP phase. This list records that historical boundary; the current accepted phase above supersedes it where it explicitly admits later work.
 
 - Event update, delete, publication, status, visibility, registration-opening, or lifecycle behavior beyond define and retrieve.
 - Additional Event business fields or business invariants not required by the existing define/retrieve contract.
@@ -241,7 +448,7 @@ The following were intentionally excluded from the accepted Event runtime and HT
 - Redis, Kafka, RabbitMQ, or other infrastructure without a demonstrated requirement.
 - Multi-model development workflow automation.
 
-These items may enter a later phase only through an explicit scope decision.
+Items not explicitly admitted by the current accepted phase remain outside implementation scope until a later explicit scope decision.
 
 ## Business capability admission rule
 
@@ -275,6 +482,6 @@ Hidden scope expansion inside implementation pull requests is not accepted.
 
 Potential future capabilities may be recorded as deferred ideas, but a deferred idea is not planned scope and must not create implementation, module, infrastructure, or API commitments.
 
-Examples currently include content management, registration, ticketing, booking, membership, surveys, payment integrations, and accounting integrations.
+Examples currently include content management, ticketing, booking, membership, surveys, payment integrations, accounting integrations, and Registration lifecycle behavior beyond the accepted minimum.
 
 Their eventual bounded-context boundaries must be determined from real use cases rather than assumed in advance.
