@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**First release preparation — v0.1.0**
+**Post-release scope gate**
 
 ## Completed
 
@@ -27,6 +27,9 @@ This document is the authoritative concise statement of where the project curren
 - Event durable persistence implementation accepted into `development` through PR #18.
 - Event runtime and HTTP interface scope accepted into `development` through PR #19.
 - Event runtime and HTTP interface implementation accepted into `development` through PR #20.
+- First release preparation accepted into `development` through PR #22.
+- First release promoted from `development` to `production` through release PR #23 using a merge commit.
+- Annotated repository release tag `v0.1.0` created on accepted `production` commit `5427dabe5eb0d00c25cd7470d345016f7cf77404`.
 - Authoritative scope, status, governance, workflow, architecture, module-model, and technology-direction documents established.
 - Structurizr DSL established as the authoritative architecture model.
 - ADR process established.
@@ -52,26 +55,23 @@ This document is the authoritative concise statement of where the project curren
 - The CI trigger and required check have been verified successfully for pull requests targeting both `development` and `production`.
 - Controlled negative CI verification through draft PR #14 confirmed that a failing root `./gradlew --no-daemon check` produces a failing `validate` GitHub status; the validation PR was closed without merge.
 - PR #20 passed the required `validate` check before the Event runtime and HTTP implementation was accepted into `development`.
+- Release PR #23 passed the required `validate` check before the `v0.1.0` state was accepted into `production`.
 - Event domain production classes are prevented from depending on Event application implementation classes, the public Event API, persistence-adapter classes, database infrastructure, HTTP, or Spring runtime concepts.
 - Event application implementation remains independent of the persistence adapter, database technologies, HTTP, and Spring runtime concepts.
 
 ## In progress
 
-- Prepare the first release from the already accepted `development` state.
-- Use `v0.1.0` as the first repository release tag.
-- Keep the release content identical to the accepted `development` state; no new implementation, dependency upgrades, contracts, infrastructure, or business behavior enter the release preparation.
-- Validate the release pull request through the existing required `validate` check.
-- Merge `development` into `production` with a merge commit, then create the annotated `v0.1.0` tag on the accepted `production` commit.
+- No implementation or release work is currently in progress.
+- The next implementation phase requires a new explicit scope decision before code, contracts, technologies, infrastructure, integrations, or business behavior are introduced.
 
 ## Known gaps
 
 - No authentication or authorization exists; those concerns were intentionally outside the completed Event runtime and HTTP phase.
 - No production deployment, TLS, secrets-management, or production database-operations baseline has been accepted.
 - No artifact/package publication process has been accepted.
-- No release has yet been produced from `production`.
 
 ## Next priority
 
-Complete the first release as `v0.1.0` using the accepted release workflow in `docs/workflow.md`.
+Make the next explicit scope decision based on a concrete use case and the admission rules in `docs/scope.md` and `docs/governance.md`.
 
-Do not add implementation changes to the release. After `v0.1.0` is accepted and tagged, return to the explicit scope gate before beginning the next implementation phase.
+Until that decision is accepted, do not introduce new Event lifecycle behavior, additional bounded contexts, authentication/authorization, messaging, frontend, deployment, external integrations, artifact publication, or unrelated infrastructure.
