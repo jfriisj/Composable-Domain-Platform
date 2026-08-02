@@ -10,13 +10,17 @@ Composable Domain Platform provides a reliable foundation for composing independ
 
 Event management is the first reference capability, but it is not the platform core and does not define the platform's general model.
 
-## Current phase
+## Accepted implementation baseline
 
-**Event runtime and HTTP interface**
+**Event runtime and HTTP interface — completed**
+
+This document retains the most recently accepted implementation scope as the baseline until a later scope decision is accepted into `development`. Current project activity and whether an implementation phase is active are owned by [`project-status.md`](project-status.md).
+
+No later implementation phase is currently accepted. Until a later scope decision is accepted, capabilities and technologies excluded below remain outside implementation authority.
 
 The repository, architecture, executable Gradle build, project workflow, continuous-integration foundation, executable architecture verification, Event reference module, and Event-owned durable PostgreSQL persistence have been accepted.
 
-The current phase proves the first externally callable vertical slice through the existing Event capability without adding new Event lifecycle behavior or another bounded context.
+The completed phase established the first externally callable vertical slice through the existing Event capability without adding new Event lifecycle behavior or another bounded context.
 
 ## Concrete requirement
 
@@ -41,7 +45,7 @@ Domain-invalid Event definitions must be represented by an explicit, transport-i
 
 Every HTTP response must carry an `X-Correlation-Id` header. If a request supplies a correlation identifier, the boundary preserves it; otherwise the boundary creates one. The correlation identifier is opaque and business-neutral and must be propagated explicitly into the Event application boundary through the minimum shared execution-context primitive required by the already accepted traceability architecture.
 
-This phase does not add Event update/delete lifecycle behavior, authentication/authorization, another bounded context, messaging, frontend work, deployment, or external-provider integration.
+The accepted Event runtime and HTTP phase did not add Event update/delete lifecycle behavior, authentication/authorization, another bounded context, messaging, frontend work, deployment, or external-provider integration.
 
 ## Runtime and HTTP admission
 
@@ -77,7 +81,7 @@ Therefore the first reference capability cannot yet be exercised as a running pl
 
 - Only the smallest business-neutral execution-context type required to carry the Correlation ID explicitly across in-process module boundaries.
 
-The current phase does not authorize a general utilities library, logging framework abstraction, security context, messaging envelope, distributed tracing API, or other speculative core mechanism.
+The accepted Event runtime and HTTP phase did not authorize a general utilities library, logging framework abstraction, security context, messaging envelope, distributed tracing API, or other speculative core mechanism.
 
 ### Event continues to own
 
@@ -139,7 +143,7 @@ Spring Boot, Spring Web, OpenAPI Generator, and any newly introduced runtime dep
 
 Spring Data, Hibernate/JPA, Spring Modulith, Spring Security, and an observability stack are not authorized by this phase.
 
-## In scope
+## Accepted scope for the completed phase
 
 - Create the minimum business-neutral `core` Gradle project required for an explicit execution context containing the Correlation ID.
 - Allow `event-api` to depend on that core execution-context contract and extend the existing Event public use-case signatures only as required to carry the execution context explicitly.
@@ -174,7 +178,7 @@ Spring Data, Hibernate/JPA, Spring Modulith, Spring Security, and an observabili
 - Update README, module/runtime/interface documentation, architecture documentation/model, and project status when the implementation is accepted.
 - Record the runtime/HTTP architecture rationale in ADR-0006.
 
-## Acceptance criteria
+## Acceptance criteria for the completed phase
 
 The phase is complete when:
 
@@ -203,7 +207,7 @@ The phase is complete when:
 
 ## Explicitly out of scope
 
-The following remain intentionally excluded from the current phase:
+The following were intentionally excluded from the accepted Event runtime and HTTP phase and remain outside accepted implementation scope until an explicit later scope decision:
 
 - Event update, delete, publication, status, visibility, registration-opening, or lifecycle behavior beyond define and retrieve.
 - Additional Event business fields or business invariants not required by the existing define/retrieve contract.

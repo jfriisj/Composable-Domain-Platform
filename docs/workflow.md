@@ -414,6 +414,16 @@ Before release:
 - release documentation/versioning required by the accepted release process must be updated;
 - no unrelated future work should be bundled into the release PR.
 
+### Permanent-branch ancestry after a release
+
+A normal release pull request is merged into `production` with a merge commit. That release merge commit belongs to the stable/release history and is not copied back into `development`.
+
+After normal work subsequently advances `development`, GitHub may therefore report `development` and `production` as diverged: `production` contains the release merge commit while `development` contains later accepted integration commits. This is expected and is not by itself a reconciliation defect.
+
+Do not merge `production` back into `development` merely to make permanent-branch ancestry appear linear. The next normal release pull request merges the accepted `development` state into the existing `production` history.
+
+Reconciliation from `production` back into `development` is required for a hotfix because the hotfix contains unique released work that must not be lost from future development. Ordinary release merge commits do not require that reconciliation.
+
 ## 17. Hotfix workflow
 
 Emergency fixes to released state may branch from `production` using `hotfix/`.
