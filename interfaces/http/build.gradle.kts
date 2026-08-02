@@ -19,6 +19,12 @@ dependencies {
     implementation(libs.jakarta.validation.api)
     implementation(libs.spring.context)
     implementation(libs.spring.web)
+
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.jakarta.servlet.api)
+    testImplementation(libs.spring.test)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 openApiGenerate {
@@ -56,4 +62,8 @@ sourceSets.named("main") {
 
 tasks.named("compileJava") {
     dependsOn(tasks.named("openApiGenerate"))
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
