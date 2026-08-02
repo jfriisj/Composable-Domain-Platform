@@ -12,155 +12,229 @@ Event management is the first reference capability, but it is not the platform c
 
 ## Current phase
 
-**Event durable persistence**
+**Event runtime and HTTP interface**
 
-The repository, architecture, executable Gradle build, project workflow, first Event reference module, continuous-integration foundation, and executable Event architecture verification have been accepted.
+The repository, architecture, executable Gradle build, project workflow, continuous-integration foundation, executable architecture verification, Event reference module, and Event-owned durable PostgreSQL persistence have been accepted.
 
-The current phase gives the existing Event bounded context its first durable outbound adapter and proves persistence ownership without introducing an application runtime or external transport.
+The current phase proves the first externally callable vertical slice through the existing Event capability without adding new Event lifecycle behavior or another bounded context.
 
 ## Concrete requirement
 
-A platform operator must be able to define an Event and later retrieve the same Event by its identity after the original application-service instance no longer exists.
+A platform operator must be able to start one platform application process, define an Event through a versioned HTTP contract, and retrieve the same Event later through HTTP from the existing durable PostgreSQL state.
 
-A successful Event definition must be durably stored before success is returned. Retrieval must reconstruct the accepted Event state from durable storage without exposing persistence-specific types through the Event public API.
+The HTTP boundary must expose only the already accepted Event define and retrieve behavior:
 
-The retrieval contract must define an explicit, transport-independent result for an unknown Event identity.
+- `POST /api/v1/events` defines an Event.
+- `GET /api/v1/events/{eventId}` retrieves an Event by identity.
+- Successful definition returns HTTP `201`.
+- Successful retrieval returns HTTP `200`.
+- Duplicate Event identity returns HTTP `409` without changing the persisted Event.
+- Unknown Event identity returns HTTP `404`.
+- Structurally or domain-invalid client input returns HTTP `400`.
+- Unexpected internal failures return HTTP `500` through a contract-defined server-error representation without exposing stack traces, persistence records, SQL, jOOQ exceptions, or implementation types.
 
-Because Event identity identifies one durable Event and update/replace behavior is outside this phase, defining an Event whose identity already exists must be rejected without changing the persisted Event. The failure must be expressed independently of PostgreSQL/jOOQ exceptions or persistence records.
+The HTTP representation must preserve the currently accepted Event fields: `eventId`, `name`, `slug`, `startsAt`, `endsAt`, and `timezone`.
 
-This phase extends only the existing Event capability. It does not add Event update/delete lifecycle behavior, another bounded context, HTTP exposure, application bootstrap, messaging, or external integration.
+The OpenAPI document is the authoritative external HTTP contract. Transport models are adapter-layer types and must not become Event domain or application models.
 
-## Event persistence admission
+Domain-invalid Event definitions must be represented by an explicit, transport-independent Event public application failure/result. The HTTP adapter must not infer domain-invalid input by catching generic implementation exceptions or by duplicating Event business validation.
+
+Every HTTP response must carry an `X-Correlation-Id` header. If a request supplies a correlation identifier, the boundary preserves it; otherwise the boundary creates one. The correlation identifier is opaque and business-neutral and must be propagated explicitly into the Event application boundary through the minimum shared execution-context primitive required by the already accepted traceability architecture.
+
+This phase does not add Event update/delete lifecycle behavior, authentication/authorization, another bounded context, messaging, frontend work, deployment, or external-provider integration.
+
+## Runtime and HTTP admission
 
 ### Concrete use case
 
-Define an Event now and retrieve its accepted state later by Event identity.
+Start the platform application and define or retrieve the existing durable Event capability through a stable external HTTP contract.
 
 ### Why the current baseline is insufficient
 
-The current `DefineEvent` use case constructs and returns Event state but has no outbound persistence port, durable adapter, database schema, or retrieval use case. State therefore cannot survive beyond the execution that created it.
+The Event bounded context can define and retrieve durable Event state, but only through in-process Java application contracts. The repository has no application composition root, executable server runtime, HTTP interface, external contract, runtime database configuration, or external-entry correlation propagation.
 
-### Event owns
+Therefore the first reference capability cannot yet be exercised as a running platform boundary.
 
-- The durable representation of the Event state already owned by the Event bounded context.
-- The Event persistence port used by Event application services.
-- The Event PostgreSQL schema and its migrations.
-- Mapping between Event domain state and Event-owned persistence records.
-- Retrieval of an Event by its identity through the Event public application API.
+### HTTP interface owns
 
-### Event does not own
+- The versioned external Event HTTP contract.
+- HTTP request/response transport types.
+- Mapping between HTTP transport types and Event public application contracts.
+- HTTP status and transport-error mapping.
+- Establishing or accepting the HTTP correlation identifier and returning it to the caller.
+- HTTP-specific structural validation.
 
-- A shared platform-wide business repository or shared business schema.
-- Persistence for another bounded context.
-- Cross-context joins or direct access to another bounded context's tables.
-- Registration, ticketing, booking, membership, speakers/program management, content, payments/accounting, notifications, or identity-provider concerns.
-- HTTP transport, application runtime, deployment, or external-provider concerns.
+### Application runtime owns
+
+- The executable Spring Boot composition root.
+- Wiring the HTTP interface to the existing Event application implementation.
+- Constructing the Event PostgreSQL persistence adapter with runtime configuration.
+- Applying the existing Event-owned Flyway migrations before the application accepts requests.
+- Minimal externalized database configuration required to start the application.
+- Runtime propagation of the correlation context across the HTTP-to-Event boundary.
+
+### Platform core owns
+
+- Only the smallest business-neutral execution-context type required to carry the Correlation ID explicitly across in-process module boundaries.
+
+The current phase does not authorize a general utilities library, logging framework abstraction, security context, messaging envelope, distributed tracing API, or other speculative core mechanism.
+
+### Event continues to own
+
+- Event business rules and state.
+- `DefineEvent`, `FindEvent`, and Event application result semantics.
+- Event persistence port, PostgreSQL schema, Flyway migration history, and jOOQ persistence adapter.
+
+The HTTP interface and application runtime must not duplicate or reinterpret Event business rules.
 
 ## Technology decision
 
 ### Problem
 
-The accepted Event implementation has no durable storage mechanism. In-memory state or test doubles cannot satisfy the requirement that Event state survive the application-service instance that created it.
+The accepted Event implementation has no executable application host or external transport. A new runtime must compose the existing ports/adapters, expose HTTP without contaminating Event domain/application code with runtime types, and make the external contract executable and version controlled.
 
-The first persistence implementation must also make Event schema ownership reproducible and test the actual database semantics used by the accepted platform direction.
+The first external entry point must also satisfy the existing correlation-propagation architecture.
 
 ### Requirement
 
-The Event implementation needs a durable relational store, version-controlled Event-owned schema migrations, explicit SQL access inside a private persistence adapter, and automated integration tests against the real selected database.
+The implementation needs:
 
-The domain and application layers must remain independent of database libraries and runtime frameworks.
+- one executable Java application runtime;
+- dependency injection and HTTP server bootstrap;
+- a version-controlled authoritative HTTP contract;
+- generated or otherwise build-verified transport interfaces/models derived from that contract;
+- explicit transport-to-application mapping;
+- minimal externalized PostgreSQL runtime configuration;
+- startup execution of the existing Event Flyway migrations;
+- real end-to-end HTTP validation against PostgreSQL;
+- explicit Correlation ID establishment and propagation.
 
 ### Alternatives considered
 
-- **PostgreSQL + Flyway + jOOQ + Testcontainers** — matches the accepted technology directions, keeps schema ownership explicit, supports version-controlled migrations and explicit SQL, and can be tested against real PostgreSQL without requiring a Spring runtime.
-- **In-memory or file-backed test storage** — useful as a test double but does not satisfy or prove the durable PostgreSQL requirement.
-- **H2 or another substitute database** — durable in some modes, but does not verify PostgreSQL schema and SQL behavior and would add a second database technology without a requirement.
-- **Plain JDBC with ad-hoc schema creation** — can access PostgreSQL but leaves migration/versioning concerns bespoke and bypasses the accepted Flyway/jOOQ direction.
-- **JPA/Hibernate or Spring Data** — can provide persistence, but adds an ORM and/or Spring runtime surface that is not required for this use case.
+- **Spring Boot + Spring Web + OpenAPI + OpenAPI Generator** — follows the existing accepted technology directions, provides a focused composition/runtime mechanism, and keeps generated transport types at the interface boundary.
+- **JDK HTTP server with manually maintained JSON and contract mapping** — can expose HTTP with fewer dependencies but creates bespoke server/bootstrap and contract-drift mechanisms that the accepted technology direction already intends to avoid.
+- **A different lightweight Java HTTP framework** — technically viable, but introduces an additional runtime direction without a demonstrated advantage over the already accepted Spring Boot direction.
+- **Place Spring HTTP controllers inside `event-impl`** — reduces project count but couples the Event bounded context to a transport/runtime framework and weakens the existing module boundary.
+- **Expose only the in-process Event Java API** — preserves the current architecture but does not satisfy the external runtime use case.
 
 ### Decision
 
-Use PostgreSQL as the Event durable store, Flyway as the authoritative Event schema-migration mechanism, jOOQ for SQL access inside the Event persistence adapter, and Testcontainers for integration tests against real PostgreSQL.
+Use Spring Boot as the application runtime and Spring Web for the HTTP adapter.
 
-Pin exact dependency versions through the repository version catalog when implementation begins.
+Create one HTTP interface Gradle project under `interfaces/http` and one executable composition-root Gradle project under `apps/platform`.
 
-Dependencies required to connect these selected technologies to PostgreSQL are authorized only as implementation details of this persistence slice.
+The HTTP interface depends on the Event public API and the minimum shared execution-context API, not on `event-impl` or Event persistence.
 
-Spring Boot, Spring Data, Hibernate/JPA, and Spring Modulith are not authorized by this decision.
+The application composition root may depend on the private Event implementation only for explicit wiring. It must not contain Event business rules.
+
+Store the authoritative versioned Event OpenAPI contract under `contracts/http/`. Use OpenAPI Generator during the build for the server-side transport interface/model surface required by the HTTP adapter. Generated sources belong to the build output and are not an independently edited source of truth.
+
+Use Jakarta Validation only at the HTTP transport boundary when required to enforce structural constraints expressed by the OpenAPI contract.
+
+Keep manual mapping for the small current transport surface; MapStruct is not authorized by this phase because the current mapping requirement does not justify it.
+
+Use the existing PostgreSQL, Flyway, jOOQ, and Testcontainers decisions. Runtime wiring may add the PostgreSQL connectivity and Flyway dependencies required to start against the existing Event-owned database schema.
+
+Spring Boot, Spring Web, OpenAPI Generator, and any newly introduced runtime dependencies must be pinned through the repository's established dependency/version mechanisms during implementation.
+
+Spring Data, Hibernate/JPA, Spring Modulith, Spring Security, and an observability stack are not authorized by this phase.
 
 ## In scope
 
-- Extend the Event public API with the smallest application-level contract required to retrieve an Event by identity.
-- Keep public Event API types independent of PostgreSQL, Flyway, jOOQ, Testcontainers, and other infrastructure types.
-- Add an outbound persistence port owned by the Event application implementation.
-- Persist every successfully defined Event before returning the successful definition result.
-- Retrieve persisted Event state by Event identity and reconstruct the existing Event domain state and `EventView`.
-- Define explicit behavior for an unknown Event identity without leaking database exceptions or persistence records.
-- Reject definition of an Event whose identity already exists without overwriting the stored Event and without leaking persistence-specific exceptions or types.
-- Add a private persistence adapter inside the existing `event-impl` Gradle project; do not create a new persistence Gradle project or top-level architectural area.
-- Add an Event-owned PostgreSQL schema through version-controlled Flyway migrations.
-- Use jOOQ only inside the Event persistence adapter.
-- Add the PostgreSQL connectivity required by the selected persistence stack.
-- Add Testcontainers-backed integration tests against real PostgreSQL and apply the Event Flyway migrations in those tests.
-- Prove durability by retrieving a previously defined Event through a fresh application-service composition connected to the same database state.
-- Preserve every currently accepted Event field across the persistence round trip: identity, name, slug, scheduled start, scheduled end, and timezone.
-- Extend the existing ArchUnit verification so Event domain and application code cannot depend on the persistence adapter or database infrastructure, while the persistence adapter may depend inward on the Event application persistence port and Event domain.
-- Keep the existing `event-api` / `event-impl` Gradle boundary.
-- Keep root `./gradlew --no-daemon check` as the authoritative validation gate and run the real PostgreSQL integration validation through that gate.
-- Keep the existing GitHub Actions workflow and required `validate` status check as the merge gate.
-- Update Event module documentation, architecture documentation/model descriptions, README current-state text, and project status when implementation is accepted.
-- Record the persistence architecture rationale in ADR-0005.
+- Create the minimum business-neutral `core` Gradle project required for an explicit execution context containing the Correlation ID.
+- Allow `event-api` to depend on that core execution-context contract and extend the existing Event public use-case signatures only as required to carry the execution context explicitly.
+- Preserve existing Event business semantics while adding execution-context propagation.
+- Add the smallest explicit Event public application failure/result required to represent an invalid Event definition without exposing domain implementation exception types.
+- Create `contracts/http/` and add the authoritative versioned OpenAPI contract for the current Event define/retrieve HTTP surface.
+- Define `POST /api/v1/events` and `GET /api/v1/events/{eventId}` only.
+- Define transport representations for the currently accepted Event fields only.
+- Define contract-stable HTTP success and error responses for `201`, `200`, `400`, `404`, `409`, and `500`.
+- Map the explicit Event invalid-definition application failure to HTTP `400` without duplicating Event business validation or treating generic implementation exceptions as client errors.
+- Define `X-Correlation-Id` request/response behavior and propagate the resulting Correlation ID explicitly into Event application calls.
+- Create the `interfaces/http` Gradle project as an inbound adapter.
+- Keep the HTTP interface dependent on Event public contracts rather than Event implementation or persistence.
+- Use Spring Web only in the HTTP/interface boundary required for this slice.
+- Generate the server transport interface/model surface from the authoritative OpenAPI contract during the build.
+- Keep generated OpenAPI types and Jakarta Validation annotations out of Event domain and application implementation.
+- Create the `apps/platform` executable Gradle project as the Spring Boot composition root.
+- Wire the existing Event define/retrieve application services and `JooqEventRepository` in the composition root.
+- Make only the minimum implementation-visibility changes required for composition; do not move Event implementation or persistence types into `event-api`.
+- Configure a PostgreSQL `DataSource` from minimal externalized runtime properties.
+- Apply the existing Event-owned Flyway migrations before the HTTP server accepts application traffic.
+- Keep Event schema ownership and migration files inside the Event implementation.
+- Add integration validation that starts the HTTP application against real PostgreSQL through Testcontainers.
+- Prove through HTTP that an Event can be defined and then retrieved with all accepted fields preserved exactly.
+- Prove through HTTP that duplicate identity returns `409` and leaves the existing Event unchanged.
+- Prove through HTTP that an unknown identity returns `404`.
+- Prove through HTTP that invalid client input returns `400` without infrastructure leakage.
+- Prove Correlation ID preservation when supplied and generation when absent.
+- Extend executable architecture verification for the new core/interface/runtime dependency boundaries.
+- Keep root `./gradlew --no-daemon check` as the authoritative validation gate, including the end-to-end HTTP/PostgreSQL validation.
+- Keep the existing GitHub Actions workflow and required `validate` status as the merge gate.
+- Update README, module/runtime/interface documentation, architecture documentation/model, and project status when the implementation is accepted.
+- Record the runtime/HTTP architecture rationale in ADR-0006.
 
 ## Acceptance criteria
 
 The phase is complete when:
 
-1. The Event public API supports retrieving an Event by identity using only Event API and Java platform types.
-2. Successful Event definition durably stores all currently accepted Event state before returning success.
-3. A fresh application-service composition connected to the same PostgreSQL state can retrieve the previously defined Event.
-4. Retrieval preserves Event identity, name, slug, start, end, and timezone exactly according to the application contract.
-5. Retrieval of an unknown Event identity has explicit tested behavior and does not leak persistence-specific exceptions or types.
-6. Defining an Event whose identity already exists is rejected, leaves the previously persisted Event unchanged, and does not leak persistence-specific exceptions or types.
-7. Event application code declares and uses an outbound persistence port rather than depending on a PostgreSQL/jOOQ adapter directly.
-8. Event domain code remains independent of persistence and database technologies.
-9. The persistence adapter remains private inside `event-impl` and depends inward on Event application/domain concepts rather than the reverse.
-10. Flyway migrations define the Event-owned PostgreSQL schema reproducibly and no shared business schema or cross-context persistence access is introduced.
-11. jOOQ database access is confined to the Event persistence adapter.
-12. Integration tests use Testcontainers with real PostgreSQL and execute the accepted Flyway migrations.
-13. Existing ArchUnit verification is extended to enforce the introduced persistence-adapter dependency direction.
-14. Root `./gradlew --no-daemon check` executes unit, architecture, and required persistence integration validation successfully.
-15. The required GitHub `validate` check succeeds for the compliant implementation.
-16. No Spring Boot/runtime bootstrap, Spring Modulith, HTTP/OpenAPI, messaging, deployment, external integration, additional bounded context, or unrelated Event lifecycle behavior is introduced.
-17. `modules/event/module.md`, relevant architecture/current-state documentation, and `docs/project-status.md` reflect the accepted persistence implementation after completion.
+1. A documented repository command starts one executable platform application using Java 21 and Spring Boot.
+2. The authoritative OpenAPI contract defines only the accepted Event define/retrieve HTTP surface for this phase.
+3. `POST /api/v1/events` maps transport input to the existing Event definition use case and returns `201` with the accepted Event representation on success.
+4. `GET /api/v1/events/{eventId}` maps to the existing Event retrieval use case and returns `200` with the accepted Event representation when found.
+5. The HTTP round trip preserves `eventId`, `name`, `slug`, `startsAt`, `endsAt`, and `timezone` exactly according to the contract.
+6. Duplicate Event identity returns `409`, leaves the previously persisted Event unchanged, and exposes no persistence-specific detail.
+7. Unknown Event identity returns `404` through a contract-defined transport result.
+8. Structurally invalid transport input or an explicit Event invalid-definition application failure returns `400` through a contract-defined transport result without duplicating Event business rules in the HTTP adapter.
+9. Unexpected internal failures return `500` through a contract-defined transport result and do not expose stack traces, SQL, persistence records, jOOQ exceptions, or implementation types.
+10. Every HTTP response carries `X-Correlation-Id`; a supplied value is preserved and an absent value is generated.
+11. The resulting Correlation ID is carried explicitly through the shared execution context into the Event application boundary.
+12. The HTTP interface depends on Event public contracts and does not depend on `event-impl`, jOOQ, Flyway, PostgreSQL driver APIs, or Event persistence records.
+13. Event domain and application implementation remain independent of Spring Boot, Spring Web, generated OpenAPI transport types, Jakarta Validation, and HTTP concepts.
+14. The application composition root contains wiring/configuration only and does not implement Event business rules.
+15. Application startup constructs the Event persistence adapter from externalized PostgreSQL configuration and applies the existing Event Flyway migrations before serving Event requests.
+16. End-to-end tests exercise the running HTTP boundary against real PostgreSQL through Testcontainers.
+17. Existing Event unit, persistence, and architecture tests continue to pass.
+18. Architecture verification enforces the accepted dependency direction for core, Event, HTTP interface, and application runtime.
+19. Root `./gradlew --no-daemon check` succeeds with the required end-to-end validation.
+20. The required GitHub `validate` check succeeds for the compliant implementation.
+21. No Event update/delete/status/visibility/publication behavior, authentication/authorization, messaging, frontend, additional bounded context, deployment, or external-provider integration is introduced.
+22. Current-state documentation and the authoritative architecture model reflect the accepted runtime and HTTP implementation after completion.
 
 ## Explicitly out of scope
 
 The following remain intentionally excluded from the current phase:
 
-- Event update, delete, publication, status, visibility, registration-opening, or other lifecycle behavior beyond define and retrieve.
-- Spring Boot application bootstrap.
-- Spring Modulith configuration or verification.
+- Event update, delete, publication, status, visibility, registration-opening, or lifecycle behavior beyond define and retrieve.
+- Additional Event business fields or business invariants not required by the existing define/retrieve contract.
+- Additional HTTP resources or endpoints beyond the two accepted Event endpoints.
+- GraphQL, gRPC, WebSocket, or other external protocols.
+- Authentication, authorization, user/role management, Spring Security, OAuth2, OIDC, or identity-provider integration.
 - Spring Data, Hibernate, or JPA.
-- OpenAPI contracts or generation.
-- HTTP controllers or other external interfaces.
-- Application-runtime modules or production bootstrap/wiring.
-- A separate persistence Gradle project, shared repository framework, generic platform persistence abstraction, or new top-level architectural area.
-- Shared business database schemas, cross-context joins, or direct cross-context persistence access.
-- Production connection-pool, secrets-management, environment-configuration, backup, replication, or database-operations infrastructure.
+- Spring Modulith configuration or verification.
+- MapStruct.
+- Distributed tracing, OpenTelemetry, metrics backends, dashboards, or production observability infrastructure.
+- A general-purpose shared `common`, `utils`, framework abstraction, or logging abstraction.
+- Causation-ID behavior for asynchronous work; no asynchronous behavior enters this phase.
 - Event publication or messaging infrastructure.
+- A separate Event persistence Gradle project or shared repository framework.
+- Shared business database schemas, cross-context joins, or direct cross-context persistence access.
+- Production-grade secrets management.
+- Production connection-pool tuning or database-operations infrastructure.
+- Backup, replication, failover, or high-availability database concerns.
+- TLS termination, reverse proxy, ingress, API gateway, rate limiting, or network-policy configuration.
 - Registration, ticketing, booking, membership, speaker/program, content, payment, accounting, notification, or other business capabilities.
 - Frontend implementation.
-- Deployment automation.
+- Docker image builds or registry publication.
+- Deployment automation or hosting-provider configuration.
+- Kubernetes or other orchestration.
 - Release automation or automatic version/tag creation.
-- Artifact or package publication.
-- Docker image builds or registry publication; a local/container runtime required by Testcontainers is test infrastructure only.
+- Artifact/package publication.
 - Multi-platform or multi-JDK CI matrices.
-- Code coverage services or quality dashboards.
-- Broad static-analysis or security-scanning suites beyond the accepted ArchUnit rules.
-- External CI services.
+- Code coverage services, quality dashboards, broad static-analysis suites, or external CI services.
 - Dependency-update automation.
 - External provider integrations.
-- Kafka, RabbitMQ, Redis, Kubernetes, or other infrastructure without a demonstrated requirement.
+- Redis, Kafka, RabbitMQ, or other infrastructure without a demonstrated requirement.
 - Multi-model development workflow automation.
 
 These items may enter a later phase only through an explicit scope decision.

@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Event durable persistence**
+**Event runtime and HTTP interface**
 
 ## Completed
 
@@ -24,6 +24,7 @@ This document is the authoritative concise statement of where the project curren
 - Minimum ArchUnit architecture verification accepted into `development` through PR #12.
 - Architecture Verification Foundation completion recorded through PR #13.
 - Event Durable Persistence scope accepted into `development` through PR #17.
+- Event durable persistence implementation accepted into `development` through PR #18.
 - Authoritative scope, status, governance, workflow, architecture, module-model, and technology-direction documents established.
 - Structurizr DSL established as the authoritative architecture model.
 - ADR process established.
@@ -42,22 +43,26 @@ This document is the authoritative concise statement of where the project curren
 - The CI trigger and required check have been verified successfully for pull requests targeting both `development` and `production`.
 - Controlled negative CI verification through draft PR #14 confirmed that a failing root `./gradlew --no-daemon check` produces a failing `validate` GitHub status; the validation PR was closed without merge.
 - ArchUnit verifies the accepted Event domain/application/persistence-adapter dependency direction through the existing `event-impl` JUnit test task.
-- Event domain production classes are prevented from depending on Event application implementation classes, the public Event API, or persistence-adapter classes.
+- Event domain production classes are prevented from depending on Event application implementation classes, the public Event API, persistence-adapter classes, or database infrastructure.
 - Event application implementation remains independent of the persistence adapter and database technologies.
-- A deliberate architecture violation has been demonstrated to fail both the architecture test and the root validation gate, while the compliant implementation passes the required CI check.
 
 ## In progress
 
-- Define the next project phase through an explicit scope decision.
+- Establish the minimum business-neutral Correlation ID execution context required by the first external entry point.
+- Define the versioned OpenAPI contract for Event definition and retrieval.
+- Add the HTTP interface and executable Spring Boot composition root without moving runtime concerns into Event.
+- Wire the existing Event durable persistence into runtime startup and apply Event Flyway migrations before serving requests.
+- Validate the full HTTP-to-Event-to-PostgreSQL slice through Testcontainers and the existing root validation gate.
 
 ## Known gaps
 
-- No application runtime exists yet.
-- No external HTTP contract exists yet.
+- No executable application runtime exists yet.
+- No external HTTP contract or HTTP interface exists yet.
+- No authentication or authorization exists; those concerns are intentionally outside the current phase.
 - No release has been produced from `production`.
 
 ## Next priority
 
-Define the next project phase through a dedicated scope pull request.
+Implement the minimum Event runtime and HTTP interface slice authorized by `docs/scope.md`.
 
-No further implementation is authorized until that scope change is accepted.
+Do not add Event lifecycle behavior, additional bounded contexts, authentication/authorization, messaging, frontend, deployment, or unrelated infrastructure in this phase.
