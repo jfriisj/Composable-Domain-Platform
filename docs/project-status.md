@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Event runtime and HTTP interface**
+**Event runtime and HTTP interface — complete**
 
 ## Completed
 
@@ -25,44 +25,49 @@ This document is the authoritative concise statement of where the project curren
 - Architecture Verification Foundation completion recorded through PR #13.
 - Event Durable Persistence scope accepted into `development` through PR #17.
 - Event durable persistence implementation accepted into `development` through PR #18.
+- Event runtime and HTTP interface scope accepted into `development` through PR #19.
+- Event runtime and HTTP interface implementation accepted into `development` through PR #20.
 - Authoritative scope, status, governance, workflow, architecture, module-model, and technology-direction documents established.
 - Structurizr DSL established as the authoritative architecture model.
 - ADR process established.
-- Initial architecture decisions accepted for modular-monolith bounded contexts, Gradle multi-project boundaries, architecture-as-code, correlation/causation traceability, and Event-owned PostgreSQL persistence.
+- Initial architecture decisions accepted for modular-monolith bounded contexts, Gradle multi-project boundaries, architecture-as-code, correlation/causation traceability, Event-owned PostgreSQL persistence, and the Spring Boot/OpenAPI runtime boundary.
 - Gradle Wrapper, Kotlin DSL, Java 21 toolchain convention, Version Catalog foundation, `build-logic`, and root `./gradlew check` established.
 - Event reference module established with separate public API and private implementation Gradle projects.
 - Event ownership, application contract, domain invariants, and reference-module tests established.
 - Event public API supports definition and retrieval by identity without exposing persistence types.
+- Event public application calls carry the minimum business-neutral execution context required for explicit Correlation ID propagation.
 - Event application services use an application-owned persistence port.
 - Event durable state is stored in an Event-owned PostgreSQL schema defined by Flyway migrations and accessed through a private jOOQ adapter.
 - Duplicate Event identity is rejected without replacing existing durable state.
 - Event persistence integration is validated against real PostgreSQL through Testcontainers.
-- The authoritative architecture model reflects the Event API, implementation, and persistence boundaries.
+- A versioned OpenAPI contract under `contracts/http/v1/event.yaml` defines the accepted external Event definition and retrieval surface.
+- The HTTP interface maps transport contracts to Event public application contracts without depending on Event implementation or persistence.
+- The executable Spring Boot platform application composes the HTTP interface, Event implementation, PostgreSQL runtime configuration, and Event-owned Flyway startup migration.
+- HTTP responses establish or preserve `X-Correlation-Id` and propagate the resulting identifier through `ExecutionContext` into the Event application boundary.
+- Running HTTP-to-Event-to-PostgreSQL end-to-end tests validate success, duplicate, unknown, invalid-input, internal-failure, durability, and correlation behavior against real PostgreSQL through Testcontainers.
+- Executable ArchUnit verification covers the accepted core, Event, HTTP interface, and application-runtime dependency boundaries.
+- The authoritative architecture model reflects the current core, contract, HTTP interface, runtime, Event API/implementation, and Event persistence boundaries.
 - GitHub Actions runs `./gradlew --no-daemon check` with JDK 21 for pull requests targeting `development` and `production`.
 - The `validate` GitHub Actions check is required by the active rulesets for both permanent branches.
 - The CI trigger and required check have been verified successfully for pull requests targeting both `development` and `production`.
 - Controlled negative CI verification through draft PR #14 confirmed that a failing root `./gradlew --no-daemon check` produces a failing `validate` GitHub status; the validation PR was closed without merge.
-- ArchUnit verifies the accepted Event domain/application/persistence-adapter dependency direction through the existing `event-impl` JUnit test task.
-- Event domain production classes are prevented from depending on Event application implementation classes, the public Event API, persistence-adapter classes, or database infrastructure.
-- Event application implementation remains independent of the persistence adapter and database technologies.
+- PR #20 passed the required `validate` check before the Event runtime and HTTP implementation was accepted into `development`.
+- Event domain production classes are prevented from depending on Event application implementation classes, the public Event API, persistence-adapter classes, database infrastructure, HTTP, or Spring runtime concepts.
+- Event application implementation remains independent of the persistence adapter, database technologies, HTTP, and Spring runtime concepts.
 
 ## In progress
 
-- Establish the minimum business-neutral Correlation ID execution context required by the first external entry point.
-- Define the versioned OpenAPI contract for Event definition and retrieval.
-- Add the HTTP interface and executable Spring Boot composition root without moving runtime concerns into Event.
-- Wire the existing Event durable persistence into runtime startup and apply Event Flyway migrations before serving requests.
-- Validate the full HTTP-to-Event-to-PostgreSQL slice through Testcontainers and the existing root validation gate.
+- No implementation work is currently in progress.
+- The next implementation phase requires a new explicit scope decision before code, contracts, technologies, or infrastructure are introduced.
 
 ## Known gaps
 
-- No executable application runtime exists yet.
-- No external HTTP contract or HTTP interface exists yet.
-- No authentication or authorization exists; those concerns are intentionally outside the current phase.
+- No authentication or authorization exists; those concerns were intentionally outside the completed Event runtime and HTTP phase.
+- No production deployment, TLS, secrets-management, or production database-operations baseline has been accepted.
 - No release has been produced from `production`.
 
 ## Next priority
 
-Implement the minimum Event runtime and HTTP interface slice authorized by `docs/scope.md`.
+Make the next explicit scope decision based on a concrete use case and the admission rules in `docs/scope.md` and `docs/governance.md`.
 
-Do not add Event lifecycle behavior, additional bounded contexts, authentication/authorization, messaging, frontend, deployment, or unrelated infrastructure in this phase.
+Until that decision is accepted, do not introduce new Event lifecycle behavior, additional bounded contexts, authentication/authorization, messaging, frontend, deployment, external integrations, or unrelated infrastructure.
