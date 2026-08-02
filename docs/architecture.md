@@ -142,12 +142,12 @@ Current build-time enforcement includes:
 
 1. Separate Gradle projects for the Event public API and private implementation.
 2. `java-library` dependency semantics.
-3. Root `./gradlew check` aggregation across build logic and current projects.
+3. ArchUnit architecture tests for the accepted Event domain/application dependency direction.
+4. Root `./gradlew check` aggregation across build logic and current projects, including the Event architecture verification.
 
 Additional enforcement remains deferred until explicitly scoped:
 
 - Spring Modulith module verification.
-- ArchUnit architecture tests.
 - PostgreSQL schema ownership and permissions.
 
 ## Architecture model
