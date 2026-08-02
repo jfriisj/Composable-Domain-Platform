@@ -457,7 +457,100 @@ Stop the current flow and resolve the issue before continuing when:
 
 Do not work around a failed gate merely to reach merge.
 
-## 20. Working checklist
+## 20. Issue backlog and prioritization
+
+GitHub Issues are a non-authoritative planning and decision queue. They record candidate problems, dependencies, decisions, deferred work, defects, and work that may later become ready for implementation.
+
+An open issue does not change accepted scope, architecture, project status, contracts, or implementation authority. If an issue conflicts with an authoritative repository source, the authoritative source wins.
+
+Substantive planned work should normally have an issue so ordering, dependencies, and prior decisions remain visible across sessions. Trivial corrections do not require an issue solely for process ceremony.
+
+### Issue categories
+
+Use the repository issue forms according to the maturity of the work:
+
+- **Decision / scope candidate** — the problem or use case is understood enough to investigate, but implementation is not yet authorized. This also covers research and possible scope changes.
+- **Ready work** — the outcome is already authorized by accepted repository state and satisfies the Definition of Ready below.
+- **Defect** — accepted behavior differs from the implementation or executable evidence.
+
+Use one primary type label where practical:
+
+- `type: decision`
+- `type: scope`
+- `type: implementation`
+- `type: defect`
+- `type: documentation`
+- `type: research`
+
+A decision, research result, or issue discussion is still not authoritative. A scope change becomes accepted only when the applicable authoritative documents are changed through a pull request and merged into `development`.
+
+### Priority
+
+Use one priority label for open planned work:
+
+- `priority: now` — the current coherent workstream. Keep this deliberately small; normally only one primary workstream should be active.
+- `priority: next` — the strongest candidate after current work, subject to all normal scope and decision gates.
+- `priority: later` — deliberately deferred work with no current implementation commitment.
+
+Use `state: blocked` in addition to the priority label when an unresolved dependency prevents progress.
+
+Priority expresses ordering, not authorization. `priority: now` must never be used to bypass an unresolved scope, architecture, ownership, or technology decision.
+
+### Dependencies
+
+When ordering matters, record dependencies explicitly using issue references such as `Blocked by #123` and `Blocks #456`.
+
+Do not rely on chat history, issue comments, or memory as the only record of a dependency that affects execution order.
+
+Downstream implementation must not begin while a required decision, scope change, or other blocking issue remains unresolved.
+
+### Definition of Ready
+
+Implementation work is ready only when all applicable statements are true:
+
+1. The concrete use case or exact outcome is understood.
+2. An accepted repository source already authorizes the outcome.
+3. Ownership and non-ownership are understood.
+4. Contract, persistence, integration, runtime, and architecture impact are understood where applicable.
+5. Any required ADR or scope decision has already been accepted.
+6. Deliberately excluded adjacent work is explicit.
+7. Validation evidence is known before implementation starts.
+
+If these conditions are not satisfied, keep the work classified as decision, scope, or research rather than treating it as implementation-ready.
+
+### Issue lifecycle
+
+The normal planning sequence is:
+
+1. Record the concrete problem, use case, defect, or candidate decision.
+2. Classify and prioritize the issue.
+3. Resolve prerequisite research, ownership, architecture, or scope decisions.
+4. If scope changes, accept the scope/documentation pull request into `development` first.
+5. Only then treat downstream implementation work as ready.
+6. Implement through the normal topic-branch and pull-request workflow.
+7. Close the issue when its intended outcome is accepted or deliberately rejected/deferred.
+
+Closing an issue records backlog state; it does not itself change accepted project truth.
+
+### Milestones and project boards
+
+Use milestones only for an accepted phase or release whose contents are sufficiently understood. Do not place speculative ideas into a milestone merely to make them appear planned.
+
+A GitHub Project board is not required while labels, issues, dependencies, milestones, and pull requests provide sufficient visibility. If a project board is introduced later, it remains a derived planning view rather than an authoritative project source.
+
+### Backlog review
+
+Review `priority: now`, `priority: next`, and blocked issues after significant merges, releases, and before selecting a new scope phase.
+
+During review:
+
+- remove or close stale issues;
+- demote work whose prerequisite no longer exists;
+- expose hidden dependencies;
+- ensure implementation issues still satisfy the Definition of Ready;
+- ensure `docs/project-status.md` and accepted scope remain the authority for what may happen next.
+
+## 21. Working checklist
 
 Use this checklist for normal topic work.
 
@@ -469,6 +562,7 @@ Use this checklist for normal topic work.
 - [ ] `docs/project-status.md` supports the next action.
 - [ ] Branch purpose is one coherent outcome.
 - [ ] A scope or ADR decision has been made first if required.
+- [ ] If the work is issue-tracked, its dependencies are current and it satisfies the applicable Definition of Ready.
 
 ### During implementation
 

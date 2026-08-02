@@ -1,0 +1,79 @@
+name: Ready work
+description: Track work that is already authorized by accepted repository state.
+title: "[Work] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form only when the outcome is already authorized.
+        If scope, ownership, architecture, or technology is still undecided, use the Decision / scope candidate form instead.
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Exact outcome
+      description: What single coherent outcome will this work deliver?
+    validations:
+      required: true
+
+  - type: input
+    id: authority
+    attributes:
+      label: Authorization reference
+      description: Reference the accepted scope, PR, ADR, governance rule, or other authoritative repository source that permits this work.
+      placeholder: "Example: docs/scope.md — Acceptance criterion 7"
+    validations:
+      required: true
+
+  - type: textarea
+    id: ownership
+    attributes:
+      label: Ownership and boundary impact
+      description: State affected ownership, contracts, persistence, integration, runtime, or architecture boundaries. Write "None" where applicable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: sources
+    attributes:
+      label: Authoritative sources affected
+      description: List the authoritative repository artifacts expected to change.
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Explicitly out of scope
+      description: State adjacent work deliberately excluded from this issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: What evidence will demonstrate that the outcome is complete?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: ready
+    attributes:
+      label: Definition of Ready
+      description: All applicable statements must be true before implementation begins.
+      options:
+        - label: The concrete use case or exact outcome is understood.
+          required: true
+        - label: An accepted repository source authorizes this outcome.
+          required: true
+        - label: Ownership and non-ownership are understood.
+          required: true
+        - label: Contract, persistence, integration, runtime, and architecture impact are understood where applicable.
+          required: true
+        - label: Any required ADR or scope decision is already accepted, or neither is required.
+          required: true
+        - label: Deliberately excluded adjacent work is explicit.
+          required: true
+        - label: Validation evidence is known before implementation starts.
+          required: true

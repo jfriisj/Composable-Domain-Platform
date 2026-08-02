@@ -1,0 +1,59 @@
+name: Defect
+description: Report a divergence from already accepted behavior.
+title: "[Defect] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A defect is a mismatch with accepted behavior.
+        If the requested result is new behavior, use the Decision / scope candidate form instead.
+
+  - type: textarea
+    id: accepted
+    attributes:
+      label: Accepted behavior and authority
+      description: Describe the expected behavior and reference the authoritative contract, scope, test, documentation, or accepted implementation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: What happens instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction / evidence
+      description: Provide the smallest reliable reproduction or evidence.
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Scope and architecture impact
+      description: State whether the correction changes accepted scope or architecture. A normal defect correction should not silently expand either.
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: What test or evidence will prove the defect is corrected without expanding behavior?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: gate
+    attributes:
+      label: Defect gate
+      options:
+        - label: This issue describes a mismatch with already accepted behavior.
+          required: true
+        - label: If resolving it requires new behavior, the work will return to the scope-decision process.
+          required: true
