@@ -1,0 +1,80 @@
+name: Decision / scope candidate
+description: Evaluate a problem or use case before implementation is accepted.
+title: "[Decision] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue is a planning record, not accepted project scope.
+        Describe the problem before committing to a solution or technology.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: What concrete problem, use case, or decision requires attention?
+    validations:
+      required: true
+
+  - type: textarea
+    id: baseline
+    attributes:
+      label: Why the current baseline is insufficient
+      description: Explain what cannot currently be achieved or decided adequately.
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: State the outcome without prematurely prescribing implementation.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: classification
+    attributes:
+      label: Candidate classification
+      options:
+        - Decision
+        - Scope change
+        - Research
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies / prerequisites
+      description: Link blockers or prerequisite decisions using issue references where possible.
+
+  - type: textarea
+    id: undecided
+    attributes:
+      label: Explicitly not decided yet
+      description: Record technologies, boundaries, APIs, or solutions that this issue must not silently commit to.
+    validations:
+      required: true
+
+  - type: textarea
+    id: authoritative
+    attributes:
+      label: Potential authoritative sources affected
+      description: Identify scope, status, governance, architecture, ADR, module, contract, build, or source artifacts that may need changes.
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Decision / acceptance evidence
+      description: What evidence would be sufficient to make or reject the decision?
+
+  - type: checkboxes
+    id: gate
+    attributes:
+      label: Decision gate
+      options:
+        - label: The issue describes a problem or use case before prescribing a solution.
+          required: true
+        - label: Opening this issue does not authorize implementation.
+          required: true
