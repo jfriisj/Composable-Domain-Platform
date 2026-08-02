@@ -28,4 +28,4 @@ The platform is not tied to a single business domain. Event management is the fi
 
 ## Current state
 
-The repository, architecture, and executable Gradle build foundations are established. Event is the first implemented reference bounded context, with separate public API and private implementation Gradle projects. No application runtime, persistence, or external HTTP contract is implemented.
+The repository, architecture, executable Gradle build, required CI gate, and Event architecture verification are established. Event is the first implemented reference bounded context, with separate public API and private implementation Gradle projects plus Event-owned durable PostgreSQL persistence through a private jOOQ adapter and Flyway migrations. Persistence integration is validated against real PostgreSQL with Testcontainers. No application runtime or external HTTP contract is implemented.

@@ -4,11 +4,13 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         stakeholder = person "Stakeholder" "Shapes platform requirements and validates business outcomes."
         platform = softwareSystem "Composable Domain Platform" "A modular application platform for independently bounded business capabilities."
 
-        eventApi = element "Event API" "Gradle project" "Public application-level contract for defining an Event and returning its state." "Current,Event Module,API"
-        eventImpl = element "Event Implementation" "Gradle project" "Private Event domain and application implementation." "Current,Event Module,Implementation"
+        eventApi = element "Event API" "Gradle project" "Public application-level contract for defining and retrieving Event state." "Current,Event Module,API"
+        eventImpl = element "Event Implementation" "Gradle project" "Private Event domain, application, and persistence-adapter implementation." "Current,Event Module,Implementation"
+        eventPersistence = element "Event Persistence" "PostgreSQL schema" "Event-owned durable state defined by Flyway migrations and accessed only through the private Event persistence adapter." "Current,Event Module,Persistence"
 
         stakeholder -> platform "Uses and shapes"
         eventImpl -> eventApi "Implements and depends on"
+        eventImpl -> eventPersistence "Persists and retrieves Event state"
     }
 
     views {
@@ -17,8 +19,8 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
             autolayout lr
         }
 
-        custom "CurrentModuleMap" "Current module map" "Implemented Gradle boundary for the Event reference module." {
-            include eventApi eventImpl
+        custom "CurrentModuleMap" "Current module map" "Implemented Gradle and persistence boundaries for the Event reference module." {
+            include eventApi eventImpl eventPersistence
             autolayout lr
         }
 
