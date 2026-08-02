@@ -1,5 +1,6 @@
 package composable.domain.platform.event.application;
 
+import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.domain.Event;
@@ -15,7 +16,9 @@ final class FindEventService implements FindEvent {
     }
 
     @Override
-    public Optional<EventView> findById(String eventId) {
+    public Optional<EventView> findById(ExecutionContext context, String eventId) {
+        Objects.requireNonNull(context, "context must not be null");
+
         if (eventId == null || eventId.isBlank()) {
             throw new IllegalArgumentException("eventId must not be blank");
         }

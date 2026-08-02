@@ -1,9 +1,11 @@
 package composable.domain.platform.event.application;
 
+import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.DefineEvent;
 import composable.domain.platform.event.api.DefineEventCommand;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
 import composable.domain.platform.event.api.EventView;
+import composable.domain.platform.event.api.InvalidEventDefinitionException;
 import composable.domain.platform.event.domain.Event;
 import java.util.Objects;
 
@@ -16,16 +18,10 @@ final class DefineEventService implements DefineEvent {
     }
 
     @Override
-    public EventView define(DefineEventCommand command) {
-        Objects.requireNonNull(command, "command must not be null");
+    public EventView define(ExecutionContext context, DefineEventCommand command) {
+        Objects.requireNonNull(context, "context must not be null");
 
-        Event event = new Event(
-                command.eventId(),
-                command.name(),
-                command.slug(),
-                command.startsAt(),
-                command.endsAt(),
-                command.timezone());
+        Event event = createEvent(command);
 
         if (!repository.addIfAbsent(event)) {
             throw new EventAlreadyDefinedException(event.id());
@@ -38,5 +34,23 @@ final class DefineEventService implements DefineEvent {
                 event.startsAt(),
                 event.endsAt(),
                 event.timezone());
+    }
+
+    private static Event createEvent(DefineEventCommand command) {
+        if (command == null) {
+            throw new InvalidEventDefinitionException();
+        }
+
+        try {
+            return new Event(
+                    command.eventId(),
+                    command.name(),
+                    command.slug(),
+                    command.startsAt(),
+                    command.endsAt(),
+                    command.timezone());
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            throw new InvalidEventDefinitionException();
+        }
     }
 }
