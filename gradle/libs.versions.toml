@@ -14,12 +14,18 @@ testcontainers = "2.0.5"
 archunit = { module = "com.tngtech.archunit:archunit", version.ref = "archunit" }
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
+jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api" }
+jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api" }
+jakarta-validation-api = { module = "jakarta.validation:jakarta.validation-api" }
 jooq = { module = "org.jooq:jooq", version.ref = "jooq" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter.module = "org.junit.jupiter:junit-jupiter"
 junit-platform-launcher.module = "org.junit.platform:junit-platform-launcher"
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-context = { module = "org.springframework:spring-context" }
+spring-web = { module = "org.springframework:spring-web" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 
 [plugins]

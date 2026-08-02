@@ -1,0 +1,215 @@
+openapi: 3.0.3
+info:
+  title: Composable Domain Platform Event API
+  version: 1.0.0
+  description: >
+    Version 1 HTTP contract for defining and retrieving the existing Event
+    capability.
+servers:
+  - url: /
+tags:
+  - name: Event
+paths:
+  /api/v1/events:
+    post:
+      tags:
+        - Event
+      operationId: defineEvent
+      summary: Define an Event
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefineEventRequest'
+      responses:
+        '201':
+          description: Event defined
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Structurally or domain-invalid Event definition
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Event identity already exists
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/events/{eventId}:
+    get:
+      tags:
+        - Event
+      operationId: findEventById
+      summary: Retrieve an Event by identity
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Event found
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Structurally invalid Event identity
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event identity is unknown
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  parameters:
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: >
+        Opaque correlation identifier. A supplied non-blank value is preserved.
+        When absent, the HTTP boundary creates one.
+      schema:
+        type: string
+        minLength: 1
+        pattern: '.*\S.*'
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      description: Event identity
+      schema:
+        type: string
+        minLength: 1
+        pattern: '.*\S.*'
+  headers:
+    CorrelationId:
+      description: >
+        Opaque correlation identifier established for the request. Every
+        response returns this header.
+      schema:
+        type: string
+        minLength: 1
+  schemas:
+    DefineEventRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - eventId
+        - name
+        - slug
+        - startsAt
+        - endsAt
+        - timezone
+      properties:
+        eventId:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        slug:
+          type: string
+          minLength: 1
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          minLength: 1
+    EventResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - eventId
+        - name
+        - slug
+        - startsAt
+        - endsAt
+        - timezone
+      properties:
+        eventId:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        slug:
+          type: string
+          minLength: 1
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          minLength: 1
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - invalid_request
+            - event_not_found
+            - event_already_defined
+            - internal_error
+        message:
+          type: string
+          minLength: 1
