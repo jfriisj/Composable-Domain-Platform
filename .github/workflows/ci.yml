@@ -12,6 +12,7 @@ permissions:
 jobs:
   validate:
     name: validate
+    if: github.base_ref == 'production'
     runs-on: ubuntu-24.04
 
     steps:
