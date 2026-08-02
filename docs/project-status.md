@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Event runtime and HTTP interface — complete**
+**First release preparation — v0.1.0**
 
 ## Completed
 
@@ -57,17 +57,21 @@ This document is the authoritative concise statement of where the project curren
 
 ## In progress
 
-- No implementation work is currently in progress.
-- The next implementation phase requires a new explicit scope decision before code, contracts, technologies, or infrastructure are introduced.
+- Prepare the first release from the already accepted `development` state.
+- Use `v0.1.0` as the first repository release tag.
+- Keep the release content identical to the accepted `development` state; no new implementation, dependency upgrades, contracts, infrastructure, or business behavior enter the release preparation.
+- Validate the release pull request through the existing required `validate` check.
+- Merge `development` into `production` with a merge commit, then create the annotated `v0.1.0` tag on the accepted `production` commit.
 
 ## Known gaps
 
 - No authentication or authorization exists; those concerns were intentionally outside the completed Event runtime and HTTP phase.
 - No production deployment, TLS, secrets-management, or production database-operations baseline has been accepted.
-- No release has been produced from `production`.
+- No artifact/package publication process has been accepted.
+- No release has yet been produced from `production`.
 
 ## Next priority
 
-Make the next explicit scope decision based on a concrete use case and the admission rules in `docs/scope.md` and `docs/governance.md`.
+Complete the first release as `v0.1.0` using the accepted release workflow in `docs/workflow.md`.
 
-Until that decision is accepted, do not introduce new Event lifecycle behavior, additional bounded contexts, authentication/authorization, messaging, frontend, deployment, external integrations, or unrelated infrastructure.
+Do not add implementation changes to the release. After `v0.1.0` is accepted and tagged, return to the explicit scope gate before beginning the next implementation phase.
