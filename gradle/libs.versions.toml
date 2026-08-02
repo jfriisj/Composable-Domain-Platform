@@ -5,7 +5,9 @@ archunit = "1.4.2"
 flyway = "12.8.1"
 jooq = "3.21.6"
 junit = "5.14.4"
+openapi-generator = "7.24.0"
 postgresql = "42.7.11"
+spring-boot = "4.1.0"
 testcontainers = "2.0.5"
 
 [libraries]
@@ -17,4 +19,9 @@ junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter.module = "org.junit.jupiter:junit-jupiter"
 junit-platform-launcher.module = "org.junit.platform:junit-platform-launcher"
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+
+[plugins]
+openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

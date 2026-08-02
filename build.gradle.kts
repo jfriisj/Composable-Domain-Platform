@@ -8,5 +8,7 @@ tasks.named("check") {
         ":core:check",
         ":event-api:check",
         ":event-impl:check",
+        ":http-interface:check",
+        ":platform-app:check",
     )
 }
