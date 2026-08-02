@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Post-release scope gate**
+**Registration composition proof — scope accepted**
 
 ## Completed
 
@@ -64,8 +64,10 @@ This document is the authoritative concise statement of where the project curren
 
 ## In progress
 
-- No implementation or release work is currently in progress.
-- The next implementation phase requires a new explicit scope decision before code, contracts, technologies, infrastructure, integrations, or business behavior are introduced.
+- The Registration composition proof is the accepted next implementation phase.
+- Implementation has not started.
+- The accepted phase introduces the planned Registration capability, Event-Registration composition, Registration HTTP contract, and Registration-owned persistence boundary defined in `docs/scope.md`.
+- Issue #32 records the scope decision and architecture resolution that led to the accepted phase.
 
 ## Known gaps
 
@@ -75,6 +77,8 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Make the next explicit scope decision based on a concrete use case and the admission rules in `docs/scope.md` and `docs/governance.md`.
+Create and execute the implementation work for the accepted Registration composition proof without expanding beyond `docs/scope.md`.
 
-Until that decision is accepted, do not introduce new Event lifecycle behavior, additional bounded contexts, authentication/authorization, messaging, frontend, deployment, external integrations, artifact publication, or unrelated infrastructure.
+Implementation must remain limited to the accepted Registration capability, Event-Registration composition, Registration HTTP surface, Registration-owned persistence, runtime wiring, architecture verification, and required tests.
+
+Authentication/authorization, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.

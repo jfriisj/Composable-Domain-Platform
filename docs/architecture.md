@@ -87,6 +87,48 @@ module A API <- composition -> module B API
 
 A composition owns the cross-capability workflow; neither participating bounded context owns the other's business rules.
 
+## Planned Registration composition proof
+
+The accepted next phase introduces the first planned second bounded capability and the first concrete composition module. These elements remain **planned**, not current, until their implementation is accepted.
+
+The planned structure is:
+
+~~~text
+modules/registration/
+├── api/
+└── impl/
+
+compositions/event-registration/
+~~~
+
+Registration owns `registrationId`, `eventId` as an opaque Event reference, `participantReference`, Registration uniqueness rules, and its own persistence boundary.
+
+Registration does not own Event existence and does not depend on Event API, Event implementation, or Event persistence.
+
+The Event-Registration composition owns the workflow that checks Event existence through the Event public API and then invokes the Registration public API.
+
+The planned dependency direction is:
+
+~~~text
+event-api <- event-registration composition -> registration-api
+                         |
+                         v
+                        core
+~~~
+
+Neither Event nor Registration depends on the other capability. The composition depends on public APIs only.
+
+The planned Registration persistence boundary is a Registration-owned PostgreSQL `registration` schema and `registration.registrations` table. No foreign key or cross-schema join to Event persistence is planned; Event existence is validated through Event's public application contract.
+
+The planned external contract is `contracts/http/v1/registration.yaml` with:
+
+- `POST /api/v1/registrations` through the cross-capability composition;
+- `GET /api/v1/registrations/{registrationId}` through the Registration public API.
+
+The existing HTTP interface and Spring Boot application remain the external adapter and technical composition root respectively.
+
+ADR-0007 records the rationale for the Registration boundary, composition ownership, and persistence isolation.
+
 ## Current reference module
 
 Event is the first implemented bounded context used to validate the module architecture.
@@ -182,7 +224,7 @@ The currently implemented architectural structure includes:
 └── docs/
 ~~~
 
-`compositions/` and `integrations/` remain architectural categories only and must not be created until accepted scope requires them.
+`compositions/event-registration` and `modules/registration` are accepted planned architecture for the current phase but are not current implementation until their implementation is accepted. `integrations/` remains an architectural category only and must not be created until later accepted scope requires it.
 
 ## Architecture enforcement
 
