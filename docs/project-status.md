@@ -30,6 +30,8 @@ This document is the authoritative concise statement of where the project curren
 - First release preparation accepted into `development` through PR #22.
 - First release promoted from `development` to `production` through release PR #23 using a merge commit.
 - Annotated repository release tag `v0.1.0` created on accepted `production` commit `5427dabe5eb0d00c25cd7470d345016f7cf77404`.
+- Issue planning and prioritization workflow accepted into `development` through PR #25.
+- CI resource policy accepted into `development` through PR #26, keeping `validate` registered on both permanent-branch PR targets while executing the GitHub-hosted validation runner only for `production`.
 - Authoritative scope, status, governance, workflow, architecture, module-model, and technology-direction documents established.
 - Structurizr DSL established as the authoritative architecture model.
 - ADR process established.
