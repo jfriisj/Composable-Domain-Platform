@@ -32,24 +32,67 @@ Event is the first implemented reference bounded context. It has separate public
 
 The repository now also contains the first executable platform runtime and external interface: a Spring Boot composition root under `apps/platform`, an HTTP inbound adapter under `interfaces/http`, a versioned authoritative OpenAPI contract under `contracts/http/v1/event.yaml`, and a minimal business-neutral execution context under `core`. End-to-end tests exercise the running HTTP boundary against real PostgreSQL through Testcontainers.
 
-## Run the platform application
+## Build and run the operational artifact
 
-The runtime requires an externally configured PostgreSQL database. Supply the three runtime properties through environment variables and start the Spring Boot application from the repository root:
+The accepted operational runtime is the executable Spring Boot/JVM artifact produced by `bootJar`. Build it from an accepted repository checkout:
+
+~~~bash
+./gradlew --no-daemon :platform-app:bootJar
+~~~
+
+The executable JAR is written under `apps/platform/build/libs/`. A repeatable proof can identify it, copy it outside the repository checkout, and run only that copied artifact:
+
+~~~bash
+JAR="$(find apps/platform/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' -print -quit)"
+test -n "$JAR"
+
+RUNTIME_DIR="$(mktemp -d)"
+cp "$JAR" "$RUNTIME_DIR/platform.jar"
+cd "$RUNTIME_DIR"
+
+PLATFORM_DATABASE_URL='jdbc:postgresql://localhost:5432/platform' \
+PLATFORM_DATABASE_USERNAME='platform' \
+PLATFORM_DATABASE_PASSWORD='platform' \
+SERVER_PORT='8080' \
+java -jar platform.jar
+~~~
+
+The runtime host must provide a compatible Java runtime, reachable PostgreSQL, the three database settings above, network reachability, and an available HTTP port. It does not require the repository, an IDE, or Gradle at runtime.
+
+Machine-checkable readiness is available at:
+
+~~~text
+GET /internal/readiness
+~~~
+
+The readiness endpoint is operational and is not part of the business OpenAPI contract. It returns `204 No Content` when PostgreSQL is usable and the application has completed startup, including the Event and Registration Flyway migrations. If PostgreSQL becomes unavailable while the process remains running, it returns `503 Service Unavailable`. Both responses have no diagnostic payload.
+
+For example, an operator can read only the readiness status code with:
+
+~~~bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/internal/readiness
+~~~
+
+After readiness, the accepted external business surface is:
+
+- `POST /api/v1/events`
+- `GET /api/v1/events/{eventId}`
+- `POST /api/v1/event-registrations`
+- `GET /api/v1/event-registrations/{registrationId}`
+
+The authoritative business wire contract is [`contracts/http/v1/event.yaml`](contracts/http/v1/event.yaml). Generated OpenAPI Java sources are derived build output and are not edited independently.
+
+## Development run
+
+For repository-local development, the same externally configured PostgreSQL boundary can be used with Gradle `bootRun`:
 
 ~~~bash
 PLATFORM_DATABASE_URL='jdbc:postgresql://localhost:5432/platform' PLATFORM_DATABASE_USERNAME='platform' PLATFORM_DATABASE_PASSWORD='platform' ./gradlew --no-daemon :platform-app:bootRun
 ~~~
 
-The default HTTP port is `8080` unless standard Spring Boot server configuration overrides it.
+`bootRun` is a development workflow; it is not the accepted operational runtime boundary.
 
-The currently accepted external surface is:
-
-- `POST /api/v1/events`
-- `GET /api/v1/events/{eventId}`
-
-The authoritative wire contract is [`contracts/http/v1/event.yaml`](contracts/http/v1/event.yaml). Generated OpenAPI Java sources are derived build output and are not edited independently.
-
-Production secrets management, deployment, TLS, authentication, authorization, and operational database configuration remain outside the current phase.
+Production secrets management, infrastructure provisioning, deployment automation, TLS, authentication, authorization, and production database operations remain outside the current phase.
 
 ## Validate
 
