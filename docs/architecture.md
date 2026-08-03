@@ -195,6 +195,24 @@ apps/platform
 
 `apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, and Event-Registration composition. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests. Runtime wiring contains technical composition only; Event-registration workflow rules remain in the composition.
 
+## Accepted operational-runtime boundary
+
+The accepted next operational scope keeps the existing modular-monolith container and Spring Boot composition root. It adds a build-to-runtime boundary without introducing another application container or infrastructure ownership boundary.
+
+The operational packaging boundary is one executable Spring Boot/JVM application artifact produced from an accepted repository version. The runtime host supplies a compatible Java runtime; repository checkout, IDE state, and Gradle `bootRun` are development concerns and are not required on the operational host.
+
+PostgreSQL remains an externally supplied runtime dependency. The operator also supplies the non-developer host/VM, network reachability, database URL/username/password, and an available HTTP listen port. The platform continues to own application startup and execution of Event- and Registration-owned Flyway migrations.
+
+The runtime must expose a machine-checkable readiness signal distinct from process existence. Readiness remains false until required configuration is accepted, PostgreSQL is reachable, both owned migration sets have completed successfully, and the HTTP runtime can serve the accepted external contract. After startup, PostgreSQL unavailability must make readiness not-ready when the accepted HTTP use cases cannot be serviced.
+
+Readiness is an operational adapter/runtime concern, not a business-domain API. The accepted architecture does not require a separate liveness contract for this proof and does not yet select a specific endpoint, Spring mechanism, or new readiness dependency.
+
+Infrastructure provisioning remains outside the platform boundary for this proof. Host/VM, PostgreSQL, networking/firewall, and provider resources are externally supplied. Docker/OCI packaging and Terraform/OpenTofu/IaC are deliberately not admitted. A later requirement for reproducible infrastructure provisioning requires a separate architecture and technology decision.
+
+This operational scope is accepted architecture for implementation planning but is not represented as a new Structurizr container or relationship because it changes packaging/run and readiness semantics of the existing `apps/platform` container rather than adding a new architectural participant.
+
+ADR-0010 records the rationale for this operational-runtime boundary.
+
 ## Persistence ownership
 
 Event implements the persistence baseline through an Event-owned PostgreSQL schema and versioned Flyway migrations.

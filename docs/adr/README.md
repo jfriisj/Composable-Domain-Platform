@@ -39,6 +39,7 @@ Accepted ADRs are not silently rewritten to change historical rationale. A later
 - [ADR-0007: Registration capability and cross-capability composition](0007-registration-capability-and-cross-capability-composition.md) — Superseded by ADR-0008
 - [ADR-0008: Domain-neutral Registration and Event-registration composition](0008-domain-neutral-registration-and-event-registration-composition.md)
 - [ADR-0009: Unified Event-facing OpenAPI contract](0009-unified-event-facing-openapi-contract.md)
+- [ADR-0010: Executable JVM operational-runtime boundary](0010-executable-jvm-operational-runtime-boundary.md)
 
 ## Template
 
