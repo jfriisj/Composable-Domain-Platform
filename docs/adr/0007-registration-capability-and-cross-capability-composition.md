@@ -1,7 +1,8 @@
 # ADR-0007: Registration capability and cross-capability composition
 
-- Status: Accepted
+- Status: Superseded
 - Date: 2026-08-03
+- Superseded by: [ADR-0008](0008-domain-neutral-registration-and-event-registration-composition.md)
 
 ## Context
 

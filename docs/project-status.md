@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Registration composition proof — scope accepted**
+**Registration composition proof — domain-neutral Registration scope accepted**
 
 ## Completed
 
@@ -66,8 +66,10 @@ This document is the authoritative concise statement of where the project curren
 
 - The Registration composition proof is the accepted next implementation phase.
 - Implementation has not started.
-- The accepted phase introduces the planned Registration capability, Event-Registration composition, Registration HTTP contract, and Registration-owned persistence boundary defined in `docs/scope.md`.
-- Issue #32 records the scope decision and architecture resolution that led to the accepted phase.
+- Registration is planned as a domain-neutral capability owning namespaced opaque `RegistrantReference` and `TargetReference` values rather than Event-specific state.
+- The Event-Registration composition is planned as the owner of Event-specific existence validation and translation into Registration references.
+- The planned external contract is Event-specific at `contracts/http/v1/event-registration.yaml`; no generic Registration HTTP dispatcher is accepted.
+- Issue #32 records the original scope decision, and issue #35 records the domain-boundary correction that supersedes the Event-specific Registration state model.
 
 ## Known gaps
 
@@ -77,8 +79,8 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Create and execute the implementation work for the accepted Registration composition proof without expanding beyond `docs/scope.md`.
+Update and execute the blocked Registration implementation work against the accepted domain-neutral Registration model without expanding beyond `docs/scope.md`.
 
-Implementation must remain limited to the accepted Registration capability, Event-Registration composition, Registration HTTP surface, Registration-owned persistence, runtime wiring, architecture verification, and required tests.
+Implementation must remain limited to the accepted Registration capability, Event-Registration composition, Event-specific registration HTTP surface, Registration-owned persistence, runtime wiring, architecture verification, and required tests.
 
-Authentication/authorization, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
+Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
