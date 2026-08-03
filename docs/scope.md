@@ -124,9 +124,9 @@ Runtime dependencies on private implementation types remain technical-wiring exc
 
 ### External HTTP contract
 
-Add a separate authoritative Event-specific contract at `contracts/http/v1/event-registration.yaml`. Event-registration operations must not be added to `event.yaml`, and no generic Registration target dispatcher is introduced.
+The authoritative Event-facing HTTP contract remains `contracts/http/v1/event.yaml`. It contains the existing Event operations and is the accepted home for the Event-registration workflow operations. The document may separate responsibilities with tags such as `Event` and `EventRegistration`, but contract-file grouping does not change bounded-context or composition ownership. No generic Registration target dispatcher is introduced.
 
-The minimum external surface is:
+Within the unified Event-facing contract, the Event-registration surface is:
 
 - `POST /api/v1/event-registrations`
 - `GET /api/v1/event-registrations/{registrationId}`
@@ -147,7 +147,7 @@ GET behavior:
 - `404` — Registration is unknown or is not an Event-target registration;
 - `500` — sanitized unexpected failure.
 
-Both POST and GET map through the Event-Registration composition.
+Both POST and GET map through the Event-Registration composition. A single OpenAPI generation step may derive separate generated API interfaces for the `Event` and `EventRegistration` tags plus shared transport models from the unified contract.
 
 Every response preserves the accepted `X-Correlation-Id` behavior, and the resulting `ExecutionContext` is propagated through composition and Registration application calls.
 

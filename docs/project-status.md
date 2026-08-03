@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Registration composition proof — domain-neutral Registration scope accepted**
+**Registration composition proof — unified Event-facing HTTP contract accepted**
 
 ## Completed
 
@@ -61,15 +61,15 @@ This document is the authoritative concise statement of where the project curren
 - Release PR #23 passed the required `validate` check before the `v0.1.0` state was accepted into `production`.
 - Event domain production classes are prevented from depending on Event application implementation classes, the public Event API, persistence-adapter classes, database infrastructure, HTTP, or Spring runtime concepts.
 - Event application implementation remains independent of the persistence adapter, database technologies, HTTP, and Spring runtime concepts.
+- Domain-neutral Registration API, implementation, Registration-owned PostgreSQL persistence, migration, tests, and architecture verification were accepted into `development` through PR #37.
 
 ## In progress
 
-- The Registration composition proof is the accepted next implementation phase.
-- Implementation has not started.
-- Registration is planned as a domain-neutral capability owning namespaced opaque `RegistrantReference` and `TargetReference` values rather than Event-specific state.
-- The Event-Registration composition is planned as the owner of Event-specific existence validation and translation into Registration references.
-- The planned external contract is Event-specific at `contracts/http/v1/event-registration.yaml`; no generic Registration HTTP dispatcher is accepted.
-- Issue #32 records the original scope decision, and issue #35 records the domain-boundary correction that supersedes the Event-specific Registration state model.
+- The Registration capability and durable persistence are implemented and accepted through PR #37.
+- Issue #38 owns the remaining Event-Registration composition, Event-facing HTTP workflow, runtime wiring, architecture enforcement, and end-to-end validation.
+- #39 accepts `contracts/http/v1/event.yaml` as the single Event-facing HTTP contract for both Event operations and Event-registration workflow operations without changing internal Event, Registration, or composition ownership.
+- #38 remains blocked only until its issue scope and readiness are re-read and updated against ADR-0009 after this decision is integrated.
+- No generic Registration HTTP dispatcher is accepted.
 
 ## Known gaps
 
@@ -79,8 +79,8 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Update and execute the blocked Registration implementation work against the accepted domain-neutral Registration model without expanding beyond `docs/scope.md`.
+Re-read and update blocked issue #38 against ADR-0009, remove the blocker if the issue is ready, and then resume the Event-Registration implementation.
 
-Implementation must remain limited to the accepted Registration capability, Event-Registration composition, Event-specific registration HTTP surface, Registration-owned persistence, runtime wiring, architecture verification, and required tests.
+The remaining implementation must stay limited to the Event-Registration composition, Event-registration operations within `contracts/http/v1/event.yaml`, runtime wiring, architecture verification, and required tests.
 
 Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
