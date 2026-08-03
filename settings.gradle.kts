@@ -13,6 +13,12 @@ project(":event-api").projectDir = file("modules/event/api")
 include(":event-impl")
 project(":event-impl").projectDir = file("modules/event/impl")
 
+include(":registration-api")
+project(":registration-api").projectDir = file("modules/registration/api")
+
+include(":registration-impl")
+project(":registration-impl").projectDir = file("modules/registration/impl")
+
 include(":http-interface")
 project(":http-interface").projectDir = file("interfaces/http")
 

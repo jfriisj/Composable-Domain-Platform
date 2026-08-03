@@ -11,6 +11,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 class EventArchitectureTest {
 
     private static final String EVENT_ROOT = "composable.domain.platform.event";
+    private static final String REGISTRATION_ROOT = "composable.domain.platform.registration";
     private static final String CORE_EXECUTION_PACKAGE =
             "composable.domain.platform.core.execution..";
     private static final String APPLICATION_PACKAGE = EVENT_ROOT + ".application..";
@@ -80,6 +81,14 @@ class EventArchitectureTest {
                         "java..",
                         "javax.sql..",
                         "org.jooq..")
+                .check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void event_production_must_not_depend_on_registration() {
+        noClasses()
+                .that().resideInAPackage(EVENT_ROOT + "..")
+                .should().dependOnClassesThat().resideInAPackage(REGISTRATION_ROOT + "..")
                 .check(PRODUCTION_CLASSES);
     }
 }
