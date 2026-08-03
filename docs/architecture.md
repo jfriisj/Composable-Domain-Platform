@@ -87,11 +87,11 @@ module A API <- composition -> module B API
 
 A composition owns the cross-capability workflow; neither participating bounded context owns the other's business rules.
 
-## Planned Registration composition proof
+## Registration composition proof
 
-The accepted next phase introduces the first planned second bounded capability and the first concrete composition module. These elements remain **planned**, not current, until their implementation is accepted.
+The accepted phase has now established Registration as the second implemented bounded capability through PR #37. The Event-Registration composition remains planned until its implementation is accepted.
 
-The planned structure is:
+The accepted structure is:
 
 ~~~text
 modules/registration/
@@ -107,7 +107,7 @@ Registration does not interpret namespaces or validate referenced business objec
 
 The Event-Registration composition owns the Event-specific workflow. It resolves Event existence through the Event public API, maps the opaque participant reference to the `participant` registrant namespace, maps Event identity to the `event` target namespace, and invokes the Registration public API. Retrieval also passes through the composition so the Event-specific HTTP surface exposes only Event-target registrations.
 
-The planned dependency direction is:
+The accepted dependency direction is:
 
 ~~~text
 event-api <- event-registration composition -> registration-api
@@ -118,12 +118,14 @@ event-api <- event-registration composition -> registration-api
 
 Neither Event nor Registration depends on the other capability. Event does not store Registration identities. The composition depends on public APIs only.
 
-The planned Registration persistence boundary is a Registration-owned PostgreSQL `registration` schema and `registration.registrations` table containing only `registration_id`, registrant namespace/reference, and target namespace/reference. No Event-specific column, foreign key, or cross-schema Event lookup is planned.
+The Registration persistence boundary is a Registration-owned PostgreSQL `registration` schema and `registration.registrations` table containing only `registration_id`, registrant namespace/reference, and target namespace/reference. No Event-specific column, foreign key, or cross-schema Event lookup is permitted.
 
-The planned external contract is the Event-specific `contracts/http/v1/event-registration.yaml` with:
+The authoritative external Event-facing contract remains `contracts/http/v1/event.yaml`. It contains the existing Event operations and is the accepted location for:
 
 - `POST /api/v1/event-registrations` through the cross-capability composition;
 - `GET /api/v1/event-registrations/{registrationId}` through the cross-capability composition.
+
+The unified OpenAPI document may use separate `Event` and `EventRegistration` tags. Contract-file grouping represents the coherent external Event-facing surface; it does not merge internal ownership. Event and Registration remain independent, and the Event-Registration composition continues to own orchestration.
 
 The transport contract keeps the current Event workflow language (`registrationId`, `eventId`, and `participantReference`) and does not expose generic Registration namespace/reference mechanics or a generic target dispatcher.
 
@@ -131,7 +133,7 @@ Authentication identity and Registration registrant identity remain separate con
 
 The existing HTTP interface and Spring Boot application remain the external adapter and technical composition root respectively.
 
-ADR-0008 supersedes ADR-0007 and records the domain-neutral Registration boundary, Event-specific composition/HTTP boundary, persistence isolation, and security/identity separation.
+ADR-0008 supersedes ADR-0007 and records the domain-neutral Registration boundary, Event-specific composition, persistence isolation, and security/identity separation. ADR-0009 supersedes only ADR-0008's separate-contract-file decision by making `event.yaml` the unified Event-facing HTTP contract.
 
 ## Current reference module
 
@@ -228,7 +230,7 @@ The currently implemented architectural structure includes:
 └── docs/
 ~~~
 
-`compositions/event-registration` and `modules/registration` are accepted planned architecture for the current phase but are not current implementation until their implementation is accepted. `integrations/` remains an architectural category only and must not be created until later accepted scope requires it.
+`modules/registration` is current accepted implementation through PR #37. `compositions/event-registration` remains accepted planned architecture until #38 is implemented and accepted. `integrations/` remains an architectural category only and must not be created until later accepted scope requires it.
 
 ## Architecture enforcement
 
