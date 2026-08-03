@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Registration composition proof — Event-Registration workflow implemented**
+**Operational-runtime proof — research active, no implementation authorized**
 
 ## Completed
 
@@ -66,7 +66,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## In progress
 
-- No implementation issue is currently selected after completion of #38 through PR #41.
+- Issue #30 is the active `priority: now` research workstream selected by #43.
+- The research must define the smallest concrete operator use case for running the accepted platform outside the development workstation.
+- No packaging, deployment, hosting, security, observability, artifact-publication, or other infrastructure implementation is authorized by the current research state.
 
 ## Known gaps
 
@@ -76,6 +78,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Re-read current `development`, accepted scope, and open issue readiness before selecting the next coherent work item.
+Complete the decision evidence in issue #30: identify the operator and environment, define reproducibility and externally supplied runtime dependencies, establish minimum readiness/operational evidence, compare reasonable solution alternatives, and keep deliberately deferred production concerns explicit. Only then may a scope change be proposed.
 
 Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
