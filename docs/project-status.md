@@ -62,13 +62,11 @@ This document is the authoritative concise statement of where the project curren
 - Event domain production classes are prevented from depending on Event application implementation classes, the public Event API, persistence-adapter classes, database infrastructure, HTTP, or Spring runtime concepts.
 - Event application implementation remains independent of the persistence adapter, database technologies, HTTP, and Spring runtime concepts.
 - Domain-neutral Registration API, implementation, Registration-owned PostgreSQL persistence, migration, tests, and architecture verification were accepted into `development` through PR #37.
-- Event-Registration composition, Event-facing HTTP operations in the unified `event.yaml`, runtime wiring, Registration startup migration, architecture enforcement, and real PostgreSQL end-to-end validation are implemented by the current accepted phase.
+- Event-Registration composition, Event-facing HTTP operations in the unified `event.yaml`, runtime wiring, Registration startup migration, architecture enforcement, and real PostgreSQL end-to-end validation were accepted into `development` through PR #41, completing issue #38.
 
 ## In progress
 
-- Issue #38 is the active implementation issue for accepting the completed Event-Registration composition proof into `development`.
-- `contracts/http/v1/event.yaml` is the single Event-facing contract for Event and Event-registration operations; no separate Event-registration contract or generic Registration HTTP dispatcher exists.
-- Event, Registration, and Event-Registration composition ownership remain separated and executable architecture rules enforce the dependency direction.
+- No implementation issue is currently selected after completion of #38 through PR #41.
 
 ## Known gaps
 
@@ -78,6 +76,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Accept issue #38 through the normal topic-branch PR workflow. After merge, re-read `development` and the issue state before selecting the next ready work item.
+Re-read current `development`, accepted scope, and open issue readiness before selecting the next coherent work item.
 
 Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
