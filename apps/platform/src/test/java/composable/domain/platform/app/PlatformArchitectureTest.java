@@ -17,6 +17,15 @@ class PlatformArchitectureTest {
     private static final String EVENT_APPLICATION_PACKAGE = ROOT + ".event.application..";
     private static final String EVENT_DOMAIN_PACKAGE = ROOT + ".event.domain..";
     private static final String EVENT_PERSISTENCE_PACKAGE = ROOT + ".event.persistence..";
+    private static final String REGISTRATION_API_PACKAGE = ROOT + ".registration.api..";
+    private static final String REGISTRATION_APPLICATION_PACKAGE =
+            ROOT + ".registration.application..";
+    private static final String REGISTRATION_DOMAIN_PACKAGE =
+            ROOT + ".registration.domain..";
+    private static final String REGISTRATION_PERSISTENCE_PACKAGE =
+            ROOT + ".registration.persistence..";
+    private static final String EVENT_REGISTRATION_COMPOSITION_PACKAGE =
+            ROOT + ".composition.eventregistration..";
     private static final String HTTP_PACKAGE = ROOT + ".http..";
 
     private static final JavaClasses PRODUCTION_CLASSES = new ClassFileImporter()
@@ -45,13 +54,16 @@ class PlatformArchitectureTest {
     }
 
     @Test
-    void http_interface_must_not_depend_on_event_implementation_or_database_infrastructure() {
+    void http_interface_must_not_depend_on_capability_implementations_or_database_infrastructure() {
         noClasses()
                 .that().resideInAPackage(HTTP_PACKAGE)
                 .should().dependOnClassesThat().resideInAnyPackage(
                         EVENT_APPLICATION_PACKAGE,
                         EVENT_DOMAIN_PACKAGE,
                         EVENT_PERSISTENCE_PACKAGE,
+                        REGISTRATION_APPLICATION_PACKAGE,
+                        REGISTRATION_DOMAIN_PACKAGE,
+                        REGISTRATION_PERSISTENCE_PACKAGE,
                         "org.flywaydb..",
                         "org.jooq..",
                         "org.postgresql..")
@@ -59,11 +71,13 @@ class PlatformArchitectureTest {
     }
 
     @Test
-    void event_domain_and_application_must_not_depend_on_http_or_runtime_frameworks() {
+    void capability_domain_and_application_must_not_depend_on_http_or_runtime_frameworks() {
         noClasses()
                 .that().resideInAnyPackage(
                         EVENT_DOMAIN_PACKAGE,
-                        EVENT_APPLICATION_PACKAGE)
+                        EVENT_APPLICATION_PACKAGE,
+                        REGISTRATION_DOMAIN_PACKAGE,
+                        REGISTRATION_APPLICATION_PACKAGE)
                 .should().dependOnClassesThat().resideInAnyPackage(
                         HTTP_PACKAGE,
                         APP_PACKAGE,
@@ -82,6 +96,10 @@ class PlatformArchitectureTest {
                         EVENT_API_PACKAGE,
                         EVENT_APPLICATION_PACKAGE,
                         EVENT_PERSISTENCE_PACKAGE,
+                        REGISTRATION_API_PACKAGE,
+                        REGISTRATION_APPLICATION_PACKAGE,
+                        REGISTRATION_PERSISTENCE_PACKAGE,
+                        EVENT_REGISTRATION_COMPOSITION_PACKAGE,
                         HTTP_PACKAGE,
                         "java..",
                         "javax.sql..",
@@ -92,10 +110,12 @@ class PlatformArchitectureTest {
     }
 
     @Test
-    void application_runtime_must_not_depend_on_event_domain() {
+    void application_runtime_must_not_depend_on_capability_domains() {
         noClasses()
                 .that().resideInAPackage(APP_PACKAGE)
-                .should().dependOnClassesThat().resideInAPackage(EVENT_DOMAIN_PACKAGE)
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        EVENT_DOMAIN_PACKAGE,
+                        REGISTRATION_DOMAIN_PACKAGE)
                 .check(PRODUCTION_CLASSES);
     }
 }

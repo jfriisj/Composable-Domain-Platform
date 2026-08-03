@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Registration composition proof — unified Event-facing HTTP contract accepted**
+**Registration composition proof — Event-Registration workflow implemented**
 
 ## Completed
 
@@ -62,14 +62,13 @@ This document is the authoritative concise statement of where the project curren
 - Event domain production classes are prevented from depending on Event application implementation classes, the public Event API, persistence-adapter classes, database infrastructure, HTTP, or Spring runtime concepts.
 - Event application implementation remains independent of the persistence adapter, database technologies, HTTP, and Spring runtime concepts.
 - Domain-neutral Registration API, implementation, Registration-owned PostgreSQL persistence, migration, tests, and architecture verification were accepted into `development` through PR #37.
+- Event-Registration composition, Event-facing HTTP operations in the unified `event.yaml`, runtime wiring, Registration startup migration, architecture enforcement, and real PostgreSQL end-to-end validation are implemented by the current accepted phase.
 
 ## In progress
 
-- The Registration capability and durable persistence are implemented and accepted through PR #37.
-- Issue #38 owns the remaining Event-Registration composition, Event-facing HTTP workflow, runtime wiring, architecture enforcement, and end-to-end validation.
-- #39 accepts `contracts/http/v1/event.yaml` as the single Event-facing HTTP contract for both Event operations and Event-registration workflow operations without changing internal Event, Registration, or composition ownership.
-- #38 remains blocked only until its issue scope and readiness are re-read and updated against ADR-0009 after this decision is integrated.
-- No generic Registration HTTP dispatcher is accepted.
+- Issue #38 is the active implementation issue for accepting the completed Event-Registration composition proof into `development`.
+- `contracts/http/v1/event.yaml` is the single Event-facing contract for Event and Event-registration operations; no separate Event-registration contract or generic Registration HTTP dispatcher exists.
+- Event, Registration, and Event-Registration composition ownership remain separated and executable architecture rules enforce the dependency direction.
 
 ## Known gaps
 
@@ -79,8 +78,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Re-read and update blocked issue #38 against ADR-0009, remove the blocker if the issue is ready, and then resume the Event-Registration implementation.
-
-The remaining implementation must stay limited to the Event-Registration composition, Event-registration operations within `contracts/http/v1/event.yaml`, runtime wiring, architecture verification, and required tests.
+Accept issue #38 through the normal topic-branch PR workflow. After merge, re-read `development` and the issue state before selecting the next ready work item.
 
 Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.

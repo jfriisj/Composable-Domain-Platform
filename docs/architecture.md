@@ -89,7 +89,7 @@ A composition owns the cross-capability workflow; neither participating bounded 
 
 ## Registration composition proof
 
-The accepted phase has now established Registration as the second implemented bounded capability through PR #37. The Event-Registration composition remains planned until its implementation is accepted.
+The accepted phase establishes Registration as the second implemented bounded capability and Event-Registration as the first implemented cross-capability composition.
 
 The accepted structure is:
 
@@ -155,7 +155,7 @@ The HTTP adapter and executable application runtime are outside the Event bounde
 
 ## Current runtime boundary
 
-The first executable vertical slice is:
+The executable Event-facing vertical slice is:
 
 ~~~text
 external HTTP caller
@@ -166,21 +166,34 @@ contracts/http/v1/event.yaml
         v
 interfaces/http
         |
-        | Event public API + ExecutionContext
+        +-----------------------> modules/event/api
+        |                              ^
+        |                              |
+        |                        modules/event/impl
+        |                              |
+        |                              v
+        |                         event.events
+        |
         v
-modules/event/api
-        ^
-        |
-modules/event/impl ----> event.events
-        ^
-        |
+compositions/event-registration
+        |                    |
+        v                    v
+modules/event/api      modules/registration/api
+                              ^
+                              |
+                      modules/registration/impl
+                              |
+                              v
+                 registration.registrations
+
 apps/platform
   Spring Boot composition root
-  PostgreSQL configuration
+  shared DataSource
   Event Flyway startup migration
+  Registration Flyway startup migration
 ~~~
 
-`apps/platform` starts the Spring Boot process and wires `interfaces/http`, the Event application services, `JooqEventRepository`, and the runtime `DataSource`. Event-owned Flyway migrations run during application context construction before the Event repository/application beans become available to serve requests.
+`apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, and Event-Registration composition. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests. Runtime wiring contains technical composition only; Event-registration workflow rules remain in the composition.
 
 ## Persistence ownership
 
@@ -194,7 +207,7 @@ Database permission enforcement remains deferred until operational scope require
 
 ## External contracts
 
-`contracts/http/v1/event.yaml` is the authoritative external HTTP contract for the current Event define/retrieve surface.
+`contracts/http/v1/event.yaml` is the authoritative external HTTP contract for the current Event define/retrieve and Event-registration create/retrieve surfaces.
 
 OpenAPI Generator derives the server interface and transport models during the build. Generated sources are adapter-layer build output and must not become Event domain or application models.
 
@@ -222,27 +235,33 @@ The currently implemented architectural structure includes:
 ├── core/
 ├── interfaces/
 │   └── http/
+├── compositions/
+│   └── event-registration/
 ├── modules/
-│   └── event/
+│   ├── event/
+│   │   ├── api/
+│   │   ├── impl/
+│   │   └── module.md
+│   └── registration/
 │       ├── api/
-│       ├── impl/
-│       └── module.md
+│       └── impl/
 └── docs/
 ~~~
 
-`modules/registration` is current accepted implementation through PR #37. `compositions/event-registration` remains accepted planned architecture until #38 is implemented and accepted. `integrations/` remains an architectural category only and must not be created until later accepted scope requires it.
+`modules/registration` and `compositions/event-registration` are current architecture. `integrations/` remains an architectural category only and must not be created until later accepted scope requires it.
 
 ## Architecture enforcement
 
 Current build-time enforcement includes:
 
-1. Separate Gradle projects for core, Event API/implementation, HTTP interface, and executable platform runtime.
+1. Separate Gradle projects for core, Event API/implementation, Registration API/implementation, Event-Registration composition, HTTP interface, and executable platform runtime.
 2. `java-library` dependency semantics for library boundaries.
-3. Event ArchUnit tests for domain/application/persistence-adapter dependency direction.
-4. Platform ArchUnit tests for core, Event API, HTTP interface, and application-runtime dependency boundaries.
-5. Event-owned Flyway migrations and PostgreSQL persistence integration tests through Testcontainers.
-6. Running Spring Boot HTTP end-to-end tests against real PostgreSQL through Testcontainers, including contract success/error behavior and correlation handling.
-7. Root `./gradlew --no-daemon check` aggregation across all current projects.
+3. Event and Registration ArchUnit tests for capability-internal dependency direction and forbidden cross-capability/framework dependencies.
+4. Event-Registration composition ArchUnit tests restricting the composition to core, Event API, Registration API, and Java platform types.
+5. Platform ArchUnit tests for core, capability APIs/implementations, composition, HTTP interface, and application-runtime dependency boundaries.
+6. Event- and Registration-owned Flyway migrations and PostgreSQL persistence integration tests through Testcontainers.
+7. Running Spring Boot HTTP end-to-end tests against real PostgreSQL through Testcontainers, including Event-registration success/error behavior, durability, uniqueness, and correlation handling.
+8. Root `./gradlew --no-daemon check` aggregation across all current projects.
 
 Additional enforcement remains deferred until explicitly scoped:
 

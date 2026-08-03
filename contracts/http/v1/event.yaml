@@ -9,6 +9,7 @@ servers:
   - url: /
 tags:
   - name: Event
+  - name: EventRegistration
 paths:
   /api/v1/events:
     post:
@@ -107,6 +108,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/event-registrations:
+    post:
+      tags:
+        - EventRegistration
+      operationId: createEventRegistration
+      summary: Register participation in an existing Event
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRegistrationRequest'
+      responses:
+        '201':
+          description: Event registration created
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationResponse'
+        '400':
+          description: Structurally or domain-invalid Event registration request
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Referenced Event does not exist
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Registration uniqueness conflict
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/event-registrations/{registrationId}:
+    get:
+      tags:
+        - EventRegistration
+      operationId: findEventRegistrationById
+      summary: Retrieve Event-registration state by identity
+      parameters:
+        - $ref: '#/components/parameters/RegistrationId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Event registration found
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationResponse'
+        '404':
+          description: Registration is unknown or is not Event-target Registration state
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   parameters:
     CorrelationId:
@@ -125,6 +223,15 @@ components:
       in: path
       required: true
       description: Event identity
+      schema:
+        type: string
+        minLength: 1
+        pattern: '.*\S.*'
+    RegistrationId:
+      name: registrationId
+      in: path
+      required: true
+      description: Registration identity
       schema:
         type: string
         minLength: 1
@@ -196,6 +303,40 @@ components:
         timezone:
           type: string
           minLength: 1
+    CreateEventRegistrationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - registrationId
+        - eventId
+        - participantReference
+      properties:
+        registrationId:
+          type: string
+          minLength: 1
+        eventId:
+          type: string
+          minLength: 1
+        participantReference:
+          type: string
+          minLength: 1
+    EventRegistrationResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - registrationId
+        - eventId
+        - participantReference
+      properties:
+        registrationId:
+          type: string
+          minLength: 1
+        eventId:
+          type: string
+          minLength: 1
+        participantReference:
+          type: string
+          minLength: 1
     ErrorResponse:
       type: object
       additionalProperties: false
@@ -209,6 +350,8 @@ components:
             - invalid_request
             - event_not_found
             - event_already_defined
+            - event_registration_not_found
+            - registration_conflict
             - internal_error
         message:
           type: string

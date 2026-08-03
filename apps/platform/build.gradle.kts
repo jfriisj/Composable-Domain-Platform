@@ -14,6 +14,9 @@ application {
 dependencies {
     implementation(project(":event-api"))
     implementation(project(":event-impl"))
+    implementation(project(":registration-api"))
+    implementation(project(":registration-impl"))
+    implementation(project(":event-registration-composition"))
     implementation(project(":http-interface"))
     implementation(platform(libs.spring.boot.dependencies))
     implementation(libs.flyway.core)
