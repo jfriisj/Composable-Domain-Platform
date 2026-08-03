@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Operational-runtime proof — scope accepted, implementation not yet activated**
+**Operational-runtime proof — implementation active**
 
 ## Completed
 
@@ -68,9 +68,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## In progress
 
-- The minimum operational-runtime scope and ADR-0010 are the accepted implementation-planning baseline; no implementation issue is currently active.
-- The accepted scope authorizes only the executable-JVM packaging boundary, machine-checkable readiness semantics, externally supplied runtime dependencies, and externally supplied infrastructure boundary.
-- Implementation must not begin until a concrete `type: implementation` issue is created or activated and verified ready against the accepted scope.
+- Issue #49 is the active `priority: now` implementation workstream for the minimum operational-runtime proof.
+- #49 is authorized by the accepted minimum operational-runtime scope and ADR-0010 and has concrete outcome, ownership/non-ownership, exclusions, validation, and resolved prerequisites.
+- Implementation remains limited to the executable-JVM artifact boundary, runtime-owned machine-checkable readiness, repeatable operator documentation, and required validation; Docker/OCI, Terraform/OpenTofu/IaC, infrastructure provisioning, and unrelated production concerns remain excluded.
 
 ## Known gaps
 
@@ -80,6 +80,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-After the scope/ADR change is accepted into `development`, create or activate one `type: implementation` issue for the minimum operational-runtime proof and verify its readiness before implementation begins.
+Execute issue #49 as one coherent implementation change, validate the executable artifact/readiness/operator proof, pass the mandatory local root `./gradlew --no-daemon check` and `git diff --check` gates, and submit one PR to `development`.
 
 Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
