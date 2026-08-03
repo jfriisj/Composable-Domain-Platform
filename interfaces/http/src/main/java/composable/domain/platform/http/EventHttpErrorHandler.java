@@ -24,6 +24,16 @@ public final class EventHttpErrorHandler {
                 exception.context());
     }
 
+    @ExceptionHandler(EventRegistrationHttpException.class)
+    public ResponseEntity<ErrorResponse> handleEventRegistrationFailure(
+            EventRegistrationHttpException exception) {
+        return response(
+                exception.status(),
+                exception.code(),
+                exception.getMessage(),
+                exception.context());
+    }
+
     @ExceptionHandler({
         ConstraintViolationException.class,
         HandlerMethodValidationException.class,

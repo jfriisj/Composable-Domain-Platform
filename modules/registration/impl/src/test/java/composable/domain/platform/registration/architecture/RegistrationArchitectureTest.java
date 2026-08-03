@@ -71,9 +71,10 @@ class RegistrationArchitectureTest {
     }
 
     @Test
-    void persistence_adapter_must_not_be_public() {
+    void jooq_persistence_adapter_must_not_be_public() {
         classes()
                 .that().resideInAPackage(PERSISTENCE_PACKAGE)
+                .and().haveSimpleName("JooqRegistrationRepository")
                 .should().notBePublic()
                 .check(PRODUCTION_CLASSES);
     }

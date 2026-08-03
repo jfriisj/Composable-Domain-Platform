@@ -19,6 +19,9 @@ project(":registration-api").projectDir = file("modules/registration/api")
 include(":registration-impl")
 project(":registration-impl").projectDir = file("modules/registration/impl")
 
+include(":event-registration-composition")
+project(":event-registration-composition").projectDir = file("compositions/event-registration")
+
 include(":http-interface")
 project(":http-interface").projectDir = file("interfaces/http")
 

@@ -12,6 +12,7 @@ val generatedOpenApi = layout.buildDirectory.dir("generated/openapi")
 dependencies {
     implementation(project(":core"))
     implementation(project(":event-api"))
+    implementation(project(":event-registration-composition"))
     implementation(platform(libs.spring.boot.dependencies))
     implementation(libs.jackson.annotations)
     implementation(libs.jakarta.annotation.api)
