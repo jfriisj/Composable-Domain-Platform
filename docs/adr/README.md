@@ -36,7 +36,8 @@ Accepted ADRs are not silently rewritten to change historical rationale. A later
 - [ADR-0004: Correlation and causation traceability](0004-correlation-and-causation-traceability.md)
 - [ADR-0005: Event-owned PostgreSQL persistence](0005-event-owned-postgresql-persistence.md)
 - [ADR-0006: Spring Boot and OpenAPI runtime boundary](0006-spring-boot-openapi-runtime-boundary.md)
-- [ADR-0007: Registration capability and cross-capability composition](0007-registration-capability-and-cross-capability-composition.md)
+- [ADR-0007: Registration capability and cross-capability composition](0007-registration-capability-and-cross-capability-composition.md) — Superseded by ADR-0008
+- [ADR-0008: Domain-neutral Registration and Event-registration composition](0008-domain-neutral-registration-and-event-registration-composition.md)
 
 ## Template
 

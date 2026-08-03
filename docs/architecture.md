@@ -101,11 +101,11 @@ modules/registration/
 compositions/event-registration/
 ~~~
 
-Registration owns `registrationId`, `eventId` as an opaque Event reference, `participantReference`, Registration uniqueness rules, and its own persistence boundary.
+Registration is domain-neutral. It owns `registrationId`, a namespaced opaque `RegistrantReference`, a namespaced opaque `TargetReference`, Registration uniqueness rules, retrieval, and its own persistence boundary.
 
-Registration does not own Event existence and does not depend on Event API, Event implementation, or Event persistence.
+Registration does not interpret namespaces or validate referenced business objects. It does not depend on Event, Person, authentication/authorization technologies, or another business capability.
 
-The Event-Registration composition owns the workflow that checks Event existence through the Event public API and then invokes the Registration public API.
+The Event-Registration composition owns the Event-specific workflow. It resolves Event existence through the Event public API, maps the opaque participant reference to the `participant` registrant namespace, maps Event identity to the `event` target namespace, and invokes the Registration public API. Retrieval also passes through the composition so the Event-specific HTTP surface exposes only Event-target registrations.
 
 The planned dependency direction is:
 
@@ -116,18 +116,22 @@ event-api <- event-registration composition -> registration-api
                         core
 ~~~
 
-Neither Event nor Registration depends on the other capability. The composition depends on public APIs only.
+Neither Event nor Registration depends on the other capability. Event does not store Registration identities. The composition depends on public APIs only.
 
-The planned Registration persistence boundary is a Registration-owned PostgreSQL `registration` schema and `registration.registrations` table. No foreign key or cross-schema join to Event persistence is planned; Event existence is validated through Event's public application contract.
+The planned Registration persistence boundary is a Registration-owned PostgreSQL `registration` schema and `registration.registrations` table containing only `registration_id`, registrant namespace/reference, and target namespace/reference. No Event-specific column, foreign key, or cross-schema Event lookup is planned.
 
-The planned external contract is `contracts/http/v1/registration.yaml` with:
+The planned external contract is the Event-specific `contracts/http/v1/event-registration.yaml` with:
 
-- `POST /api/v1/registrations` through the cross-capability composition;
-- `GET /api/v1/registrations/{registrationId}` through the Registration public API.
+- `POST /api/v1/event-registrations` through the cross-capability composition;
+- `GET /api/v1/event-registrations/{registrationId}` through the cross-capability composition.
+
+The transport contract keeps the current Event workflow language (`registrationId`, `eventId`, and `participantReference`) and does not expose generic Registration namespace/reference mechanics or a generic target dispatcher.
+
+Authentication identity and Registration registrant identity remain separate concepts. Authentication/authorization implementation and a Person capability are not introduced by this phase.
 
 The existing HTTP interface and Spring Boot application remain the external adapter and technical composition root respectively.
 
-ADR-0007 records the rationale for the Registration boundary, composition ownership, and persistence isolation.
+ADR-0008 supersedes ADR-0007 and records the domain-neutral Registration boundary, Event-specific composition/HTTP boundary, persistence isolation, and security/identity separation.
 
 ## Current reference module
 
