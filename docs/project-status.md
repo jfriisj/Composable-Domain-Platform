@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Operational-runtime proof — decision active, no implementation authorized**
+**Operational-runtime proof — scope accepted, implementation not yet activated**
 
 ## Completed
 
@@ -64,12 +64,13 @@ This document is the authoritative concise statement of where the project curren
 - Domain-neutral Registration API, implementation, Registration-owned PostgreSQL persistence, migration, tests, and architecture verification were accepted into `development` through PR #37.
 - Event-Registration composition, Event-facing HTTP operations in the unified `event.yaml`, runtime wiring, Registration startup migration, architecture enforcement, and real PostgreSQL end-to-end validation were accepted into `development` through PR #41, completing issue #38.
 - Operational-runtime research completed in issue #30, establishing the minimum operator use case, reproducibility requirements, externally supplied dependencies, readiness evidence, solution alternatives, and the separate Terraform/OpenTofu/IaC provisioning boundary.
+- The minimum operational-runtime contract was selected in issue #45: executable JVM artifact, externally supplied Java/PostgreSQL/host/network, machine-checkable readiness, and no infrastructure provisioning or Terraform/OpenTofu/IaC in the minimum proof.
 
 ## In progress
 
-- Issue #45 is the active `priority: now` decision workstream following completion of research issue #30.
-- The decision must select the minimum packaging/run boundary, define technology-neutral readiness semantics, make externally supplied runtime dependencies explicit, and decide whether infrastructure provisioning remains outside the proof.
-- No packaging, readiness, deployment, hosting, Terraform/OpenTofu/IaC, or other infrastructure implementation is authorized until the decision is translated into accepted repository scope.
+- The minimum operational-runtime scope and ADR-0010 are the accepted implementation-planning baseline; no implementation issue is currently active.
+- The accepted scope authorizes only the executable-JVM packaging boundary, machine-checkable readiness semantics, externally supplied runtime dependencies, and externally supplied infrastructure boundary.
+- Implementation must not begin until a concrete `type: implementation` issue is created or activated and verified ready against the accepted scope.
 
 ## Known gaps
 
@@ -79,6 +80,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Complete the decision evidence in issue #45: select one packaging/run boundary, define readiness semantics and externally supplied runtime dependencies, make the infrastructure-provisioning boundary explicit, and define implementation validation evidence. Only then may a scope change be proposed.
+After the scope/ADR change is accepted into `development`, create or activate one `type: implementation` issue for the minimum operational-runtime proof and verify its readiness before implementation begins.
 
 Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.

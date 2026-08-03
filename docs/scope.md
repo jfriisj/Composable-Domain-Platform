@@ -12,9 +12,109 @@ Event management is the first reference capability, but it is not the platform c
 
 ## Current accepted phase
 
-**Registration composition proof**
+**Minimum operational-runtime proof**
 
-The next implementation phase proves a second independently owned business capability and an explicit cross-capability workflow through the minimum participant-registration use case identified through issues #28, #31, #32, and the domain-boundary correction in #35.
+The next implementation phase proves that one accepted platform version can be built into a distinct executable runtime artifact, started reproducibly outside the development workstation, and judged objectively ready without introducing infrastructure provisioning or unrelated production concerns.
+
+The accepted operational contract was established through research issue #30 and decision issue #45.
+
+### Concrete operator use case
+
+A single platform operator must be able to:
+
+1. build one accepted platform version into one executable Spring Boot/JVM application artifact;
+2. transfer and start that artifact on one non-developer host or VM without repository checkout, IDE state, or Gradle `bootRun` on the runtime host;
+3. supply a compatible Java runtime, reachable PostgreSQL, database configuration, networking, and an available HTTP listen port externally;
+4. determine through a machine-checkable signal when the application is ready to serve the accepted HTTP contract;
+5. exercise the accepted Event and Event-registration HTTP operations after readiness;
+6. stop and restart the application process against the same PostgreSQL database and retrieve durable Event and Registration state created before the restart.
+
+### Packaging and run boundary
+
+The operational artifact is one executable Spring Boot/JVM application artifact produced from the accepted repository build.
+
+Repository checkout plus Gradle `bootRun` remains a development workflow and is not the operational proof boundary.
+
+The runtime host supplies a compatible Java runtime. Docker or OCI packaging is not required or authorized by this phase.
+
+Artifact publication to a registry or repository is not required. The proof may transfer the built artifact through a simpler controlled mechanism.
+
+### Externally supplied dependencies
+
+The operator supplies:
+
+- one non-developer host or VM;
+- a compatible Java runtime;
+- a reachable PostgreSQL instance;
+- database URL, username, and password through the existing externalized runtime configuration boundary;
+- networking required for application-to-PostgreSQL and caller-to-application communication;
+- an available HTTP listen port.
+
+The project does not provision those resources in this phase.
+
+The platform runtime continues to own application startup and execution of the accepted Event and Registration Flyway migrations.
+
+### Readiness contract
+
+The runtime must expose a machine-checkable readiness signal distinct from mere process existence.
+
+Readiness must remain false until:
+
+1. required runtime configuration has been accepted;
+2. PostgreSQL is reachable with the supplied configuration;
+3. Event Flyway migrations have completed successfully;
+4. Registration Flyway migrations have completed successfully;
+5. the application HTTP runtime is available to serve the accepted external contract.
+
+After startup, readiness must report not-ready when PostgreSQL unavailability prevents the runtime from servicing the accepted HTTP use cases.
+
+Readiness is an operational signal, not a business-domain API. It must not expose credentials, database details, stack traces, or implementation internals.
+
+This scope authorizes only the minimum readiness implementation required to satisfy these semantics. It does not preselect Spring Boot Actuator, a readiness endpoint path, a new library, or another readiness technology.
+
+No separate liveness contract is required by this phase.
+
+### Infrastructure-provisioning boundary
+
+Infrastructure remains externally supplied.
+
+This phase does not provision:
+
+- host or VM infrastructure;
+- PostgreSQL infrastructure;
+- networking or firewall resources;
+- cloud or hosting-provider resources.
+
+Terraform, OpenTofu, or another Infrastructure-as-Code technology is not required or authorized. A later provisioning use case requires a separate accepted decision against a concrete provider/operator requirement.
+
+### Operational validation
+
+Implementation must prove at least:
+
+1. one executable JVM application artifact is produced from an accepted repository version;
+2. the artifact starts on a clean non-developer host with only documented Java/runtime prerequisites and external configuration;
+3. the runtime host does not require repository checkout, IDE state, or Gradle `bootRun`;
+4. missing or invalid required database configuration fails closed;
+5. unavailable PostgreSQL prevents readiness;
+6. Event and Registration Flyway migrations complete before readiness becomes true;
+7. readiness is machine-checkable and follows the accepted semantics;
+8. accepted Event and Event-registration HTTP operations are serviceable after readiness;
+9. durable Event and Registration state survives application-process restart against the same PostgreSQL database;
+10. operator instructions are sufficient to repeat the run;
+11. focused validation and root `./gradlew --no-daemon check` succeed;
+12. `git diff --check` succeeds and the implementation remains inside this scope.
+
+### Explicitly out of scope
+
+This phase does not authorize Docker or OCI packaging, Docker Compose, Kubernetes, Terraform, OpenTofu, cloud or hosting-provider configuration, host/VM provisioning, PostgreSQL provisioning, networking/firewall provisioning, container or artifact registries, artifact-publication infrastructure, TLS termination or ingress, secrets-management products, production PostgreSQL backup/restore/HA/tuning, zero-downtime deployment, rollback automation, horizontal scaling or orchestration, observability infrastructure, authentication or authorization, or unrelated product/domain capability work.
+
+No new technology is admitted by this phase. Java, Gradle, Spring Boot, PostgreSQL, Flyway, and the existing testing baseline remain the applicable accepted directions. Docker remains a candidate only.
+
+## Accepted Registration composition baseline
+
+**Registration composition proof — completed**
+
+The previously accepted phase established the second independently owned business capability and explicit cross-capability Event-registration workflow through the minimum participant-registration use case identified through issues #28, #31, #32, and the domain-boundary correction in #35.
 
 ### Concrete requirement
 
