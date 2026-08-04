@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Operational-runtime proof — implementation active**
+**Operational-runtime proof — completed**
 
 ## Completed
 
@@ -65,12 +65,11 @@ This document is the authoritative concise statement of where the project curren
 - Event-Registration composition, Event-facing HTTP operations in the unified `event.yaml`, runtime wiring, Registration startup migration, architecture enforcement, and real PostgreSQL end-to-end validation were accepted into `development` through PR #41, completing issue #38.
 - Operational-runtime research completed in issue #30, establishing the minimum operator use case, reproducibility requirements, externally supplied dependencies, readiness evidence, solution alternatives, and the separate Terraform/OpenTofu/IaC provisioning boundary.
 - The minimum operational-runtime contract was selected in issue #45: executable JVM artifact, externally supplied Java/PostgreSQL/host/network, machine-checkable readiness, and no infrastructure provisioning or Terraform/OpenTofu/IaC in the minimum proof.
+- The minimum operational-runtime proof was implemented through PR #51, completing issue #49 with an executable Spring Boot/JVM artifact run path, runtime-owned machine-checkable readiness, repeatable operator documentation, restart/durability evidence, and PostgreSQL-loss readiness validation.
 
 ## In progress
 
-- Issue #49 is the active `priority: now` implementation workstream for the minimum operational-runtime proof.
-- #49 is authorized by the accepted minimum operational-runtime scope and ADR-0010 and has concrete outcome, ownership/non-ownership, exclusions, validation, and resolved prerequisites.
-- Implementation remains limited to the executable-JVM artifact boundary, runtime-owned machine-checkable readiness, repeatable operator documentation, and required validation; Docker/OCI, Terraform/OpenTofu/IaC, infrastructure provisioning, and unrelated production concerns remain excluded.
+- No implementation, research, scope, or decision workstream is currently active.
 
 ## Known gaps
 
@@ -80,6 +79,6 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Execute issue #49 as one coherent implementation change, validate the executable artifact/readiness/operator proof, pass the mandatory local root `./gradlew --no-daemon check` and `git diff --check` gates, and submit one PR to `development`.
+Create a decision issue to select the next concrete platform proof or use case from the current accepted repository state before activating further research, scope, or implementation work.
 
 Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
