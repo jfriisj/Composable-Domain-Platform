@@ -53,6 +53,78 @@ docs scope PR    |
 
 No implementation begins merely because a future direction appears reasonable.
 
+## Goal and subgoal planning
+
+A Goal Issue is a planning and tracking container for one observable stakeholder, operator, or developer outcome that may require multiple existing issue types to complete.
+
+Goal Issues use the `type: goal` label. `type: goal` identifies a planning container; it is not executable work and does not authorize implementation, change accepted scope, accept a bounded context, admit a technology, or replace an authoritative repository artifact. `docs/scope.md` remains the authority for accepted scope.
+
+A Goal Issue must define:
+
+- one concrete use case or measurable outcome;
+- the accepted repository baseline from which the goal starts;
+- explicit non-goals;
+- objective end-to-end acceptance evidence;
+- a `Subgoals` checklist containing the child issues currently known to be required;
+- explicit `Blocked by #...` and `Blocks #...` dependencies where ordering matters;
+- which subgoals are independent enough to proceed in parallel.
+
+Each subgoal records its planning parent as `Goal: #...`. Goal membership is separate from execution dependency:
+
+- `Goal: #...` identifies the planning hierarchy;
+- `Blocked by #...` identifies an unresolved execution dependency;
+- `Blocks #...` records the reverse execution dependency.
+
+Subgoals use the existing executable issue types: decision, scope, research, implementation, defect, and documentation. Each subgoal keeps its own admission, readiness, validation, and change-control requirements.
+
+Creating a Goal or subgoal issue records planned work only. Capability names, architecture alternatives, technologies, and implementation approaches mentioned in planning remain exploratory hypotheses until the applicable decision and scope flow accepts them.
+
+### Goal priority and decomposition
+
+There should normally be only one active `type: goal` with `priority: now`. Multiple child issues may carry `priority: now` when they belong to the same active Goal or coherent workstream and are independently ready.
+
+Goal detail increases only as the Goal approaches execution:
+
+- `priority: later` — keep the Goal outcome-level; do not pre-design bounded contexts or implementation.
+- `priority: next` — re-read the Goal against current `development`, identify the research/decisions needed to make ownership and scope explicit, and decompose only enough to expose meaningful dependencies and parallel work.
+- `priority: now` — execute only subgoals that satisfy their normal readiness rules.
+
+### Parallel readiness
+
+A subgoal is parallel-ready only when:
+
+- its explicit prerequisites are resolved;
+- applicable accepted scope authorizes the work;
+- ownership and non-ownership are explicit;
+- it does not depend on an unresolved sibling result;
+- it has an independently verifiable outcome;
+- concurrent work will not make uncontrolled competing changes to the same authoritative truth.
+
+Parallel work is an execution property, not a reason to merge scope or ownership decisions prematurely.
+
+### Re-read after subgoal progress
+
+After a prerequisite or subgoal merges:
+
+1. re-read remote `development`;
+2. verify the merged result;
+3. re-read directly dependent issues;
+4. re-read the parent Goal;
+5. update readiness, dependencies, or the Goal subgoal checklist when repository evidence changed the plan;
+6. only then select the next ready action.
+
+An implementation subgoal is ready only when its concrete outcome, accepted scope, ownership and non-ownership, exclusions, validation, and dependencies are resolved.
+
+### Goal completion
+
+A Goal is complete only when:
+
+- all required subgoals are complete;
+- objective end-to-end acceptance evidence is satisfied;
+- the complete accepted result exists in `development`;
+- `docs/project-status.md` records the resulting project state when the Goal changes current status;
+- no unresolved dependency required for the Goal outcome remains.
+
 ## 1. Start from authoritative state
 
 Before planning or changing code, inspect at minimum:

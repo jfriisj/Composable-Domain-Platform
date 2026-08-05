@@ -13,6 +13,7 @@ Each type of information has one authoritative owner:
 | Accepted scope | `docs/scope.md` |
 | Current project state | `docs/project-status.md` |
 | Development workflow | `docs/workflow.md` |
+| Work tracking, Goal/Subgoal decomposition, and dependencies | GitHub issues |
 | Architecture model and diagrams | `docs/architecture/workspace.dsl` |
 | Architecture principles and boundary rules | `docs/architecture.md` |
 | Module responsibilities | `docs/modules.md` and each implemented module's `module.md` |
@@ -72,6 +73,22 @@ A useful idea is not automatically accepted scope.
 If a change is outside the current scope, it must either be deferred or proposed explicitly as a scope change. Scope changes must update `docs/scope.md` in the same decision flow.
 
 No future capability is implemented solely because the architecture could support it.
+
+## Goal and subgoal planning
+
+Goal Issues provide planning and tracking above the existing executable issue types. They use the `type: goal` label and must describe one observable use-case outcome rather than prescribe a module, technology, or implementation. `type: goal` is a planning type and does not itself authorize executable work.
+
+Each subgoal identifies its planning parent with `Goal: #...`. The parent/child hierarchy is separate from execution dependencies recorded through `Blocked by #...` and `Blocks #...`.
+
+Goal and subgoal issues are not authoritative scope. Creating them may record exploratory capability hypotheses or alternatives, but those hypotheses remain unaccepted until the applicable decision, architecture, and scope flow is completed.
+
+There should normally be one active Goal with `priority: now`. Multiple child issues may be active in parallel when they belong to the same coherent Goal/workstream, have resolved prerequisites, independent ownership and validation, and do not make uncontrolled competing changes to the same authoritative truth.
+
+Goal decomposition is progressive. Later Goals remain outcome-level planning items; `priority: next` Goals may be decomposed enough to resolve research, decisions, dependencies, and scope; `priority: now` executes only ready subgoals.
+
+After a prerequisite or subgoal merges, the parent Goal and directly dependent issues must be re-read against the new accepted `development` state before the next ready action is selected.
+
+A Goal is complete only after its required subgoals are complete, objective end-to-end acceptance is proven in accepted `development`, applicable project status is synchronized, and no dependency required for the Goal outcome remains unresolved. Closing a Goal does not retroactively authorize work that bypassed accepted scope or governance.
 
 ## Architecture control
 

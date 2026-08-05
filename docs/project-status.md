@@ -69,7 +69,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## In progress
 
-- No implementation, research, scope, or decision workstream is currently active.
+- Decision issue #53 is active to select the next concrete platform proof or product use case from the completed operational-runtime baseline.
+- Decision issue #54 is active as the process subgoal to define Goal/Subgoal issue decomposition before detailed product-roadmap decomposition.
+- No implementation, research, or scope workstream is currently active.
 
 ## Known gaps
 
@@ -79,6 +81,8 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Create a decision issue to select the next concrete platform proof or use case from the current accepted repository state before activating further research, scope, or implementation work.
+Complete decision issue #54 and accept or reject the Goal/Subgoal planning model through the authoritative workflow/governance documentation. Then complete decision issue #53 by selecting the next concrete product or platform use case from the accepted repository state.
+
+If Goal/Subgoal planning is accepted, decompose the selected #53 outcome only after that outcome is chosen. Detailed child issues may then expose research, decisions, scope changes, implementation dependencies, parallel work, integration, and end-to-end acceptance without treating exploratory capability hypotheses as accepted scope.
 
 Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
