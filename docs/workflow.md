@@ -53,6 +53,32 @@ docs scope PR    |
 
 No implementation begins merely because a future direction appears reasonable.
 
+## Goal and subgoal planning
+
+A Goal Issue is a planning and tracking container for one observable stakeholder, operator, or developer outcome that may require multiple existing issue types to complete.
+
+A Goal Issue does not authorize implementation, change accepted scope, accept a bounded context, admit a technology, or replace an authoritative repository artifact. `docs/scope.md` remains the authority for accepted scope.
+
+A Goal Issue must define:
+
+- one concrete use case or measurable outcome;
+- the accepted repository baseline from which the goal starts;
+- explicit non-goals;
+- objective end-to-end acceptance evidence;
+- the child or subgoal issues currently known to be required;
+- explicit `Blocked by #...` and `Blocks #...` dependencies where ordering matters;
+- which subgoals are independent enough to proceed in parallel.
+
+Subgoals use the existing issue types: decision, scope, research, implementation, defect, and documentation. Each subgoal keeps its own admission, readiness, validation, and change-control requirements.
+
+Creating a Goal or subgoal issue records planned work only. Capability names, architecture alternatives, technologies, and implementation approaches mentioned in planning remain exploratory until the applicable decision and scope flow accepts them.
+
+The current or next Goal may be decomposed in enough detail to expose dependencies and parallel work. Later Goals should normally remain outcome-level planning items until promoted toward `priority: next`; do not pre-design their bounded contexts or implementation.
+
+An implementation subgoal is ready only when its concrete outcome, accepted scope, ownership and non-ownership, exclusions, validation, and dependencies are resolved. After a prerequisite merges, re-read the dependent issue against the new `development` state and update its readiness when necessary.
+
+A Goal is complete only when its required subgoals are complete and its end-to-end acceptance evidence is satisfied.
+
 ## 1. Start from authoritative state
 
 Before planning or changing code, inspect at minimum:

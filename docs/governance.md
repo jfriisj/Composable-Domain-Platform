@@ -13,6 +13,7 @@ Each type of information has one authoritative owner:
 | Accepted scope | `docs/scope.md` |
 | Current project state | `docs/project-status.md` |
 | Development workflow | `docs/workflow.md` |
+| Work tracking, Goal/Subgoal decomposition, and dependencies | GitHub issues |
 | Architecture model and diagrams | `docs/architecture/workspace.dsl` |
 | Architecture principles and boundary rules | `docs/architecture.md` |
 | Module responsibilities | `docs/modules.md` and each implemented module's `module.md` |
@@ -72,6 +73,18 @@ A useful idea is not automatically accepted scope.
 If a change is outside the current scope, it must either be deferred or proposed explicitly as a scope change. Scope changes must update `docs/scope.md` in the same decision flow.
 
 No future capability is implemented solely because the architecture could support it.
+
+## Goal and subgoal planning
+
+Goal Issues provide planning and tracking above the existing executable issue types. A Goal must describe one observable use-case outcome rather than prescribe a module, technology, or implementation.
+
+Goal and subgoal issues are not authoritative scope. Creating them may record exploratory capability hypotheses or alternatives, but those hypotheses remain unaccepted until the applicable decision, architecture, and scope flow is completed.
+
+A detailed Goal decomposition must make dependencies explicit. Work may proceed in parallel only when the relevant subgoals have independent ownership, no unresolved blocking dependency, and each work item is otherwise ready under the normal workflow.
+
+The current or next Goal may be decomposed in detail. Later Goals should normally remain outcome-level items until promoted toward `priority: next`, avoiding speculative capability or implementation design.
+
+A Goal is complete only after its required subgoals and objective end-to-end acceptance evidence are complete. Closing a Goal does not retroactively authorize work that bypassed accepted scope or governance.
 
 ## Architecture control
 
