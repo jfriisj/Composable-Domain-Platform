@@ -76,15 +76,19 @@ No future capability is implemented solely because the architecture could suppor
 
 ## Goal and subgoal planning
 
-Goal Issues provide planning and tracking above the existing executable issue types. A Goal must describe one observable use-case outcome rather than prescribe a module, technology, or implementation.
+Goal Issues provide planning and tracking above the existing executable issue types. They use the `type: goal` label and must describe one observable use-case outcome rather than prescribe a module, technology, or implementation. `type: goal` is a planning type and does not itself authorize executable work.
+
+Each subgoal identifies its planning parent with `Goal: #...`. The parent/child hierarchy is separate from execution dependencies recorded through `Blocked by #...` and `Blocks #...`.
 
 Goal and subgoal issues are not authoritative scope. Creating them may record exploratory capability hypotheses or alternatives, but those hypotheses remain unaccepted until the applicable decision, architecture, and scope flow is completed.
 
-A detailed Goal decomposition must make dependencies explicit. Work may proceed in parallel only when the relevant subgoals have independent ownership, no unresolved blocking dependency, and each work item is otherwise ready under the normal workflow.
+There should normally be one active Goal with `priority: now`. Multiple child issues may be active in parallel when they belong to the same coherent Goal/workstream, have resolved prerequisites, independent ownership and validation, and do not make uncontrolled competing changes to the same authoritative truth.
 
-The current or next Goal may be decomposed in detail. Later Goals should normally remain outcome-level items until promoted toward `priority: next`, avoiding speculative capability or implementation design.
+Goal decomposition is progressive. Later Goals remain outcome-level planning items; `priority: next` Goals may be decomposed enough to resolve research, decisions, dependencies, and scope; `priority: now` executes only ready subgoals.
 
-A Goal is complete only after its required subgoals and objective end-to-end acceptance evidence are complete. Closing a Goal does not retroactively authorize work that bypassed accepted scope or governance.
+After a prerequisite or subgoal merges, the parent Goal and directly dependent issues must be re-read against the new accepted `development` state before the next ready action is selected.
+
+A Goal is complete only after its required subgoals are complete, objective end-to-end acceptance is proven in accepted `development`, applicable project status is synchronized, and no dependency required for the Goal outcome remains unresolved. Closing a Goal does not retroactively authorize work that bypassed accepted scope or governance.
 
 ## Architecture control
 
