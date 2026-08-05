@@ -67,11 +67,12 @@ This document is the authoritative concise statement of where the project curren
 - The minimum operational-runtime contract was selected in issue #45: executable JVM artifact, externally supplied Java/PostgreSQL/host/network, machine-checkable readiness, and no infrastructure provisioning or Terraform/OpenTofu/IaC in the minimum proof.
 - The minimum operational-runtime proof was implemented through PR #51, completing issue #49 with an executable Spring Boot/JVM artifact run path, runtime-owned machine-checkable readiness, repeatable operator documentation, restart/durability evidence, and PostgreSQL-loss readiness validation.
 - Goal/Subgoal planning was accepted through PR #55, completing decision issue #54 with `type: goal` planning semantics, explicit `Goal: #...` parent relationships, separate execution dependencies, progressive decomposition, parallel-readiness rules, and end-to-end Goal completion criteria.
+- Decision issue #53 selected the minimum usable adult Event Registration lifecycle as the next product-driven proof: an adult participant can discover an intentionally available Event, register, later retrieve private Event-registration state, and cancel that registration. The decision does not authorize implementation or technology.
 
 ## In progress
 
-- Decision issue #53 is active to select the next concrete platform proof or product use case from the completed operational-runtime baseline.
-- No implementation, research, or scope workstream is currently active.
+- Goal issue #57 is active with `priority: now` to plan and track the minimum usable adult Event Registration lifecycle selected by decision #53.
+- No executable subgoal, implementation, research, or scope workstream is currently active.
 
 ## Known gaps
 
@@ -81,8 +82,8 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Complete decision issue #53 by selecting one next concrete product or platform use case from the accepted repository state.
+Progressively decompose Goal #57 only far enough to create the concrete decision/research/scope subgoals required by the selected participant lifecycle. The initial planning topics are Event availability/discovery ownership, participant identity/protected-operation boundaries, registration cancellation lifecycle/ownership, identity-driven participant-data/privacy requirements, and later scope acceptance.
 
-After #53 selects that outcome, apply the accepted Goal/Subgoal workflow to decompose it only as far as needed for the current/next Goal. Detailed subgoals may then expose research, decisions, scope changes, implementation dependencies, parallel work, integration, and end-to-end acceptance without treating exploratory capability hypotheses as accepted scope.
+Do not create ready implementation work until the applicable decisions and accepted scope authorize it. Exploratory capability, architecture, and technology hypotheses remain non-authoritative.
 
 Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
