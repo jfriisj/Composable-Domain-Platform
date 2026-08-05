@@ -40,6 +40,7 @@ Accepted ADRs are not silently rewritten to change historical rationale. A later
 - [ADR-0008: Domain-neutral Registration and Event-registration composition](0008-domain-neutral-registration-and-event-registration-composition.md)
 - [ADR-0009: Unified Event-facing OpenAPI contract](0009-unified-event-facing-openapi-contract.md)
 - [ADR-0010: Executable JVM operational-runtime boundary](0010-executable-jvm-operational-runtime-boundary.md)
+- [ADR-0011: Registration-owned cancellation lifecycle](0011-registration-owned-cancellation-lifecycle.md)
 
 ## Template
 
