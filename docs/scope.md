@@ -12,9 +12,173 @@ Event management is the first reference capability, but it is not the platform c
 
 ## Current accepted phase
 
-**Minimum operational-runtime proof**
+**Minimum usable adult Event Registration lifecycle**
 
-The next implementation phase proves that one accepted platform version can be built into a distinct executable runtime artifact, started reproducibly outside the development workstation, and judged objectively ready without introducing infrastructure provisioning or unrelated production concerns.
+The next product implementation phase proves the participant lifecycle selected by decision issue #53 and accepted for scope through issue #65:
+
+> An adult participant can discover an Event that has intentionally been made available, register participation, later retrieve their private Event-registration state, and cancel that registration.
+
+This scope translates the completed planning decisions #59, #60, #61, Accepted ADR-0011, and #64 into implementation authorization while preserving the existing Event, Registration, Event-Registration composition, HTTP adapter, runtime, persistence, and correlation ownership boundaries.
+
+Scope acceptance is not automatic implementation readiness. Each executable subgoal must still satisfy normal dependency, architecture, technology, ownership, and validation gates.
+
+### Concrete participant use case
+
+The accepted implementation must support one coherent workflow in which:
+
+1. a newly defined Event is not participant-discoverable until Event explicitly publishes it;
+2. public participant discovery returns published Events only;
+3. a participant-private Event-registration operation receives a transport-neutral authenticated actor reference established by an external/security boundary;
+4. Event-Registration composition derives participant Registration ownership from that actor reference rather than trusting caller-supplied participant ownership;
+5. the owning participant can create and retrieve their Event-registration state;
+6. Registration exposes its generic `active` / `cancelled` lifecycle;
+7. the owning participant can cancel through Event-Registration composition and later retrieve the same durable Registration as `cancelled`;
+8. a different authenticated participant cannot learn whether another participant's private Event-registration resource exists;
+9. correlation remains independent from participant identity;
+10. Event publication state and Registration lifecycle state survive application-process restart against the same PostgreSQL database.
+
+### Event publication and discovery
+
+Event owns participant publication truth.
+
+The accepted minimum publication lifecycle is:
+
+- `unpublished` — the Event exists and remains retrievable by known Event identity but is absent from participant discovery;
+- `published` — the Event has intentionally been made available for participant discovery.
+
+A newly defined Event is `unpublished`. The only accepted transition is:
+
+`unpublished -> published`
+
+No unpublish/withdraw transition is accepted.
+
+Participant discovery is public and returns only published Events. Known-id Event retrieval remains independent of publication state.
+
+Publication does not define registration eligibility, registration opening/closing periods, capacity, quotas, waitlists, participant eligibility, authorization, payment, or ticketing. This scope does not infer a rule that an unpublished Event cannot otherwise be referenced by an already known Event identity.
+
+Publication state is durable Event-owned state and must not require Registration or participant-private state.
+
+### Participant identity and authorization boundary
+
+Published Event discovery is public.
+
+Event-registration creation, retrieval of a participant's private Event-registration state, and participant cancellation are participant-private.
+
+Technical authentication identity is established at an external/security boundary. Participant-private application behavior receives only a transport-neutral opaque stable authenticated actor reference.
+
+The external caller must not choose participant ownership through an arbitrary `participantReference`. Event-Registration composition derives:
+
+`AuthenticatedActorReference(x) -> RegistrantReference("participant", x)`
+
+Event-Registration composition owns the participant-owns-registration authorization decision for create, retrieve, and cancel workflows.
+
+Registration remains security-neutral. It does not authenticate, authorize, inspect credentials or tokens, know identity-provider semantics, or interpret the `participant` namespace.
+
+Application semantics keep at least these outcomes distinct:
+
+- authentication required;
+- Registration not found;
+- authorization denied;
+- invalid request.
+
+The concrete authentication mechanism, credential/token/session representation, identity provider, Java type/package placement, and security framework remain unselected by this scope.
+
+### Registration cancellation lifecycle
+
+Registration owns the minimum generic lifecycle accepted by decision #61 and ADR-0011.
+
+A new Registration is `active`.
+
+The only accepted transition is:
+
+`active -> cancelled`
+
+Cancelling an already cancelled Registration is idempotent and returns the same cancelled Registration without creating a new relation or changing its identities.
+
+Cancellation preserves:
+
+- `registrationId`;
+- `RegistrantReference`;
+- `TargetReference`;
+- durable retrieval;
+- the complete `(RegistrantReference, TargetReference)` uniqueness rule.
+
+A cancelled pair therefore remains occupied. Same-pair re-registration and reactivation are not accepted.
+
+Registration owns lifecycle state, generic cancellation behavior, persistence, and retrieval. Event-Registration composition owns participant authorization and Event-specific orchestration before invoking generic Registration cancellation. Event remains Registration-independent.
+
+### Participant-data and privacy boundary
+
+The authenticated actor reference and derived participant `RegistrantReference` are participant-linked private data for project handling.
+
+Participant-private application behavior must receive a platform-facing opaque stable actor reference rather than a raw upstream/provider security-subject identifier. Registration persists only its own opaque participant reference.
+
+No participant profile or business attributes are required by this phase.
+
+For an authenticated non-owner, the Event-facing external contract must conceal private resource existence using the same not-found disclosure behavior as an unknown private Event-registration. Internal authorization-denied semantics remain distinct.
+
+Unauthenticated participant-private access remains a distinct authentication-required failure.
+
+Normal structured application logs must not contain:
+
+- authenticated actor reference values;
+- participant `RegistrantReference.reference` values;
+- raw upstream/provider security-subject identifiers.
+
+Correlation and causation identifiers remain identity-free under ADR-0004 and must not be reused as participant identity.
+
+No additional participant-data retention/deletion mechanism is accepted beyond the durable Registration lifecycle. ADR-0011 therefore continues to govern retention of the participant-linked opaque registrant reference as part of durable Registration state.
+
+### Implementation-readiness boundary
+
+This scope does not select how the external/security boundary authenticates a caller or derives the platform-facing stable actor reference.
+
+Before an executable authentication/security-boundary subgoal becomes ready, planning must verify whether its concrete design uses only already accepted technology and existing architectural relationships.
+
+If the design requires a new technology, dependency, durable identity-mapping store, persistence owner, security component, bounded context, or significant relationship, that work remains blocked until the applicable decision, ADR, architecture-model, and technology-admission steps are completed.
+
+A concrete provider-to-platform identity mapping store is not authorized by this phase.
+
+No new bounded context, container, persistence owner, or Event/Registration dependency relationship is accepted by this scope. The existing Structurizr relationships therefore remain authoritative unless later implementation planning demonstrates a structural change.
+
+### Required implementation validation
+
+The complete accepted implementation must prove at least:
+
+1. a newly defined Event is unpublished;
+2. an unpublished Event remains retrievable by known identity and absent from participant discovery;
+3. publishing an Event creates durable Event-owned published state;
+4. public discovery returns published Events;
+5. unauthenticated participant-private creation is rejected;
+6. authenticated creation derives participant ownership from the accepted actor boundary rather than caller-controlled ownership input;
+7. a new Registration is active;
+8. the owning participant can retrieve private Event-registration state;
+9. an authenticated non-owner receives the same external resource-existence disclosure as an unknown private Registration;
+10. unauthenticated retrieval remains a distinct authentication failure;
+11. the owning participant can cancel the Registration;
+12. cancellation changes the same durable Registration to cancelled;
+13. repeated cancellation is idempotent;
+14. cancelled state remains retrievable;
+15. the cancelled registrant-target pair continues to prevent same-pair duplicate Registration;
+16. Event publication and Registration lifecycle state survive process restart against the same PostgreSQL database;
+17. normal structured logs contain no actor or participant registrant-reference values;
+18. correlation remains independent from participant identity;
+19. Event and Registration ownership/dependency boundaries remain enforced;
+20. persistence and authorized, unknown, non-owner, and unauthenticated workflows are validated against real PostgreSQL;
+21. focused validation and root `./gradlew --no-daemon check` succeed for build-affecting implementation;
+22. `git diff --check` succeeds and implementation remains inside this scope.
+
+### Explicitly out of scope
+
+This phase does not authorize minors/guardian/consent flows, organizations or multi-tenancy, Event unpublish/withdraw, registration opening/closing periods, capacity/quotas/waitlists, same-pair re-registration/reactivation, cancellation reasons/history or required cancellation timestamps, Event-specific cancellation deadlines/policy, payments/pricing/ticketing/invoicing/refunds, notifications/messaging, check-in/attendance, frontend implementation, Person/Account capability, participant profile data, roles/permissions, OAuth/OIDC, JWT, sessions/cookies, Spring Security, a specific identity provider, raw provider/security-subject identity as Registration durable state, durable identity-mapping storage, participant-identifier audit/logging infrastructure, new participant retention/deletion/anonymization workflows, deployment/infrastructure expansion, Docker/OCI, Kubernetes, Terraform/OpenTofu, cloud/provider provisioning, unrelated Event or Registration lifecycle expansion, or any other technology/capability not separately accepted.
+
+No authentication technology is admitted by this scope. Existing accepted technologies remain applicable where the later executable design demonstrates that they are sufficient.
+
+## Accepted operational-runtime baseline
+
+**Minimum operational-runtime proof — completed**
+
+The previously accepted phase established that one accepted platform version can be built into a distinct executable runtime artifact, started reproducibly outside the development workstation, and judged objectively ready without introducing infrastructure provisioning or unrelated production concerns.
 
 The accepted operational contract was established through research issue #30 and decision issue #45.
 
