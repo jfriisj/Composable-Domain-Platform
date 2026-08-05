@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Operational-runtime proof — completed**
+**Minimum usable adult Event Registration lifecycle — scope accepted**
 
 ## Completed
 
@@ -68,22 +68,29 @@ This document is the authoritative concise statement of where the project curren
 - The minimum operational-runtime proof was implemented through PR #51, completing issue #49 with an executable Spring Boot/JVM artifact run path, runtime-owned machine-checkable readiness, repeatable operator documentation, restart/durability evidence, and PostgreSQL-loss readiness validation.
 - Goal/Subgoal planning was accepted through PR #55, completing decision issue #54 with `type: goal` planning semantics, explicit `Goal: #...` parent relationships, separate execution dependencies, progressive decomposition, parallel-readiness rules, and end-to-end Goal completion criteria.
 - Decision issue #53 selected the minimum usable adult Event Registration lifecycle as the next product-driven proof: an adult participant can discover an intentionally available Event, register, later retrieve private Event-registration state, and cancel that registration. The decision does not authorize implementation or technology.
+- Decision issue #59 accepted explicit Event-owned `unpublished` / `published` publication state and public discovery of published Events while keeping publication separate from Registration eligibility.
+- Decision issue #60 accepted a transport-neutral authenticated actor reference with Event-Registration-owned participant authorization for participant-private create/retrieve/cancel behavior while keeping Registration security-neutral.
+- Decision issue #61 accepted Registration-owned generic `active` / `cancelled` lifecycle semantics with idempotent cancellation and uniqueness preserved across cancellation.
+- Documentation issue #62 recorded the Registration lifecycle ownership extension as Accepted ADR-0011 without changing Event/Registration dependency relationships.
+- Decision issue #64 accepted the minimum participant-data/privacy boundary: platform-facing opaque actor identity, no raw provider subject as Registration durable state, external non-owner existence concealment, identity-free normal logging/correlation, and no extra retention workflow.
+- Scope issue #65 accepted the minimum usable adult Event Registration lifecycle for implementation planning while leaving concrete authentication technology, actor-reference derivation, and any new identity-mapping/security architecture subject to later readiness and change-control gates.
 
 ## In progress
 
-- Goal issue #57 is active with `priority: now` to plan and track the minimum usable adult Event Registration lifecycle selected by decision #53.
-- No executable subgoal, implementation, research, or scope workstream is currently active.
+- Goal issue #57 remains active with `priority: now`; its minimum participant lifecycle scope is accepted and ready for progressive implementation decomposition.
+- No executable implementation subgoal is active yet. Each candidate child must still pass its own dependency, ownership, architecture, technology, and validation readiness checks before execution.
 
 ## Known gaps
 
-- No authentication or authorization exists; those concerns were intentionally outside the completed Event runtime and HTTP phase.
+- No authentication or authorization implementation exists yet. The accepted lifecycle requires an external/security authentication boundary and Event-Registration-owned participant authorization, but concrete authentication technology and actor-reference derivation remain unselected.
+- No durable provider-to-platform identity-mapping store or new security component is accepted; any concrete need for one requires separate decision/architecture control.
 - No production deployment, TLS, secrets-management, or production database-operations baseline has been accepted.
 - No artifact/package publication process has been accepted.
 
 ## Next priority
 
-Progressively decompose Goal #57 only far enough to create the concrete decision/research/scope subgoals required by the selected participant lifecycle. The initial planning topics are Event availability/discovery ownership, participant identity/protected-operation boundaries, registration cancellation lifecycle/ownership, identity-driven participant-data/privacy requirements, and later scope acceptance.
+Progressively decompose the accepted Goal #57 scope into the smallest independently verifiable executable subgoals for Event publication/discovery, Registration lifecycle, Event-Registration participant authorization/orchestration, external contract/security-boundary adaptation, and complete end-to-end evidence.
 
-Do not create ready implementation work until the applicable decisions and accepted scope authorize it. Exploratory capability, architecture, and technology hypotheses remain non-authoritative.
+Before any authentication/security-boundary implementation becomes ready, verify whether its concrete design can use already accepted technology and existing architectural relationships. Any new security technology, durable identity mapping, persistence owner, component, or significant relationship requires the applicable decision/ADR/architecture gate first.
 
-Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
+Person/Account, participant profiles, capacity/waitlists, re-registration/reactivation, payment/ticketing, notifications/messaging, frontend, deployment/infrastructure expansion, and other exclusions in `docs/scope.md` remain outside accepted scope.

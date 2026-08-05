@@ -87,9 +87,9 @@ module A API <- composition -> module B API
 
 A composition owns the cross-capability workflow; neither participating bounded context owns the other's business rules.
 
-## Registration composition proof
+## Current Registration composition baseline
 
-The accepted phase establishes Registration as the second implemented bounded capability and Event-Registration as the first implemented cross-capability composition.
+The current implemented baseline establishes Registration as the second implemented bounded capability and Event-Registration as the first implemented cross-capability composition.
 
 The accepted structure is:
 
@@ -134,6 +134,24 @@ Authentication identity and Registration registrant identity remain separate con
 The existing HTTP interface and Spring Boot application remain the external adapter and technical composition root respectively.
 
 ADR-0008 supersedes ADR-0007 and records the domain-neutral Registration boundary, Event-specific composition, persistence isolation, and security/identity separation. ADR-0009 supersedes only ADR-0008's separate-contract-file decision by making `event.yaml` the unified Event-facing HTTP contract.
+
+## Accepted minimum participant lifecycle scope
+
+The minimum usable adult Event Registration lifecycle is accepted as **planned implementation scope**, not as already implemented architecture.
+
+The scope preserves the current bounded contexts, composition, persistence owners, external HTTP adapter, executable application container, and dependency direction. No new bounded context, container, persistence owner, or Event/Registration dependency relationship is accepted solely by this lifecycle scope.
+
+Within the existing Event bounded context, planned implementation may add durable Event-owned publication state with `unpublished` and `published` states, initial `unpublished` state, a one-way `unpublished -> published` transition, and public discovery of published Events. Known-id Event retrieval remains independent of publication. Publication does not own Registration eligibility, capacity, waitlists, payment, participant identity, or authorization.
+
+Within the existing Registration bounded context, planned implementation may add the generic lifecycle accepted by ADR-0011: initial `active` state, idempotent `active -> cancelled` behavior, lifecycle state in retrieval, and Registration-owned durable persistence. Cancellation preserves Registration identity and the existing complete registrant-target uniqueness rule; cancelled pairs remain occupied. Registration remains domain-neutral and security-neutral.
+
+Participant-private Event-registration create, retrieve, and cancel behavior is planned through the existing Event-Registration composition. Technical authentication identity remains external to Event and Registration. A security/external boundary supplies a transport-neutral opaque stable authenticated actor reference, and the composition derives the participant `RegistrantReference` and owns participant authorization. Caller-supplied participant ownership is not authoritative.
+
+The actor reference is participant-linked private data for project handling. Registration persists only its own opaque participant reference; raw upstream/provider security-subject identifiers are not accepted as Registration durable state. Authenticated non-owner access keeps an internal authorization-denied semantic but uses the same external not-found resource-existence disclosure as an unknown private Event-registration. Normal structured logs exclude actor and participant registrant-reference values. Correlation and causation identifiers remain identity-free.
+
+The concrete authentication technology, credential/session/token representation, actor-reference derivation mechanism, and Java/module placement remain unselected. If a concrete implementation requires a new technology, durable identity-mapping store, security component, persistence owner, module relationship, or significant architectural boundary, that requirement must return to normal decision and architecture control before implementation becomes ready.
+
+Because this scope changes planned behavior inside existing ownership and relationships rather than adding a modeled architectural participant, `docs/architecture/workspace.dsl` remains unchanged at scope acceptance. Current views must continue to represent only implemented state until later implementation is accepted.
 
 ## Current reference module
 
