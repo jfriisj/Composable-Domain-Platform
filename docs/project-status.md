@@ -66,11 +66,11 @@ This document is the authoritative concise statement of where the project curren
 - Operational-runtime research completed in issue #30, establishing the minimum operator use case, reproducibility requirements, externally supplied dependencies, readiness evidence, solution alternatives, and the separate Terraform/OpenTofu/IaC provisioning boundary.
 - The minimum operational-runtime contract was selected in issue #45: executable JVM artifact, externally supplied Java/PostgreSQL/host/network, machine-checkable readiness, and no infrastructure provisioning or Terraform/OpenTofu/IaC in the minimum proof.
 - The minimum operational-runtime proof was implemented through PR #51, completing issue #49 with an executable Spring Boot/JVM artifact run path, runtime-owned machine-checkable readiness, repeatable operator documentation, restart/durability evidence, and PostgreSQL-loss readiness validation.
+- Goal/Subgoal planning was accepted through PR #55, completing decision issue #54 with `type: goal` planning semantics, explicit `Goal: #...` parent relationships, separate execution dependencies, progressive decomposition, parallel-readiness rules, and end-to-end Goal completion criteria.
 
 ## In progress
 
 - Decision issue #53 is active to select the next concrete platform proof or product use case from the completed operational-runtime baseline.
-- Decision issue #54 is active as the process subgoal to define Goal/Subgoal issue decomposition before detailed product-roadmap decomposition.
 - No implementation, research, or scope workstream is currently active.
 
 ## Known gaps
@@ -81,8 +81,8 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Complete decision issue #54 and accept or reject the Goal/Subgoal planning model through the authoritative workflow/governance documentation. Then complete decision issue #53 by selecting the next concrete product or platform use case from the accepted repository state.
+Complete decision issue #53 by selecting one next concrete product or platform use case from the accepted repository state.
 
-If Goal/Subgoal planning is accepted, decompose the selected #53 outcome only after that outcome is chosen. Detailed child issues may then expose research, decisions, scope changes, implementation dependencies, parallel work, integration, and end-to-end acceptance without treating exploratory capability hypotheses as accepted scope.
+After #53 selects that outcome, apply the accepted Goal/Subgoal workflow to decompose it only as far as needed for the current/next Goal. Detailed subgoals may then expose research, decisions, scope changes, implementation dependencies, parallel work, integration, and end-to-end acceptance without treating exploratory capability hypotheses as accepted scope.
 
 Authentication/authorization, Person capability implementation, payment, capacity, ticketing, notifications, messaging, frontend, deployment, external integrations, unrelated Event lifecycle behavior, and other excluded concerns remain outside accepted scope.
