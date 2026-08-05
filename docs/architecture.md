@@ -101,7 +101,7 @@ modules/registration/
 compositions/event-registration/
 ~~~
 
-Registration is domain-neutral. It owns `registrationId`, a namespaced opaque `RegistrantReference`, a namespaced opaque `TargetReference`, Registration uniqueness rules, retrieval, and its own persistence boundary.
+Registration is domain-neutral. It owns `registrationId`, a namespaced opaque `RegistrantReference`, a namespaced opaque `TargetReference`, Registration uniqueness rules, the generic `active` / `cancelled` lifecycle, idempotent generic cancellation, retrieval, and its own persistence boundary.
 
 Registration does not interpret namespaces or validate referenced business objects. It does not depend on Event, Person, authentication/authorization technologies, or another business capability.
 
@@ -118,7 +118,7 @@ event-api <- event-registration composition -> registration-api
 
 Neither Event nor Registration depends on the other capability. Event does not store Registration identities. The composition depends on public APIs only.
 
-The Registration persistence boundary is a Registration-owned PostgreSQL `registration` schema and `registration.registrations` table containing only `registration_id`, registrant namespace/reference, and target namespace/reference. No Event-specific column, foreign key, or cross-schema Event lookup is permitted.
+The Registration persistence boundary is a Registration-owned PostgreSQL `registration` schema and `registration.registrations` table containing `registration_id`, registrant namespace/reference, target namespace/reference, and Registration lifecycle. No Event-specific column, foreign key, or cross-schema Event lookup is permitted.
 
 The authoritative external Event-facing contract remains `contracts/http/v1/event.yaml`. It contains the existing Event operations and is the accepted location for:
 
@@ -143,7 +143,7 @@ The scope preserves the current bounded contexts, composition, persistence owner
 
 Within the existing Event bounded context, planned implementation may add durable Event-owned publication state with `unpublished` and `published` states, initial `unpublished` state, a one-way `unpublished -> published` transition, and public discovery of published Events. Known-id Event retrieval remains independent of publication. Publication does not own Registration eligibility, capacity, waitlists, payment, participant identity, or authorization.
 
-Within the existing Registration bounded context, planned implementation may add the generic lifecycle accepted by ADR-0011: initial `active` state, idempotent `active -> cancelled` behavior, lifecycle state in retrieval, and Registration-owned durable persistence. Cancellation preserves Registration identity and the existing complete registrant-target uniqueness rule; cancelled pairs remain occupied. Registration remains domain-neutral and security-neutral.
+Within the existing Registration bounded context, the generic lifecycle accepted by ADR-0011 is now implemented: initial `active` state, idempotent `active -> cancelled` behavior, lifecycle state in Registration retrieval, a transport-neutral generic cancellation operation, and Registration-owned durable persistence. Cancellation preserves Registration identity and the existing complete registrant-target uniqueness rule; cancelled pairs remain occupied. Registration remains domain-neutral and security-neutral. Event-facing participant cancellation remains planned through Event-Registration composition.
 
 Participant-private Event-registration create, retrieve, and cancel behavior is planned through the existing Event-Registration composition. Technical authentication identity remains external to Event and Registration. A security/external boundary supplies a transport-neutral opaque stable authenticated actor reference, and the composition derives the participant `RegistrantReference` and owns participant authorization. Caller-supplied participant ownership is not authoritative.
 

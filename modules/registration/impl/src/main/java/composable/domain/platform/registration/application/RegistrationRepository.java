@@ -8,4 +8,6 @@ public interface RegistrationRepository {
     boolean addIfAbsent(Registration registration);
 
     Optional<Registration> findById(String registrationId);
+
+    void updateLifecycle(Registration registration);
 }
