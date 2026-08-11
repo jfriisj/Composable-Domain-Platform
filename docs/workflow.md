@@ -132,6 +132,7 @@ Before planning or changing code, inspect at minimum:
 - [`scope.md`](scope.md) for accepted scope and exclusions.
 - [`project-status.md`](project-status.md) for current state and next priority.
 - [`governance.md`](governance.md) for change-control rules.
+- Applicable language-engineering standard registered by `governance.md`; for Java work, [`engineering/java.md`](engineering/java.md).
 - Relevant architecture, module, ADR, technology, contract, build, and source files for the concern being changed.
 
 Repository state on `development` is the accepted next-state baseline.
