@@ -116,4 +116,4 @@ The Event module itself has no:
 - external provider integration.
 - application runtime/bootstrap or production database configuration.
 
-Those runtime and HTTP responsibilities live outside the bounded context in `apps/platform` and `interfaces/http`.
+Those runtime and HTTP responsibilities live outside the bounded context in `platform/apps/platform` and `platform/interfaces/http`.

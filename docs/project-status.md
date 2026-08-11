@@ -45,7 +45,7 @@ This document is the authoritative concise statement of where the project curren
 - Event durable state is stored in an Event-owned PostgreSQL schema defined by Flyway migrations and accessed through a private jOOQ adapter.
 - Duplicate Event identity is rejected without replacing existing durable state.
 - Event persistence integration is validated against real PostgreSQL through Testcontainers.
-- A versioned OpenAPI contract under `contracts/http/v1/event.yaml` defines the accepted external Event definition and retrieval surface.
+- A versioned OpenAPI contract under `platform/contracts/http/v1/event.yaml` defines the accepted external Event definition and retrieval surface.
 - The HTTP interface maps transport contracts to Event public application contracts without depending on Event implementation or persistence.
 - The executable Spring Boot platform application composes the HTTP interface, Event implementation, PostgreSQL runtime configuration, and Event-owned Flyway startup migration.
 - HTTP responses establish or preserve `X-Correlation-Id` and propagate the resulting identifier through `ExecutionContext` into the Event application boundary.

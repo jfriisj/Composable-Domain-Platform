@@ -23,7 +23,7 @@ Cross-boundary execution metadata such as Correlation ID and Causation ID may be
 The standard Gradle shape for a domain module is:
 
 ~~~text
-modules/<name>/
+platform/modules/<name>/
 ├── api/
 └── impl/
 ~~~
@@ -58,9 +58,9 @@ An integration must not leak provider-specific models into domain code.
 
 Interface modules translate transport contracts into application contracts and must not contain business rules. They are responsible for establishing or accepting correlation context at external entry points and propagating it into the platform execution context.
 
-The current `interfaces/http` Gradle project is the first implemented interface module. It:
+The current `platform/interfaces/http` Gradle project is the first implemented interface module. It:
 
-- implements the server surface generated from `contracts/http/v1/event.yaml`;
+- implements the server surface generated from `platform/contracts/http/v1/event.yaml`;
 - depends on `event-api` and `core`, not on `event-impl` or Event persistence;
 - maps HTTP transport types manually to Event public application contracts;
 - owns HTTP status/error mapping and structural transport validation;
@@ -72,7 +72,7 @@ Generated OpenAPI types remain transport-layer build output and are not Event do
 
 **Responsibility:** provide the executable technical composition root.
 
-The current `apps/platform` Gradle project is the first application runtime. It owns Spring Boot startup, technical dependency injection, minimal externalized PostgreSQL configuration, Event Flyway startup migration, and construction of the Event persistence and application adapters.
+The current `platform/apps/platform` Gradle project is the first application runtime. It owns Spring Boot startup, technical dependency injection, minimal externalized PostgreSQL configuration, Event Flyway startup migration, and construction of the Event persistence and application adapters.
 
 The application runtime may depend on private implementation types only where required for explicit technical wiring. It must not contain Event business rules, reinterpret Event failures, or become a general shared implementation module.
 
@@ -80,7 +80,7 @@ The application runtime may depend on private implementation types only where re
 
 OpenAPI documents, JSON Schemas, event schemas, and similar artifacts are contracts, not business modules.
 
-The current authoritative HTTP contract is stored at `contracts/http/v1/event.yaml`. Generated sources derived from that contract belong to build output rather than `contracts/`.
+The current authoritative HTTP contract is stored at `platform/contracts/http/v1/event.yaml`. Generated sources derived from that contract belong to build output rather than `platform/contracts/`.
 
 ## Module admission rule
 
