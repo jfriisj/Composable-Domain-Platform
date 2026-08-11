@@ -3,6 +3,7 @@ package composable.domain.platform.registration.persistence;
 import composable.domain.platform.registration.application.RegistrationRepository;
 import composable.domain.platform.registration.domain.RegistrantReference;
 import composable.domain.platform.registration.domain.Registration;
+import composable.domain.platform.registration.domain.RegistrationLifecycle;
 import composable.domain.platform.registration.domain.TargetReference;
 import java.util.Objects;
 import java.util.Optional;
@@ -28,6 +29,8 @@ final class JooqRegistrationRepository implements RegistrationRepository {
             DSL.field(DSL.name("target_namespace"), String.class);
     private static final Field<String> TARGET_REFERENCE =
             DSL.field(DSL.name("target_reference"), String.class);
+    private static final Field<String> LIFECYCLE =
+            DSL.field(DSL.name("lifecycle"), String.class);
 
     private final DataSource dataSource;
 
@@ -46,13 +49,15 @@ final class JooqRegistrationRepository implements RegistrationRepository {
                                 REGISTRANT_NAMESPACE,
                                 REGISTRANT_REFERENCE,
                                 TARGET_NAMESPACE,
-                                TARGET_REFERENCE)
+                                TARGET_REFERENCE,
+                                LIFECYCLE)
                         .values(
                                 registration.id(),
                                 registration.registrantReference().namespace(),
                                 registration.registrantReference().reference(),
                                 registration.targetReference().namespace(),
-                                registration.targetReference().reference())
+                                registration.targetReference().reference(),
+                                toPersistenceValue(registration.lifecycle()))
                         .onConflict()
                         .doNothing()
                         .execute()
@@ -69,12 +74,29 @@ final class JooqRegistrationRepository implements RegistrationRepository {
                         REGISTRANT_NAMESPACE,
                         REGISTRANT_REFERENCE,
                         TARGET_NAMESPACE,
-                        TARGET_REFERENCE)
+                        TARGET_REFERENCE,
+                        LIFECYCLE)
                 .from(REGISTRATIONS)
                 .where(REGISTRATION_ID.eq(registrationId))
                 .fetchOne();
 
         return Optional.ofNullable(record).map(JooqRegistrationRepository::toRegistration);
+    }
+
+    @Override
+    public void updateLifecycle(Registration registration) {
+        Objects.requireNonNull(registration, "registration must not be null");
+
+        int updated = dsl()
+                .update(REGISTRATIONS)
+                .set(LIFECYCLE, toPersistenceValue(registration.lifecycle()))
+                .where(REGISTRATION_ID.eq(registration.id()))
+                .execute();
+
+        if (updated != 1) {
+            throw new IllegalStateException(
+                    "Expected exactly one Registration lifecycle row to be updated");
+        }
     }
 
     private DSLContext dsl() {
@@ -89,6 +111,23 @@ final class JooqRegistrationRepository implements RegistrationRepository {
                         record.get(REGISTRANT_REFERENCE)),
                 new TargetReference(
                         record.get(TARGET_NAMESPACE),
-                        record.get(TARGET_REFERENCE)));
+                        record.get(TARGET_REFERENCE)),
+                fromPersistenceValue(record.get(LIFECYCLE)));
+    }
+
+    private static String toPersistenceValue(RegistrationLifecycle lifecycle) {
+        return switch (lifecycle) {
+            case ACTIVE -> "active";
+            case CANCELLED -> "cancelled";
+        };
+    }
+
+    private static RegistrationLifecycle fromPersistenceValue(String lifecycle) {
+        return switch (lifecycle) {
+            case "active" -> RegistrationLifecycle.ACTIVE;
+            case "cancelled" -> RegistrationLifecycle.CANCELLED;
+            default -> throw new IllegalStateException(
+                    "Unsupported persisted Registration lifecycle");
+        };
     }
 }

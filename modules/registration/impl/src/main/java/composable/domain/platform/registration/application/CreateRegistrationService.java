@@ -61,6 +61,8 @@ public final class CreateRegistrationService implements CreateRegistration {
                         registration.registrantReference().reference()),
                 new composable.domain.platform.registration.api.TargetReference(
                         registration.targetReference().namespace(),
-                        registration.targetReference().reference()));
+                        registration.targetReference().reference()),
+                composable.domain.platform.registration.api.RegistrationLifecycle.valueOf(
+                        registration.lifecycle().name()));
     }
 }

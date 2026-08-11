@@ -7,6 +7,7 @@ import composable.domain.platform.core.execution.CorrelationId;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.registration.api.CreateRegistrationCommand;
 import composable.domain.platform.registration.api.RegistrantReference;
+import composable.domain.platform.registration.api.RegistrationLifecycle;
 import composable.domain.platform.registration.api.RegistrationView;
 import composable.domain.platform.registration.api.TargetReference;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ class FindRegistrationServiceTest {
                         new RegistrantReference("registrant", "one"),
                         new TargetReference("target", "one")),
                 found);
+        assertEquals(RegistrationLifecycle.ACTIVE, found.lifecycle());
     }
 
     @Test

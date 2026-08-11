@@ -9,6 +9,7 @@ import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.registration.api.CreateRegistrationCommand;
 import composable.domain.platform.registration.api.InvalidRegistrationDefinitionException;
 import composable.domain.platform.registration.api.RegistrantReference;
+import composable.domain.platform.registration.api.RegistrationLifecycle;
 import composable.domain.platform.registration.api.RegistrationUniquenessConflictException;
 import composable.domain.platform.registration.api.RegistrationView;
 import composable.domain.platform.registration.api.TargetReference;
@@ -30,6 +31,7 @@ class CreateRegistrationServiceTest {
         assertEquals(
                 view("registration-1", "registrant", "one", "target", "one"),
                 created);
+        assertEquals(RegistrationLifecycle.ACTIVE, created.lifecycle());
     }
 
     @Test

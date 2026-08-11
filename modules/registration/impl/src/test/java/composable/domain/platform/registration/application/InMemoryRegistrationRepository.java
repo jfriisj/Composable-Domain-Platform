@@ -30,6 +30,23 @@ final class InMemoryRegistrationRepository implements RegistrationRepository {
         return Optional.ofNullable(registrations.get(registrationId));
     }
 
+    @Override
+    public synchronized void updateLifecycle(Registration registration) {
+        Registration existing = registrations.get(registration.id());
+
+        if (existing == null) {
+            throw new IllegalStateException(
+                    "Expected Registration to exist before lifecycle update");
+        }
+
+        if (!ReferencePair.from(existing).equals(ReferencePair.from(registration))) {
+            throw new IllegalArgumentException(
+                    "Registration lifecycle update must preserve registrant and target references");
+        }
+
+        registrations.put(registration.id(), registration);
+    }
+
     private record ReferencePair(
             String registrantNamespace,
             String registrantReference,
