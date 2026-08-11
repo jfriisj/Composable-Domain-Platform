@@ -74,11 +74,12 @@ This document is the authoritative concise statement of where the project curren
 - Documentation issue #62 recorded the Registration lifecycle ownership extension as Accepted ADR-0011 without changing Event/Registration dependency relationships.
 - Decision issue #64 accepted the minimum participant-data/privacy boundary: platform-facing opaque actor identity, no raw provider subject as Registration durable state, external non-owner existence concealment, identity-free normal logging/correlation, and no extra retention workflow.
 - Scope issue #65 accepted the minimum usable adult Event Registration lifecycle for implementation planning while leaving concrete authentication technology, actor-reference derivation, and any new identity-mapping/security architecture subject to later readiness and change-control gates.
+- Registration lifecycle implementation #67 was accepted into `development` through PR #68, adding Registration-owned `active` / `cancelled` lifecycle state, transport-neutral generic idempotent cancellation, durable lifecycle persistence and retrieval, and preservation of registrant-target uniqueness across cancellation.
 
 ## In progress
 
 - Goal issue #57 remains active with `priority: now`; its minimum participant lifecycle scope is accepted and ready for progressive implementation decomposition.
-- No executable implementation subgoal is active yet. Each candidate child must still pass its own dependency, ownership, architecture, technology, and validation readiness checks before execution.
+- No further executable Goal #57 implementation subgoal is currently active. Each remaining candidate child must still pass its own dependency, ownership, architecture, technology, and validation readiness checks before execution.
 
 ## Known gaps
 
@@ -89,7 +90,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Progressively decompose the accepted Goal #57 scope into the smallest independently verifiable executable subgoals for Event publication/discovery, Registration lifecycle, Event-Registration participant authorization/orchestration, external contract/security-boundary adaptation, and complete end-to-end evidence.
+Progressively decompose the remaining accepted Goal #57 scope into the smallest independently verifiable executable subgoals for Event publication/discovery, Event-Registration participant authorization/orchestration, external contract/security-boundary adaptation, and complete end-to-end evidence. Registration lifecycle implementation is already complete through #67 and must not be decomposed again.
 
 Before any authentication/security-boundary implementation becomes ready, verify whether its concrete design can use already accepted technology and existing architectural relationships. Any new security technology, durable identity mapping, persistence owner, component, or significant relationship requires the applicable decision/ADR/architecture gate first.
 
