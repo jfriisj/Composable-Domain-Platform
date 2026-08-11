@@ -19,8 +19,8 @@ Each type of information has one authoritative owner:
 | Module responsibilities | `docs/modules.md` and each implemented module's `module.md` |
 | Architecture rationale | `docs/adr/` |
 | Approved baseline technologies | `docs/tech-stack.md` |
-| External HTTP contract | Versioned OpenAPI contracts under `contracts/http/` |
-| Database schema | Bounded-context-owned Flyway migrations; currently Event migrations under `modules/event/impl/src/main/resources/db/migration/event/` |
+| External HTTP contract | Versioned OpenAPI contracts under `platform/contracts/http/` |
+| Database schema | Bounded-context-owned Flyway migrations; currently Event migrations under `platform/modules/event/impl/src/main/resources/db/migration/event/` |
 | Build dependencies and module wiring | Gradle build files |
 | Implementation behavior | Source code and automated tests |
 

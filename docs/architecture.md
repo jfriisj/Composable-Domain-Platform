@@ -94,11 +94,11 @@ The current implemented baseline establishes Registration as the second implemen
 The accepted structure is:
 
 ~~~text
-modules/registration/
+platform/modules/registration/
 ├── api/
 └── impl/
 
-compositions/event-registration/
+platform/compositions/event-registration/
 ~~~
 
 Registration is domain-neutral. It owns `registrationId`, a namespaced opaque `RegistrantReference`, a namespaced opaque `TargetReference`, Registration uniqueness rules, the generic `active` / `cancelled` lifecycle, idempotent generic cancellation, retrieval, and its own persistence boundary.
@@ -120,7 +120,7 @@ Neither Event nor Registration depends on the other capability. Event does not s
 
 The Registration persistence boundary is a Registration-owned PostgreSQL `registration` schema and `registration.registrations` table containing `registration_id`, registrant namespace/reference, target namespace/reference, and Registration lifecycle. No Event-specific column, foreign key, or cross-schema Event lookup is permitted.
 
-The authoritative external Event-facing contract remains `contracts/http/v1/event.yaml`. It contains the existing Event operations and is the accepted location for:
+The authoritative external Event-facing contract remains `platform/contracts/http/v1/event.yaml`. It contains the existing Event operations and is the accepted location for:
 
 - `POST /api/v1/event-registrations` through the cross-capability composition;
 - `GET /api/v1/event-registrations/{registrationId}` through the cross-capability composition.
@@ -160,7 +160,7 @@ Event is the first implemented bounded context used to validate the module archi
 Its physical shape remains:
 
 ~~~text
-modules/event/
+platform/modules/event/
 ├── api/
 └── impl/
 ~~~
@@ -179,39 +179,39 @@ The executable Event-facing vertical slice is:
 external HTTP caller
         |
         v
-contracts/http/v1/event.yaml
+platform/contracts/http/v1/event.yaml
         |
         v
-interfaces/http
+platform/interfaces/http
         |
-        +-----------------------> modules/event/api
+        +-----------------------> platform/modules/event/api
         |                              ^
         |                              |
-        |                        modules/event/impl
+        |                        platform/modules/event/impl
         |                              |
         |                              v
         |                         event.events
         |
         v
-compositions/event-registration
+platform/compositions/event-registration
         |                    |
         v                    v
-modules/event/api      modules/registration/api
+platform/modules/event/api      platform/modules/registration/api
                               ^
                               |
-                      modules/registration/impl
+                      platform/modules/registration/impl
                               |
                               v
                  registration.registrations
 
-apps/platform
+platform/apps/platform
   Spring Boot composition root
   shared DataSource
   Event Flyway startup migration
   Registration Flyway startup migration
 ~~~
 
-`apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, and Event-Registration composition. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests. Runtime wiring contains technical composition only; Event-registration workflow rules remain in the composition.
+`platform/apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, and Event-Registration composition. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests. Runtime wiring contains technical composition only; Event-registration workflow rules remain in the composition.
 
 ## Accepted operational-runtime boundary
 
@@ -227,7 +227,7 @@ Readiness is an operational adapter/runtime concern, not a business-domain API. 
 
 Infrastructure provisioning remains outside the platform boundary for this proof. Host/VM, PostgreSQL, networking/firewall, and provider resources are externally supplied. Docker/OCI packaging and Terraform/OpenTofu/IaC are deliberately not admitted. A later requirement for reproducible infrastructure provisioning requires a separate architecture and technology decision.
 
-This operational scope is accepted architecture for implementation planning but is not represented as a new Structurizr container or relationship because it changes packaging/run and readiness semantics of the existing `apps/platform` container rather than adding a new architectural participant.
+This operational scope is accepted architecture for implementation planning but is not represented as a new Structurizr container or relationship because it changes packaging/run and readiness semantics of the existing `platform/apps/platform` container rather than adding a new architectural participant.
 
 ADR-0010 records the rationale for this operational-runtime boundary.
 
@@ -243,7 +243,7 @@ Database permission enforcement remains deferred until operational scope require
 
 ## External contracts
 
-`contracts/http/v1/event.yaml` is the authoritative external HTTP contract for the current Event define/retrieve and Event-registration create/retrieve surfaces.
+`platform/contracts/http/v1/event.yaml` is the authoritative external HTTP contract for the current Event define/retrieve and Event-registration create/retrieve surfaces.
 
 OpenAPI Generator derives the server interface and transport models during the build. Generated sources are adapter-layer build output and must not become Event domain or application models.
 
@@ -261,30 +261,31 @@ The currently implemented architectural structure includes:
 
 ~~~text
 .
-├── apps/
-│   └── platform/
+├── platform/
+│   ├── apps/
+│   │   └── platform/
+│   ├── core/
+│   ├── modules/
+│   │   ├── event/
+│   │   │   ├── api/
+│   │   │   ├── impl/
+│   │   │   └── module.md
+│   │   └── registration/
+│   │       ├── api/
+│   │       └── impl/
+│   ├── compositions/
+│   │   └── event-registration/
+│   ├── interfaces/
+│   │   └── http/
+│   └── contracts/
+│       └── http/
+│           └── v1/
+│               └── event.yaml
 ├── build-logic/
-├── contracts/
-│   └── http/
-│       └── v1/
-│           └── event.yaml
-├── core/
-├── interfaces/
-│   └── http/
-├── compositions/
-│   └── event-registration/
-├── modules/
-│   ├── event/
-│   │   ├── api/
-│   │   ├── impl/
-│   │   └── module.md
-│   └── registration/
-│       ├── api/
-│       └── impl/
 └── docs/
 ~~~
 
-`modules/registration` and `compositions/event-registration` are current architecture. `integrations/` remains an architectural category only and must not be created until later accepted scope requires it.
+`platform/modules/registration` and `platform/compositions/event-registration` are current architecture. `integrations/` remains an architectural category only and must not be created until later accepted scope requires it.
 
 ## Architecture enforcement
 

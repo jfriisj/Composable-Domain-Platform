@@ -317,7 +317,7 @@ Whether a registrant or target exists is not Registration-owned truth.
 Create Registration as an independently bounded domain capability using the established shape:
 
 ~~~text
-modules/registration/
+platform/modules/registration/
 ├── api/
 └── impl/
 ~~~
@@ -345,7 +345,7 @@ Event must not store Registration identities and must not depend on Registration
 
 Create one composition project:
 
-`compositions/event-registration`
+`platform/compositions/event-registration`
 
 The composition owns only the Event-specific workflow spanning Event and Registration. Its registration operation must:
 
@@ -388,7 +388,7 @@ Runtime dependencies on private implementation types remain technical-wiring exc
 
 ### External HTTP contract
 
-The authoritative Event-facing HTTP contract remains `contracts/http/v1/event.yaml`. It contains the existing Event operations and is the accepted home for the Event-registration workflow operations. The document may separate responsibilities with tags such as `Event` and `EventRegistration`, but contract-file grouping does not change bounded-context or composition ownership. No generic Registration target dispatcher is introduced.
+The authoritative Event-facing HTTP contract remains `platform/contracts/http/v1/event.yaml`. It contains the existing Event operations and is the accepted home for the Event-registration workflow operations. The document may separate responsibilities with tags such as `Event` and `EventRegistration`, but contract-file grouping does not change bounded-context or composition ownership. No generic Registration target dispatcher is introduced.
 
 Within the unified Event-facing contract, the Event-registration surface is:
 
@@ -425,7 +425,7 @@ Registration owns PostgreSQL schema `registration` and table `registration.regis
 - `target_namespace`;
 - `target_reference`.
 
-Registration migrations belong under `modules/registration/impl/src/main/resources/db/migration/registration/`.
+Registration migrations belong under `platform/modules/registration/impl/src/main/resources/db/migration/registration/`.
 
 Registration follows the accepted persistence pattern: application-owned persistence port, private jOOQ adapter, Registration-owned Flyway migrations, and PostgreSQL integration validation through Testcontainers.
 
@@ -613,13 +613,13 @@ The implementation needs:
 
 Use Spring Boot as the application runtime and Spring Web for the HTTP adapter.
 
-Create one HTTP interface Gradle project under `interfaces/http` and one executable composition-root Gradle project under `apps/platform`.
+Create one HTTP interface Gradle project under `platform/interfaces/http` and one executable composition-root Gradle project under `platform/apps/platform`.
 
 The HTTP interface depends on the Event public API and the minimum shared execution-context API, not on `event-impl` or Event persistence.
 
 The application composition root may depend on the private Event implementation only for explicit wiring. It must not contain Event business rules.
 
-Store the authoritative versioned Event OpenAPI contract under `contracts/http/`. Use OpenAPI Generator during the build for the server-side transport interface/model surface required by the HTTP adapter. Generated sources belong to the build output and are not an independently edited source of truth.
+Store the authoritative versioned Event OpenAPI contract under `platform/contracts/http/`. Use OpenAPI Generator during the build for the server-side transport interface/model surface required by the HTTP adapter. Generated sources belong to the build output and are not an independently edited source of truth.
 
 Use Jakarta Validation only at the HTTP transport boundary when required to enforce structural constraints expressed by the OpenAPI contract.
 
@@ -637,18 +637,18 @@ Spring Data, Hibernate/JPA, Spring Modulith, Spring Security, and an observabili
 - Allow `event-api` to depend on that core execution-context contract and extend the existing Event public use-case signatures only as required to carry the execution context explicitly.
 - Preserve existing Event business semantics while adding execution-context propagation.
 - Add the smallest explicit Event public application failure/result required to represent an invalid Event definition without exposing domain implementation exception types.
-- Create `contracts/http/` and add the authoritative versioned OpenAPI contract for the current Event define/retrieve HTTP surface.
+- Create `platform/contracts/http/` and add the authoritative versioned OpenAPI contract for the current Event define/retrieve HTTP surface.
 - Define `POST /api/v1/events` and `GET /api/v1/events/{eventId}` only.
 - Define transport representations for the currently accepted Event fields only.
 - Define contract-stable HTTP success and error responses for `201`, `200`, `400`, `404`, `409`, and `500`.
 - Map the explicit Event invalid-definition application failure to HTTP `400` without duplicating Event business validation or treating generic implementation exceptions as client errors.
 - Define `X-Correlation-Id` request/response behavior and propagate the resulting Correlation ID explicitly into Event application calls.
-- Create the `interfaces/http` Gradle project as an inbound adapter.
+- Create the `platform/interfaces/http` Gradle project as an inbound adapter.
 - Keep the HTTP interface dependent on Event public contracts rather than Event implementation or persistence.
 - Use Spring Web only in the HTTP/interface boundary required for this slice.
 - Generate the server transport interface/model surface from the authoritative OpenAPI contract during the build.
 - Keep generated OpenAPI types and Jakarta Validation annotations out of Event domain and application implementation.
-- Create the `apps/platform` executable Gradle project as the Spring Boot composition root.
+- Create the `platform/apps/platform` executable Gradle project as the Spring Boot composition root.
 - Wire the existing Event define/retrieve application services and `JooqEventRepository` in the composition root.
 - Make only the minimum implementation-visibility changes required for composition; do not move Event implementation or persistence types into `event-api`.
 - Configure a PostgreSQL `DataSource` from minimal externalized runtime properties.

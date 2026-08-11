@@ -31,7 +31,7 @@ dependencies {
 openApiGenerate {
     generatorName.set("spring")
     library.set("spring-boot")
-    inputSpec.set(rootProject.file("contracts/http/v1/event.yaml").absolutePath)
+    inputSpec.set(rootProject.file("platform/contracts/http/v1/event.yaml").absolutePath)
     outputDir.set(generatedOpenApi)
     apiPackage.set("composable.domain.platform.http.generated.api")
     invokerPackage.set("composable.domain.platform.http.generated")

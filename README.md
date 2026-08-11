@@ -30,7 +30,7 @@ The platform is not tied to a single business domain. Event management is the fi
 
 Event is the first implemented reference bounded context. It has separate public API and private implementation Gradle projects, Event-owned durable PostgreSQL persistence through a private jOOQ adapter and Flyway migrations, and executable architecture verification.
 
-The repository now also contains the first executable platform runtime and external interface: a Spring Boot composition root under `apps/platform`, an HTTP inbound adapter under `interfaces/http`, a versioned authoritative OpenAPI contract under `contracts/http/v1/event.yaml`, and a minimal business-neutral execution context under `core`. End-to-end tests exercise the running HTTP boundary against real PostgreSQL through Testcontainers.
+The repository now also contains the first executable platform runtime and external interface: a Spring Boot composition root under `platform/apps/platform`, an HTTP inbound adapter under `platform/interfaces/http`, a versioned authoritative OpenAPI contract under `platform/contracts/http/v1/event.yaml`, and a minimal business-neutral execution context under `platform/core`. End-to-end tests exercise the running HTTP boundary against real PostgreSQL through Testcontainers.
 
 ## Build and run the operational artifact
 
@@ -40,10 +40,10 @@ The accepted operational runtime is the executable Spring Boot/JVM artifact prod
 ./gradlew --no-daemon :platform-app:bootJar
 ~~~
 
-The executable JAR is written under `apps/platform/build/libs/`. A repeatable proof can identify it, copy it outside the repository checkout, and run only that copied artifact:
+The executable JAR is written under `platform/apps/platform/build/libs/`. A repeatable proof can identify it, copy it outside the repository checkout, and run only that copied artifact:
 
 ~~~bash
-JAR="$(find apps/platform/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' -print -quit)"
+JAR="$(find platform/apps/platform/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' -print -quit)"
 test -n "$JAR"
 
 RUNTIME_DIR="$(mktemp -d)"
@@ -80,7 +80,7 @@ After readiness, the accepted external business surface is:
 - `POST /api/v1/event-registrations`
 - `GET /api/v1/event-registrations/{registrationId}`
 
-The authoritative business wire contract is [`contracts/http/v1/event.yaml`](contracts/http/v1/event.yaml). Generated OpenAPI Java sources are derived build output and are not edited independently.
+The authoritative business wire contract is [`platform/contracts/http/v1/event.yaml`](platform/contracts/http/v1/event.yaml). Generated OpenAPI Java sources are derived build output and are not edited independently.
 
 ## Development run
 
