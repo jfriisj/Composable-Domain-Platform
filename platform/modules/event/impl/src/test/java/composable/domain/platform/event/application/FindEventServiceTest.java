@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import composable.domain.platform.core.execution.CorrelationId;
 import composable.domain.platform.core.execution.ExecutionContext;
+import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.domain.Event;
 import java.time.Instant;
@@ -19,7 +20,7 @@ class FindEventServiceTest {
             new ExecutionContext(new CorrelationId("test-correlation"));
 
     @Test
-    void findsExistingEventByIdentity() {
+    void findsExistingUnpublishedEventByIdentity() {
         Instant startsAt = Instant.parse("2026-09-01T08:00:00Z");
         Instant endsAt = Instant.parse("2026-09-01T10:00:00Z");
         ZoneId timezone = ZoneId.of("Europe/Copenhagen");
@@ -42,8 +43,29 @@ class FindEventServiceTest {
                         "platform-day",
                         startsAt,
                         endsAt,
-                        timezone)),
+                        timezone,
+                        EventPublicationState.UNPUBLISHED)),
                 result);
+    }
+
+    @Test
+    void knownIdRetrievalReturnsPublishedEvent() {
+        InMemoryEventRepository repository = new InMemoryEventRepository();
+        Event event = new Event(
+                "event-published",
+                "Published Event",
+                "published-event",
+                Instant.parse("2026-09-01T08:00:00Z"),
+                Instant.parse("2026-09-01T10:00:00Z"),
+                ZoneId.of("Europe/Copenhagen"));
+        repository.addIfAbsent(event);
+        repository.updatePublicationState(event.publish(), event.publicationState());
+
+        EventView result = new FindEventService(repository)
+                .findById(CONTEXT, "event-published")
+                .orElseThrow();
+
+        assertEquals(EventPublicationState.PUBLISHED, result.publicationState());
     }
 
     @Test

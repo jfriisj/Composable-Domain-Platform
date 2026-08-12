@@ -8,6 +8,7 @@ import composable.domain.platform.core.execution.CorrelationId;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.DefineEventCommand;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
+import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.InvalidEventDefinitionException;
 import java.time.Instant;
@@ -20,7 +21,7 @@ class DefineEventServiceTest {
             new ExecutionContext(new CorrelationId("test-correlation"));
 
     @Test
-    void definesEventPersistsItAndReturnsResultingState() {
+    void definesUnpublishedEventPersistsItAndReturnsResultingState() {
         Instant startsAt = Instant.parse("2026-09-01T08:00:00Z");
         Instant endsAt = Instant.parse("2026-09-01T10:00:00Z");
         ZoneId timezone = ZoneId.of("Europe/Copenhagen");
@@ -42,7 +43,8 @@ class DefineEventServiceTest {
                 "platform-day",
                 startsAt,
                 endsAt,
-                timezone);
+                timezone,
+                EventPublicationState.UNPUBLISHED);
 
         assertEquals(expected, result);
         assertEquals(
@@ -77,12 +79,11 @@ class DefineEventServiceTest {
                         timezone)));
 
         assertEquals("event-1", error.eventId());
-        assertEquals(
-                "Original Event",
-                new FindEventService(repository)
-                        .findById(CONTEXT, "event-1")
-                        .orElseThrow()
-                        .name());
+        EventView persisted = new FindEventService(repository)
+                .findById(CONTEXT, "event-1")
+                .orElseThrow();
+        assertEquals("Original Event", persisted.name());
+        assertEquals(EventPublicationState.UNPUBLISHED, persisted.publicationState());
     }
 
     @Test

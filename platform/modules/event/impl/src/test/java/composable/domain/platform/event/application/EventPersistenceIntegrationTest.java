@@ -8,12 +8,16 @@ import composable.domain.platform.core.execution.CorrelationId;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.DefineEventCommand;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
+import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.persistence.JooqEventRepository;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationVersion;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -30,7 +34,7 @@ class EventPersistenceIntegrationTest {
     private static DataSource dataSource;
 
     @BeforeAll
-    static void startDatabase() {
+    static void startDatabase() throws SQLException {
         POSTGRESQL.start();
 
         PGSimpleDataSource postgresDataSource = new PGSimpleDataSource();
@@ -42,6 +46,15 @@ class EventPersistenceIntegrationTest {
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration/event")
+                .target(MigrationVersion.fromVersion("1"))
+                .load()
+                .migrate();
+
+        insertPrePublicationEvent();
+
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration/event")
                 .load()
                 .migrate();
     }
@@ -49,6 +62,18 @@ class EventPersistenceIntegrationTest {
     @AfterAll
     static void stopDatabase() {
         POSTGRESQL.stop();
+    }
+
+    @Test
+    void migratesPrePublicationEventAsUnpublished() {
+        EventView migrated =
+                new FindEventService(new JooqEventRepository(dataSource))
+                        .findById(CONTEXT, "pre-publication-event")
+                        .orElseThrow();
+
+        assertEquals(EventPublicationState.UNPUBLISHED, migrated.publicationState());
+        assertEquals("Legacy Event", migrated.name());
+        assertEquals("legacy-event", migrated.slug());
     }
 
     @Test
@@ -81,6 +106,103 @@ class EventPersistenceIntegrationTest {
         assertEquals(command.startsAt(), retrieved.startsAt());
         assertEquals(command.endsAt(), retrieved.endsAt());
         assertEquals(command.timezone(), retrieved.timezone());
+        assertEquals(EventPublicationState.UNPUBLISHED, retrieved.publicationState());
+    }
+
+    @Test
+    void persistsPublicationAndDiscoversPersistedPublishedEventsOnly() {
+        DefineEventService definition =
+                new DefineEventService(new JooqEventRepository(dataSource));
+
+        EventView toPublish = definition.define(
+                CONTEXT,
+                command(
+                        "persistent-publish",
+                        "Published Persistent Event",
+                        "published-persistent-event"));
+        EventView toRemainUnpublished = definition.define(
+                CONTEXT,
+                command(
+                        "persistent-unpublished",
+                        "Unpublished Persistent Event",
+                        "unpublished-persistent-event"));
+
+        EventView published =
+                new PublishEventService(new JooqEventRepository(dataSource))
+                        .publish(CONTEXT, toPublish.eventId());
+
+        EventView freshRead =
+                new FindEventService(new JooqEventRepository(dataSource))
+                        .findById(CONTEXT, toPublish.eventId())
+                        .orElseThrow();
+
+        assertEquals(toPublish.eventId(), freshRead.eventId());
+        assertEquals(toPublish.name(), freshRead.name());
+        assertEquals(toPublish.slug(), freshRead.slug());
+        assertEquals(toPublish.startsAt(), freshRead.startsAt());
+        assertEquals(toPublish.endsAt(), freshRead.endsAt());
+        assertEquals(toPublish.timezone(), freshRead.timezone());
+        assertEquals(EventPublicationState.PUBLISHED, freshRead.publicationState());
+        assertEquals(published, freshRead);
+
+        var discovered =
+                new DiscoverEventsService(new JooqEventRepository(dataSource))
+                        .discover(CONTEXT);
+
+        assertTrue(discovered.stream()
+                .anyMatch(event -> event.eventId().equals(toPublish.eventId())));
+        assertTrue(discovered.stream()
+                .noneMatch(event -> event.eventId().equals(toRemainUnpublished.eventId())));
+    }
+
+    @Test
+    void knownIdRetrievalWorksForBothPublicationStates() {
+        DefineEventService definition =
+                new DefineEventService(new JooqEventRepository(dataSource));
+        EventView unpublished = definition.define(
+                CONTEXT,
+                command(
+                        "persistent-known-unpublished",
+                        "Known Unpublished",
+                        "known-unpublished"));
+        EventView published = definition.define(
+                CONTEXT,
+                command(
+                        "persistent-known-published",
+                        "Known Published",
+                        "known-published"));
+
+        new PublishEventService(new JooqEventRepository(dataSource))
+                .publish(CONTEXT, published.eventId());
+
+        assertEquals(
+                EventPublicationState.UNPUBLISHED,
+                new FindEventService(new JooqEventRepository(dataSource))
+                        .findById(CONTEXT, unpublished.eventId())
+                        .orElseThrow()
+                        .publicationState());
+        assertEquals(
+                EventPublicationState.PUBLISHED,
+                new FindEventService(new JooqEventRepository(dataSource))
+                        .findById(CONTEXT, published.eventId())
+                        .orElseThrow()
+                        .publicationState());
+    }
+
+    @Test
+    void databaseRejectsUnsupportedPublicationState() {
+        assertThrows(
+                SQLException.class,
+                () -> {
+                    try (var connection = dataSource.getConnection();
+                            PreparedStatement statement = connection.prepareStatement(
+                                    "update event.events "
+                                            + "set publication_state = ? where event_id = ?")) {
+                        statement.setString(1, "unsupported");
+                        statement.setString(2, "pre-publication-event");
+                        statement.executeUpdate();
+                    }
+                });
     }
 
     @Test
@@ -118,6 +240,7 @@ class EventPersistenceIntegrationTest {
         assertEquals("persistent-duplicate-1", error.eventId());
         assertEquals("Original Persistent Event", persisted.name());
         assertEquals("original-persistent-event", persisted.slug());
+        assertEquals(EventPublicationState.UNPUBLISHED, persisted.publicationState());
     }
 
     @Test
@@ -126,5 +249,37 @@ class EventPersistenceIntegrationTest {
                 new FindEventService(new JooqEventRepository(dataSource))
                         .findById(CONTEXT, "persistent-missing")
                         .isEmpty());
+    }
+
+    private static void insertPrePublicationEvent() throws SQLException {
+        try (var connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "insert into event.events "
+                                + "(event_id, name, slug, starts_at_epoch_second, starts_at_nano, "
+                                + "ends_at_epoch_second, ends_at_nano, timezone) "
+                                + "values (?, ?, ?, ?, ?, ?, ?, ?)")) {
+            statement.setString(1, "pre-publication-event");
+            statement.setString(2, "Legacy Event");
+            statement.setString(3, "legacy-event");
+            statement.setLong(4, Instant.parse("2026-08-01T08:00:00Z").getEpochSecond());
+            statement.setInt(5, 0);
+            statement.setLong(6, Instant.parse("2026-08-01T10:00:00Z").getEpochSecond());
+            statement.setInt(7, 0);
+            statement.setString(8, "Europe/Copenhagen");
+            statement.executeUpdate();
+        }
+    }
+
+    private static DefineEventCommand command(
+            String eventId,
+            String name,
+            String slug) {
+        return new DefineEventCommand(
+                eventId,
+                name,
+                slug,
+                Instant.parse("2026-11-01T08:00:00Z"),
+                Instant.parse("2026-11-01T10:00:00Z"),
+                ZoneId.of("Europe/Copenhagen"));
     }
 }

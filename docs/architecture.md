@@ -137,11 +137,11 @@ ADR-0008 supersedes ADR-0007 and records the domain-neutral Registration boundar
 
 ## Accepted minimum participant lifecycle scope
 
-The minimum usable adult Event Registration lifecycle is accepted as **planned implementation scope**, not as already implemented architecture.
+The minimum usable adult Event Registration lifecycle is accepted implementation scope and is being implemented incrementally. Current architecture statements below distinguish accepted implemented state from remaining planned behavior.
 
 The scope preserves the current bounded contexts, composition, persistence owners, external HTTP adapter, executable application container, and dependency direction. No new bounded context, container, persistence owner, or Event/Registration dependency relationship is accepted solely by this lifecycle scope.
 
-Within the existing Event bounded context, planned implementation may add durable Event-owned publication state with `unpublished` and `published` states, initial `unpublished` state, a one-way `unpublished -> published` transition, and public discovery of published Events. Known-id Event retrieval remains independent of publication. Publication does not own Registration eligibility, capacity, waitlists, payment, participant identity, or authorization.
+Within the existing Event bounded context, Event now implements durable Event-owned publication state with `unpublished` and `published` states, initial `unpublished` state, a one-way `unpublished -> published` transition, and transport-neutral public discovery of published Events. Known-id Event retrieval remains independent of publication. Publication does not own Registration eligibility, capacity, waitlists, payment, participant identity, or authorization.
 
 Within the existing Registration bounded context, the generic lifecycle accepted by ADR-0011 is now implemented: initial `active` state, idempotent `active -> cancelled` behavior, lifecycle state in Registration retrieval, a transport-neutral generic cancellation operation, and Registration-owned durable persistence. Cancellation preserves Registration identity and the existing complete registrant-target uniqueness rule; cancelled pairs remain occupied. Registration remains domain-neutral and security-neutral. Event-facing participant cancellation remains planned through Event-Registration composition.
 
@@ -151,7 +151,7 @@ The actor reference is participant-linked private data for project handling. Reg
 
 The concrete authentication technology, credential/session/token representation, actor-reference derivation mechanism, and Java/module placement remain unselected. If a concrete implementation requires a new technology, durable identity-mapping store, security component, persistence owner, module relationship, or significant architectural boundary, that requirement must return to normal decision and architecture control before implementation becomes ready.
 
-Because this scope changes planned behavior inside existing ownership and relationships rather than adding a modeled architectural participant, `docs/architecture/workspace.dsl` remains unchanged at scope acceptance. Current views must continue to represent only implemented state until later implementation is accepted.
+Because this lifecycle changes behavior inside existing ownership and relationships rather than adding a modeled architectural participant, `docs/architecture/workspace.dsl` remains unchanged. Event publication/discovery implementation adds no bounded context, container, persistence owner, or modeled relationship.
 
 ## Current reference module
 
@@ -165,7 +165,7 @@ platform/modules/event/
 └── impl/
 ~~~
 
-The API project contains application-level contracts for defining and retrieving Event state, explicit duplicate and invalid-definition failures, and the shared execution context carried by the current use-case signatures.
+The API project contains application-level contracts for defining, retrieving, publishing, and discovering Event state; explicit definition and publication failures; publication state in Event views; and the shared execution context carried by the current use-case signatures.
 
 The implementation project contains the Event domain model, application implementation and outbound persistence port, and a private jOOQ PostgreSQL persistence adapter. Event-owned Flyway migrations define its durable schema.
 

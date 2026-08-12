@@ -2,8 +2,10 @@ package composable.domain.platform.event.persistence;
 
 import composable.domain.platform.event.application.EventRepository;
 import composable.domain.platform.event.domain.Event;
+import composable.domain.platform.event.domain.PublicationState;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import javax.sql.DataSource;
@@ -33,6 +35,8 @@ public final class JooqEventRepository implements EventRepository {
             DSL.field(DSL.name("ends_at_nano"), Integer.class);
     private static final Field<String> TIMEZONE =
             DSL.field(DSL.name("timezone"), String.class);
+    private static final Field<String> PUBLICATION_STATE =
+            DSL.field(DSL.name("publication_state"), String.class);
 
     private final DataSource dataSource;
 
@@ -54,7 +58,8 @@ public final class JooqEventRepository implements EventRepository {
                                 STARTS_AT_NANO,
                                 ENDS_AT_EPOCH_SECOND,
                                 ENDS_AT_NANO,
-                                TIMEZONE)
+                                TIMEZONE,
+                                PUBLICATION_STATE)
                         .values(
                                 event.id(),
                                 event.name(),
@@ -63,7 +68,8 @@ public final class JooqEventRepository implements EventRepository {
                                 event.startsAt().getNano(),
                                 event.endsAt().getEpochSecond(),
                                 event.endsAt().getNano(),
-                                event.timezone().getId())
+                                event.timezone().getId(),
+                                toPersistenceValue(event.publicationState()))
                         .onConflict(EVENT_ID)
                         .doNothing()
                         .execute()
@@ -83,12 +89,45 @@ public final class JooqEventRepository implements EventRepository {
                         STARTS_AT_NANO,
                         ENDS_AT_EPOCH_SECOND,
                         ENDS_AT_NANO,
-                        TIMEZONE)
+                        TIMEZONE,
+                        PUBLICATION_STATE)
                 .from(EVENTS)
                 .where(EVENT_ID.eq(eventId))
                 .fetchOne();
 
         return Optional.ofNullable(record).map(JooqEventRepository::toEvent);
+    }
+
+    @Override
+    public boolean updatePublicationState(Event event, PublicationState expectedState) {
+        Objects.requireNonNull(event, "event must not be null");
+        Objects.requireNonNull(expectedState, "expectedState must not be null");
+
+        return dsl()
+                        .update(EVENTS)
+                        .set(PUBLICATION_STATE, toPersistenceValue(event.publicationState()))
+                        .where(EVENT_ID.eq(event.id()))
+                        .and(PUBLICATION_STATE.eq(toPersistenceValue(expectedState)))
+                        .execute()
+                == 1;
+    }
+
+    @Override
+    public Collection<Event> findPublished() {
+        return dsl()
+                .select(
+                        EVENT_ID,
+                        NAME,
+                        SLUG,
+                        STARTS_AT_EPOCH_SECOND,
+                        STARTS_AT_NANO,
+                        ENDS_AT_EPOCH_SECOND,
+                        ENDS_AT_NANO,
+                        TIMEZONE,
+                        PUBLICATION_STATE)
+                .from(EVENTS)
+                .where(PUBLICATION_STATE.eq(toPersistenceValue(PublicationState.PUBLISHED)))
+                .fetch(record -> toEvent(record));
     }
 
     private DSLContext dsl() {
@@ -106,6 +145,23 @@ public final class JooqEventRepository implements EventRepository {
                 Instant.ofEpochSecond(
                         record.get(ENDS_AT_EPOCH_SECOND),
                         record.get(ENDS_AT_NANO)),
-                ZoneId.of(record.get(TIMEZONE)));
+                ZoneId.of(record.get(TIMEZONE)),
+                fromPersistenceValue(record.get(PUBLICATION_STATE)));
+    }
+
+    private static String toPersistenceValue(PublicationState publicationState) {
+        return switch (publicationState) {
+            case UNPUBLISHED -> "unpublished";
+            case PUBLISHED -> "published";
+        };
+    }
+
+    private static PublicationState fromPersistenceValue(String publicationState) {
+        return switch (publicationState) {
+            case "unpublished" -> PublicationState.UNPUBLISHED;
+            case "published" -> PublicationState.PUBLISHED;
+            default -> throw new IllegalStateException(
+                    "Unsupported persisted Event publication state");
+        };
     }
 }
