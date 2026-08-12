@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import composable.domain.platform.core.execution.CorrelationId;
 import composable.domain.platform.core.execution.ExecutionContext;
+import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.registration.api.CreateRegistration;
@@ -210,6 +211,7 @@ class EventRegistrationServiceTest {
                 "event",
                 Instant.parse("2026-08-10T10:00:00Z"),
                 Instant.parse("2026-08-10T11:00:00Z"),
-                ZoneId.of("Europe/Copenhagen"));
+                ZoneId.of("Europe/Copenhagen"),
+                EventPublicationState.UNPUBLISHED);
     }
 }

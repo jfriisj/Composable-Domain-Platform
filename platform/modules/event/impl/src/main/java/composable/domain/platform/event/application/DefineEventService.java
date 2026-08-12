@@ -27,13 +27,7 @@ public final class DefineEventService implements DefineEvent {
             throw new EventAlreadyDefinedException(event.id());
         }
 
-        return new EventView(
-                event.id(),
-                event.name(),
-                event.slug(),
-                event.startsAt(),
-                event.endsAt(),
-                event.timezone());
+        return EventViews.from(event);
     }
 
     private static Event createEvent(DefineEventCommand command) {

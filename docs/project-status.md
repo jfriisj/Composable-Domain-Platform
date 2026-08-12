@@ -75,6 +75,7 @@ This document is the authoritative concise statement of where the project curren
 - Decision issue #64 accepted the minimum participant-data/privacy boundary: platform-facing opaque actor identity, no raw provider subject as Registration durable state, external non-owner existence concealment, identity-free normal logging/correlation, and no extra retention workflow.
 - Scope issue #65 accepted the minimum usable adult Event Registration lifecycle for implementation planning while leaving concrete authentication technology, actor-reference derivation, and any new identity-mapping/security architecture subject to later readiness and change-control gates.
 - Registration lifecycle implementation #67 was accepted into `development` through PR #68, adding Registration-owned `active` / `cancelled` lifecycle state, transport-neutral generic idempotent cancellation, durable lifecycle persistence and retrieval, and preservation of registrant-target uniqueness across cancellation.
+- Event publication/discovery implementation #74 added Event-owned `unpublished` / `published` state, one-way publication, transport-neutral discovery of published Events, durable V1-to-V2 migration/backfill, and real-PostgreSQL validation while keeping known-id retrieval publication-independent.
 
 ## In progress
 
@@ -90,7 +91,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Progressively decompose the remaining accepted Goal #57 scope into the smallest independently verifiable executable subgoals for Event publication/discovery, Event-Registration participant authorization/orchestration, external contract/security-boundary adaptation, and complete end-to-end evidence. Registration lifecycle implementation is already complete through #67 and must not be decomposed again.
+Progressively decompose the remaining accepted Goal #57 scope into the smallest independently verifiable executable subgoals for Event-Registration participant authorization/orchestration, external contract/security-boundary adaptation, and complete end-to-end evidence. Registration lifecycle implementation #67 and Event publication/discovery implementation #74 are complete and must not be decomposed again.
 
 Before any authentication/security-boundary implementation becomes ready, verify whether its concrete design can use already accepted technology and existing architectural relationships. Any new security technology, durable identity mapping, persistence owner, component, or significant relationship requires the applicable decision/ADR/architecture gate first.
 

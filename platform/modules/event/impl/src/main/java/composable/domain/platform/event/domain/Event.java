@@ -10,7 +10,8 @@ public record Event(
         String slug,
         Instant startsAt,
         Instant endsAt,
-        ZoneId timezone) {
+        ZoneId timezone,
+        PublicationState publicationState) {
 
     public Event {
         id = requireText(id, "id");
@@ -19,10 +20,43 @@ public record Event(
         Objects.requireNonNull(startsAt, "startsAt must not be null");
         Objects.requireNonNull(endsAt, "endsAt must not be null");
         Objects.requireNonNull(timezone, "timezone must not be null");
+        Objects.requireNonNull(publicationState, "publicationState must not be null");
 
         if (!endsAt.isAfter(startsAt)) {
             throw new IllegalArgumentException("endsAt must be after startsAt");
         }
+    }
+
+    public Event(
+            String id,
+            String name,
+            String slug,
+            Instant startsAt,
+            Instant endsAt,
+            ZoneId timezone) {
+        this(
+                id,
+                name,
+                slug,
+                startsAt,
+                endsAt,
+                timezone,
+                PublicationState.UNPUBLISHED);
+    }
+
+    public Event publish() {
+        if (publicationState == PublicationState.PUBLISHED) {
+            throw new IllegalStateException("Event is already published");
+        }
+
+        return new Event(
+                id,
+                name,
+                slug,
+                startsAt,
+                endsAt,
+                timezone,
+                PublicationState.PUBLISHED);
     }
 
     private static String requireText(String value, String field) {

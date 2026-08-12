@@ -9,6 +9,7 @@ import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.DefineEvent;
 import composable.domain.platform.event.api.DefineEventCommand;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
+import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.InvalidEventDefinitionException;
@@ -33,7 +34,8 @@ class EventHttpAdapterTest {
             "platform-day",
             Instant.parse("2026-09-01T08:00:00.123456789Z"),
             Instant.parse("2026-09-01T10:00:00.987654321Z"),
-            ZoneId.of("Europe/Copenhagen"));
+            ZoneId.of("Europe/Copenhagen"),
+            EventPublicationState.UNPUBLISHED);
 
     @Test
     void definesEventWithSuppliedCorrelationAndMapsTransportFields() {
