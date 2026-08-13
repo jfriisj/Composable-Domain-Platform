@@ -80,18 +80,18 @@ This document is the authoritative concise statement of where the project curren
 ## In progress
 
 - Goal issue #57 remains active with `priority: now`; its minimum participant lifecycle scope is accepted and ready for progressive implementation decomposition.
-- No further executable Goal #57 implementation subgoal is currently active. Each remaining candidate child must still pass its own dependency, ownership, architecture, technology, and validation readiness checks before execution.
+- Implementation issue #79 is the active executable Goal #57 child. It adds the transport-neutral actor-bound participant-private Event-Registration composition path while preserving the existing legacy HTTP-facing composition contracts unchanged until the later external contract/security-boundary adaptation.
 
 ## Known gaps
 
-- No authentication or authorization implementation exists yet. The accepted lifecycle requires an external/security authentication boundary and Event-Registration-owned participant authorization, but concrete authentication technology and actor-reference derivation remain unselected.
+- No external technical authentication implementation exists yet. #79 implements Event-Registration-owned participant authorization only at the transport-neutral composition boundary; concrete authentication technology, external actor establishment, and actor-reference derivation remain unselected.
 - No durable provider-to-platform identity-mapping store or new security component is accepted; any concrete need for one requires separate decision/architecture control.
 - No production deployment, TLS, secrets-management, or production database-operations baseline has been accepted.
 - No artifact/package publication process has been accepted.
 
 ## Next priority
 
-Progressively decompose the remaining accepted Goal #57 scope into the smallest independently verifiable executable subgoals for Event-Registration participant authorization/orchestration, external contract/security-boundary adaptation, and complete end-to-end evidence. Registration lifecycle implementation #67 and Event publication/discovery implementation #74 are complete and must not be decomposed again.
+Complete #79 as the current actor-bound Event-Registration composition subgoal, then re-read accepted `development` and progressively decompose the remaining external contract/security-boundary adaptation and complete end-to-end evidence. Registration lifecycle implementation #67 and Event publication/discovery implementation #74 are complete and must not be decomposed again.
 
 Before any authentication/security-boundary implementation becomes ready, verify whether its concrete design can use already accepted technology and existing architectural relationships. Any new security technology, durable identity mapping, persistence owner, component, or significant relationship requires the applicable decision/ADR/architecture gate first.
 
