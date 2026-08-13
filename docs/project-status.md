@@ -77,23 +77,27 @@ This document is the authoritative concise statement of where the project curren
 - Registration lifecycle implementation #67 was accepted into `development` through PR #68, adding Registration-owned `active` / `cancelled` lifecycle state, transport-neutral generic idempotent cancellation, durable lifecycle persistence and retrieval, and preservation of registrant-target uniqueness across cancellation.
 - Event publication/discovery implementation #74 added Event-owned `unpublished` / `published` state, one-way publication, transport-neutral discovery of published Events, durable V1-to-V2 migration/backfill, and real-PostgreSQL validation while keeping known-id retrieval publication-independent.
 - Participant-private Event-Registration orchestration #79 was accepted into `development` through PR #80, adding the transport-neutral actor-bound create/retrieve/cancel path, Event-Registration-owned participant authorization, Registration lifecycle exposure, and cancellation delegation after authorization while preserving the legacy HTTP-facing create/find compatibility path unchanged.
+- Research issue #83 determined the minimum external participant authentication boundary candidates and established that caller-controlled identity is not authentication, no durable identity mapping is demonstrated as necessary, and Spring Security is the least-bespoke in-process candidate for the existing Spring Boot runtime.
+- Decision issue #84 selected Spring Security with stateless HTTP Basic for the minimum non-browser participant-authentication proof, externally supplied encoded runtime credential verifiers, direct opaque stable platform principal pseudonyms as `AuthenticatedActorReference`, and Event-Registration-owned participant authorization.
+- Documentation issue #85 was accepted through PR #86 as ADR-0012, recording the selected authentication boundary without changing the architecture model or admitting implementation by itself.
 
 ## In progress
 
-- Goal issue #57 remains active with `priority: now`; its minimum participant lifecycle scope is accepted and ready for progressive implementation decomposition.
-- No executable Goal #57 child is currently active. Participant-private Event-Registration orchestration #79 is complete through PR #80; the remaining Goal outcome must now be decomposed from the accepted post-#79 `development` state.
+- Goal issue #57 remains active with `priority: now`.
+- Scope subgoal #87 is the active Goal #57 child. It admits only the ADR-0012 participant-authentication boundary into `docs/scope.md`, records Spring Security as an accepted technology direction, aligns the architecture narrative, and synchronizes project status. It does not implement authentication.
+- External participant authentication/security-boundary implementation remains not-ready until #87 is accepted into `development`.
 
 ## Known gaps
 
-- No external technical authentication implementation exists yet. Event-Registration-owned participant authorization is now implemented at the transport-neutral composition boundary through #79/PR #80, while concrete authentication technology, external actor establishment, and actor-reference derivation remain unselected.
-- No durable provider-to-platform identity-mapping store or new security component is accepted; any concrete need for one requires separate decision/architecture control.
+- No external technical authentication implementation exists yet. The mechanism is selected by #84/ADR-0012: Spring Security with stateless HTTP Basic, externally configured encoded password verifiers, and direct opaque stable platform principal pseudonyms adapted to `AuthenticatedActorReference`. Event-Registration-owned participant authorization is already implemented at the transport-neutral composition boundary through #79/PR #80.
+- No durable provider-to-platform identity-mapping store, Person/Account capability, identity provider, or new modeled security component is accepted. HMAC derivation remains deferred unless a future raw provider subject creates that need.
 - No production deployment, TLS, secrets-management, or production database-operations baseline has been accepted.
 - No artifact/package publication process has been accepted.
 
 ## Next priority
 
-Progressively decompose the remaining Goal #57 outcome from the accepted post-#79 `development` state into the smallest independently verifiable subgoals for external Event-facing contract/security-boundary adaptation and complete end-to-end lifecycle evidence. Registration lifecycle implementation #67, Event publication/discovery implementation #74, and participant-private Event-Registration orchestration #79 are complete and must not be decomposed again.
+Accept scope/technology-admission subgoal #87 into `development`. After that merge, re-read Goal #57 and the accepted authoritative artifacts before decomposing the minimum external Event-facing authentication/security-boundary implementation.
 
-Before any authentication/security-boundary implementation becomes ready, verify whether its concrete design can use already accepted technology and existing architectural relationships. Any new security technology, durable identity mapping, persistence owner, component, or significant relationship requires the applicable decision/ADR/architecture gate first.
+That later implementation may use only the bounded Spring Security/stateless HTTP Basic design admitted by #87 and ADR-0012. Any need for OAuth/OIDC, JWT, sessions/cookies, a specific identity provider, durable identity mapping, a new persistence owner/component, or another significant relationship requires separate change control.
 
 Person/Account, participant profiles, capacity/waitlists, re-registration/reactivation, payment/ticketing, notifications/messaging, frontend, deployment/infrastructure expansion, and other exclusions in `docs/scope.md` remain outside accepted scope.

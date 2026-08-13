@@ -18,7 +18,7 @@ The next product implementation phase proves the participant lifecycle selected 
 
 > An adult participant can discover an Event that has intentionally been made available, register participation, later retrieve their private Event-registration state, and cancel that registration.
 
-This scope translates the completed planning decisions #59, #60, #61, Accepted ADR-0011, and #64 into implementation authorization while preserving the existing Event, Registration, Event-Registration composition, HTTP adapter, runtime, persistence, and correlation ownership boundaries.
+This scope translates the completed planning decisions #59, #60, #61, #64, #84, Accepted ADR-0011, and Accepted ADR-0012 into implementation authorization while preserving the existing Event, Registration, Event-Registration composition, HTTP adapter, runtime, persistence, correlation, and security-ownership boundaries.
 
 Scope acceptance is not automatic implementation readiness. Each executable subgoal must still satisfy normal dependency, architecture, technology, ownership, and validation gates.
 
@@ -81,7 +81,21 @@ Application semantics keep at least these outcomes distinct:
 - authorization denied;
 - invalid request.
 
-The concrete authentication mechanism, credential/token/session representation, identity provider, Java type/package placement, and security framework remain unselected by this scope.
+ADR-0012 and scope subgoal #87 select and admit the minimum technical authentication boundary for this phase. Spring Security is the accepted technical authentication framework inside the existing Spring Boot runtime, with stateless HTTP Basic as the minimum non-browser proof mechanism for participant-private Event-registration create, retrieve, and cancel operations. Published Event discovery remains public.
+
+Participant proof credentials are externally supplied runtime configuration. Each configured proof participant contains only an opaque stable platform principal identifier and an encoded password verifier. The runtime may load those entries into an in-memory authentication service. Plain-text/no-op password storage is not accepted. No credential database, participant user repository, Person/Account persistence, identity database, credential migration subsystem, enrollment/reset/recovery/admin API, or identity-provider integration is introduced.
+
+After successful authentication, the platform-facing actor rule is:
+
+`authenticatedPrincipalName -> AuthenticatedActorReference(authenticatedPrincipalName)`
+
+The configured principal identifier is the platform pseudonym. It must be nonblank, opaque, unique within the configured authentication boundary, stable across restart, and free of participant profile or business meaning. It must not be an email address, display name, raw provider/security subject, credential, token, role, authority, correlation identifier, or causation identifier. No HMAC derivation or durable provider-to-platform identity mapping is accepted for this phase.
+
+`platform/apps/platform` owns the later Spring Security filter-chain/runtime wiring, HTTP Basic setup, runtime credential-verification configuration, establishment of the authenticated technical principal, and adaptation to the narrow transport-neutral actor-reference boundary. `platform/interfaces/http` remains a transport adapter: it receives an already authenticated actor reference and must not parse Basic credentials, verify passwords, own password encoding, perform participant business authorization, or derive Registration references. Event-Registration composition continues to own actor-to-`RegistrantReference("participant", actorReference)` mapping and participant authorization. Registration remains security-neutral.
+
+The accepted proof is stateless and non-browser. It does not introduce form login, login pages, session/cookie authentication, remember-me, logout/session lifecycle, OAuth/OIDC login, or JWT bearer authentication. A later implementation may exclude this stateless participant-private API path from CSRF-token requirements; that permission does not authorize a future browser client to reuse the security design unchanged.
+
+HTTP Basic is not considered secure across an untrusted network without secure transport. TLS is therefore an external prerequisite for such use, but production TLS termination, certificate lifecycle, ingress/proxy, deployment, and hosting infrastructure remain outside this phase.
 
 ### Registration cancellation lifecycle
 
@@ -121,6 +135,10 @@ Unauthenticated participant-private access remains a distinct authentication-req
 
 Normal structured application logs must not contain:
 
+- `Authorization` header values;
+- passwords;
+- password verifiers;
+- configured principal values;
 - authenticated actor reference values;
 - participant `RegistrantReference.reference` values;
 - raw upstream/provider security-subject identifiers.
@@ -131,15 +149,15 @@ No additional participant-data retention/deletion mechanism is accepted beyond t
 
 ### Implementation-readiness boundary
 
-This scope does not select how the external/security boundary authenticates a caller or derives the platform-facing stable actor reference.
+ADR-0012 and #87 resolve the technology/scope admission required before the minimum external participant authentication boundary can be implemented. After this scope admission is accepted into `development`, a later implementation subgoal may add `org.springframework.boot:spring-boot-starter-security` through the existing Spring Boot dependency-management baseline and implement only the bounded security behavior described above.
 
-Before an executable authentication/security-boundary subgoal becomes ready, planning must verify whether its concrete design uses only already accepted technology and existing architectural relationships.
+That later implementation must still define exact contract/runtime changes, ownership/non-ownership, validation, and exclusions before it is ready. Scope admission is not permission for broader security work.
 
-If the design requires a new technology, dependency, durable identity-mapping store, persistence owner, security component, bounded context, or significant relationship, that work remains blocked until the applicable decision, ADR, architecture-model, and technology-admission steps are completed.
+Required authentication configuration must fail closed when absent or structurally invalid. Production credential values must not be committed to repository configuration. Deterministic test-only credentials may be supplied through test configuration. No secrets-management product is selected.
 
-A concrete provider-to-platform identity mapping store is not authorized by this phase.
+A concrete provider-to-platform identity mapping store is not authorized by this phase. A later need for HMAC derivation, durable mapping, a new persistence owner, external authenticator, identity provider, security component, bounded context, module relationship, or other significant architectural relationship must return to normal decision and architecture control.
 
-No new bounded context, container, persistence owner, or Event/Registration dependency relationship is accepted by this scope. The existing Structurizr relationships therefore remain authoritative unless later implementation planning demonstrates a structural change.
+No new bounded context, container, persistence owner, or Event/Registration dependency relationship is accepted by this scope. Spring Security is technology inside the existing Platform Application/runtime boundary, not a new modeled architectural participant. `docs/architecture/workspace.dsl` therefore remains structurally unchanged.
 
 ### Required implementation validation
 
@@ -170,9 +188,9 @@ The complete accepted implementation must prove at least:
 
 ### Explicitly out of scope
 
-This phase does not authorize minors/guardian/consent flows, organizations or multi-tenancy, Event unpublish/withdraw, registration opening/closing periods, capacity/quotas/waitlists, same-pair re-registration/reactivation, cancellation reasons/history or required cancellation timestamps, Event-specific cancellation deadlines/policy, payments/pricing/ticketing/invoicing/refunds, notifications/messaging, check-in/attendance, frontend implementation, Person/Account capability, participant profile data, roles/permissions, OAuth/OIDC, JWT, sessions/cookies, Spring Security, a specific identity provider, raw provider/security-subject identity as Registration durable state, durable identity-mapping storage, participant-identifier audit/logging infrastructure, new participant retention/deletion/anonymization workflows, deployment/infrastructure expansion, Docker/OCI, Kubernetes, Terraform/OpenTofu, cloud/provider provisioning, unrelated Event or Registration lifecycle expansion, or any other technology/capability not separately accepted.
+This phase does not authorize minors/guardian/consent flows, organizations or multi-tenancy, Event unpublish/withdraw, registration opening/closing periods, capacity/quotas/waitlists, same-pair re-registration/reactivation, cancellation reasons/history or required cancellation timestamps, Event-specific cancellation deadlines/policy, payments/pricing/ticketing/invoicing/refunds, notifications/messaging, check-in/attendance, frontend implementation, Person/Account capability, participant profile data, roles/permissions, OAuth/OIDC, JWT, sessions/cookies, form login, a specific identity provider, raw provider/security-subject identity as Registration durable state, HMAC actor derivation, durable identity-mapping storage, credential persistence, participant-identifier audit/security logging infrastructure, new participant retention/deletion/anonymization workflows, production TLS termination or deployment infrastructure, secrets-management products, Docker/OCI, Kubernetes, Terraform/OpenTofu, cloud/provider provisioning, unrelated Event or Registration lifecycle expansion, or any other technology/capability not separately accepted.
 
-No authentication technology is admitted by this scope. Existing accepted technologies remain applicable where the later executable design demonstrates that they are sufficient.
+Spring Security with stateless HTTP Basic is admitted only for the minimum participant-private authentication proof described in this phase. `spring-boot-starter-security` may be introduced by a later ready implementation subgoal; no other authentication technology is admitted by this scope.
 
 ## Accepted operational-runtime baseline
 
