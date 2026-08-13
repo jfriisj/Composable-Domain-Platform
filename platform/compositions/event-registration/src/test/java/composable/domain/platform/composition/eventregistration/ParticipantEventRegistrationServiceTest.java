@@ -1,0 +1,395 @@
+package composable.domain.platform.composition.eventregistration;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import composable.domain.platform.core.execution.CorrelationId;
+import composable.domain.platform.core.execution.ExecutionContext;
+import composable.domain.platform.event.api.EventPublicationState;
+import composable.domain.platform.event.api.EventView;
+import composable.domain.platform.event.api.FindEvent;
+import composable.domain.platform.registration.api.CancelRegistration;
+import composable.domain.platform.registration.api.CreateRegistration;
+import composable.domain.platform.registration.api.CreateRegistrationCommand;
+import composable.domain.platform.registration.api.FindRegistration;
+import composable.domain.platform.registration.api.InvalidRegistrationDefinitionException;
+import composable.domain.platform.registration.api.RegistrantReference;
+import composable.domain.platform.registration.api.RegistrationLifecycle;
+import composable.domain.platform.registration.api.RegistrationUniquenessConflictException;
+import composable.domain.platform.registration.api.RegistrationView;
+import composable.domain.platform.registration.api.TargetReference;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.Test;
+
+class ParticipantEventRegistrationServiceTest {
+
+    private static final ExecutionContext CONTEXT =
+            new ExecutionContext(new CorrelationId("participant-event-registration-test"));
+    private static final AuthenticatedActorReference ACTOR =
+            new AuthenticatedActorReference("actor-opaque");
+
+    @Test
+    void authenticatedActorReferenceRejectsMissingValue() {
+        assertThrows(IllegalArgumentException.class, () -> new AuthenticatedActorReference(null));
+        assertThrows(IllegalArgumentException.class, () -> new AuthenticatedActorReference(" "));
+    }
+
+    @Test
+    void createRejectsMissingActorBeforeCallingDependencies() {
+        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+                noEventLookup(),
+                noRegistrationCreate(),
+                noRegistrationLookup(),
+                noRegistrationCancellation());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.create(
+                        CONTEXT,
+                        null,
+                        new CreateParticipantEventRegistrationCommand(
+                                "registration-1",
+                                "event-1")));
+    }
+
+    @Test
+    void createsForAuthenticatedActorAndMapsActiveLifecycleWithoutPublicationEligibility() {
+        AtomicReference<ExecutionContext> eventContext = new AtomicReference<>();
+        AtomicReference<ExecutionContext> registrationContext = new AtomicReference<>();
+        AtomicReference<CreateRegistrationCommand> registrationCommand = new AtomicReference<>();
+
+        FindEvent findEvent = (context, eventId) -> {
+            eventContext.set(context);
+            return Optional.of(event(eventId, EventPublicationState.UNPUBLISHED));
+        };
+        CreateRegistration createRegistration = (context, command) -> {
+            registrationContext.set(context);
+            registrationCommand.set(command);
+            return new RegistrationView(
+                    command.registrationId(),
+                    command.registrantReference(),
+                    command.targetReference(),
+                    RegistrationLifecycle.ACTIVE);
+        };
+
+        ParticipantEventRegistrationView created = new ParticipantEventRegistrationService(
+                findEvent,
+                createRegistration,
+                noRegistrationLookup(),
+                noRegistrationCancellation())
+                .create(
+                        CONTEXT,
+                        ACTOR,
+                        new CreateParticipantEventRegistrationCommand(
+                                "registration-1",
+                                "event-1"));
+
+        assertEquals(
+                new ParticipantEventRegistrationView(
+                        "registration-1",
+                        "event-1",
+                        EventRegistrationLifecycle.ACTIVE),
+                created);
+        assertEquals(
+                new CreateRegistrationCommand(
+                        "registration-1",
+                        new RegistrantReference("participant", "actor-opaque"),
+                        new TargetReference("event", "event-1")),
+                registrationCommand.get());
+        assertSame(CONTEXT, eventContext.get());
+        assertSame(CONTEXT, registrationContext.get());
+    }
+
+    @Test
+    void unknownEventDoesNotCreateParticipantRegistration() {
+        AtomicBoolean registrationCalled = new AtomicBoolean();
+
+        CreateRegistration createRegistration = (context, command) -> {
+            registrationCalled.set(true);
+            throw new AssertionError("Registration must not be invoked");
+        };
+
+        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+                (context, eventId) -> Optional.empty(),
+                createRegistration,
+                noRegistrationLookup(),
+                noRegistrationCancellation());
+
+        assertThrows(
+                UnknownEventForRegistrationException.class,
+                () -> service.create(
+                        CONTEXT,
+                        ACTOR,
+                        new CreateParticipantEventRegistrationCommand(
+                                "registration-1",
+                                "missing-event")));
+
+        assertFalse(registrationCalled.get());
+    }
+
+    @Test
+    void preservesCreateInvalidDefinitionFailure() {
+        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+                (context, eventId) -> Optional.of(event(eventId, EventPublicationState.PUBLISHED)),
+                (context, command) -> {
+                    throw new InvalidRegistrationDefinitionException();
+                },
+                noRegistrationLookup(),
+                noRegistrationCancellation());
+
+        assertThrows(
+                InvalidEventRegistrationDefinitionException.class,
+                () -> service.create(
+                        CONTEXT,
+                        ACTOR,
+                        new CreateParticipantEventRegistrationCommand(
+                                " ",
+                                "event-1")));
+    }
+
+    @Test
+    void preservesCreateUniquenessConflictFailure() {
+        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+                (context, eventId) -> Optional.of(event(eventId, EventPublicationState.PUBLISHED)),
+                (context, command) -> {
+                    throw new RegistrationUniquenessConflictException();
+                },
+                noRegistrationLookup(),
+                noRegistrationCancellation());
+
+        assertThrows(
+                EventRegistrationUniquenessConflictException.class,
+                () -> service.create(
+                        CONTEXT,
+                        ACTOR,
+                        new CreateParticipantEventRegistrationCommand(
+                                "registration-1",
+                                "event-1")));
+    }
+
+    @Test
+    void owningActorRetrievesEventRegistrationWithLifecycleAndContext() {
+        AtomicReference<ExecutionContext> registrationContext = new AtomicReference<>();
+        RegistrationView registration = registration(
+                "registration-1",
+                "actor-opaque",
+                "event",
+                "event-1",
+                RegistrationLifecycle.CANCELLED);
+
+        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+                noEventLookup(),
+                noRegistrationCreate(),
+                (context, registrationId) -> {
+                    registrationContext.set(context);
+                    return Optional.of(registration);
+                },
+                noRegistrationCancellation());
+
+        assertEquals(
+                Optional.of(new ParticipantEventRegistrationView(
+                        "registration-1",
+                        "event-1",
+                        EventRegistrationLifecycle.CANCELLED)),
+                service.findById(CONTEXT, ACTOR, "registration-1"));
+        assertSame(CONTEXT, registrationContext.get());
+    }
+
+    @Test
+    void unknownOrNonEventTargetIsNotFound() {
+        RegistrationView nonEvent = registration(
+                "registration-1",
+                "actor-opaque",
+                "course",
+                "course-1",
+                RegistrationLifecycle.ACTIVE);
+
+        ParticipantEventRegistrationService unknownService =
+                new ParticipantEventRegistrationService(
+                        noEventLookup(),
+                        noRegistrationCreate(),
+                        (context, registrationId) -> Optional.empty(),
+                        noRegistrationCancellation());
+
+        ParticipantEventRegistrationService nonEventService =
+                new ParticipantEventRegistrationService(
+                        noEventLookup(),
+                        noRegistrationCreate(),
+                        (context, registrationId) -> Optional.of(nonEvent),
+                        noRegistrationCancellation());
+
+        assertTrue(unknownService.findById(CONTEXT, ACTOR, "missing").isEmpty());
+        assertTrue(nonEventService.findById(CONTEXT, ACTOR, "registration-1").isEmpty());
+    }
+
+    @Test
+    void nonOwnerRetrievalHasDistinctAuthorizationDeniedSemantic() {
+        RegistrationView registration = registration(
+                "registration-1",
+                "other-actor",
+                "event",
+                "event-1",
+                RegistrationLifecycle.ACTIVE);
+
+        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+                noEventLookup(),
+                noRegistrationCreate(),
+                (context, registrationId) -> Optional.of(registration),
+                noRegistrationCancellation());
+
+        assertThrows(
+                EventRegistrationAuthorizationDeniedException.class,
+                () -> service.findById(CONTEXT, ACTOR, "registration-1"));
+    }
+
+    @Test
+    void owningActorCancelsAfterAuthorizationAndPreservesContext() {
+        AtomicReference<RegistrationView> state = new AtomicReference<>(registration(
+                "registration-1",
+                "actor-opaque",
+                "event",
+                "event-1",
+                RegistrationLifecycle.ACTIVE));
+        AtomicReference<ExecutionContext> findContext = new AtomicReference<>();
+        AtomicReference<ExecutionContext> cancelContext = new AtomicReference<>();
+        AtomicInteger cancelCalls = new AtomicInteger();
+
+        FindRegistration findRegistration = (context, registrationId) -> {
+            findContext.set(context);
+            return Optional.of(state.get());
+        };
+        CancelRegistration cancelRegistration = (context, registrationId) -> {
+            cancelContext.set(context);
+            cancelCalls.incrementAndGet();
+            RegistrationView current = state.get();
+            RegistrationView cancelled = new RegistrationView(
+                    current.registrationId(),
+                    current.registrantReference(),
+                    current.targetReference(),
+                    RegistrationLifecycle.CANCELLED);
+            state.set(cancelled);
+            return Optional.of(cancelled);
+        };
+
+        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+                noEventLookup(),
+                noRegistrationCreate(),
+                findRegistration,
+                cancelRegistration);
+
+        ParticipantEventRegistrationView first =
+                service.cancel(CONTEXT, ACTOR, "registration-1").orElseThrow();
+        ParticipantEventRegistrationView second =
+                service.cancel(CONTEXT, ACTOR, "registration-1").orElseThrow();
+
+        assertEquals(EventRegistrationLifecycle.CANCELLED, first.lifecycle());
+        assertEquals(first, second);
+        assertEquals(2, cancelCalls.get());
+        assertSame(CONTEXT, findContext.get());
+        assertSame(CONTEXT, cancelContext.get());
+    }
+
+    @Test
+    void nonOwnerCannotInvokeRegistrationCancellation() {
+        AtomicBoolean cancellationCalled = new AtomicBoolean();
+        RegistrationView registration = registration(
+                "registration-1",
+                "other-actor",
+                "event",
+                "event-1",
+                RegistrationLifecycle.ACTIVE);
+
+        CancelRegistration cancelRegistration = (context, registrationId) -> {
+            cancellationCalled.set(true);
+            throw new AssertionError("Registration cancellation must not be invoked");
+        };
+
+        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+                noEventLookup(),
+                noRegistrationCreate(),
+                (context, registrationId) -> Optional.of(registration),
+                cancelRegistration);
+
+        assertThrows(
+                EventRegistrationAuthorizationDeniedException.class,
+                () -> service.cancel(CONTEXT, ACTOR, "registration-1"));
+        assertFalse(cancellationCalled.get());
+    }
+
+    @Test
+    void cancelReturnsNotFoundWithoutInvokingRegistrationCancellation() {
+        AtomicBoolean cancellationCalled = new AtomicBoolean();
+
+        CancelRegistration cancelRegistration = (context, registrationId) -> {
+            cancellationCalled.set(true);
+            throw new AssertionError("Registration cancellation must not be invoked");
+        };
+
+        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+                noEventLookup(),
+                noRegistrationCreate(),
+                (context, registrationId) -> Optional.empty(),
+                cancelRegistration);
+
+        assertTrue(service.cancel(CONTEXT, ACTOR, "missing").isEmpty());
+        assertFalse(cancellationCalled.get());
+    }
+
+    private static FindEvent noEventLookup() {
+        return (context, eventId) -> {
+            throw new AssertionError("Event lookup must not be invoked");
+        };
+    }
+
+    private static CreateRegistration noRegistrationCreate() {
+        return (context, command) -> {
+            throw new AssertionError("Registration creation must not be invoked");
+        };
+    }
+
+    private static FindRegistration noRegistrationLookup() {
+        return (context, registrationId) -> {
+            throw new AssertionError("Registration lookup must not be invoked");
+        };
+    }
+
+    private static CancelRegistration noRegistrationCancellation() {
+        return (context, registrationId) -> {
+            throw new AssertionError("Registration cancellation must not be invoked");
+        };
+    }
+
+    private static RegistrationView registration(
+            String registrationId,
+            String actorReference,
+            String targetNamespace,
+            String targetReference,
+            RegistrationLifecycle lifecycle) {
+        return new RegistrationView(
+                registrationId,
+                new RegistrantReference("participant", actorReference),
+                new TargetReference(targetNamespace, targetReference),
+                lifecycle);
+    }
+
+    private static EventView event(
+            String eventId,
+            EventPublicationState publicationState) {
+        return new EventView(
+                eventId,
+                "Event",
+                "event",
+                Instant.parse("2026-08-10T10:00:00Z"),
+                Instant.parse("2026-08-10T11:00:00Z"),
+                ZoneId.of("Europe/Copenhagen"),
+                publicationState);
+    }
+}
