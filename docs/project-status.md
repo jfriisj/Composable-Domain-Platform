@@ -76,22 +76,23 @@ This document is the authoritative concise statement of where the project curren
 - Scope issue #65 accepted the minimum usable adult Event Registration lifecycle for implementation planning while leaving concrete authentication technology, actor-reference derivation, and any new identity-mapping/security architecture subject to later readiness and change-control gates.
 - Registration lifecycle implementation #67 was accepted into `development` through PR #68, adding Registration-owned `active` / `cancelled` lifecycle state, transport-neutral generic idempotent cancellation, durable lifecycle persistence and retrieval, and preservation of registrant-target uniqueness across cancellation.
 - Event publication/discovery implementation #74 added Event-owned `unpublished` / `published` state, one-way publication, transport-neutral discovery of published Events, durable V1-to-V2 migration/backfill, and real-PostgreSQL validation while keeping known-id retrieval publication-independent.
+- Participant-private Event-Registration orchestration #79 was accepted into `development` through PR #80, adding the transport-neutral actor-bound create/retrieve/cancel path, Event-Registration-owned participant authorization, Registration lifecycle exposure, and cancellation delegation after authorization while preserving the legacy HTTP-facing create/find compatibility path unchanged.
 
 ## In progress
 
 - Goal issue #57 remains active with `priority: now`; its minimum participant lifecycle scope is accepted and ready for progressive implementation decomposition.
-- Implementation issue #79 is the active executable Goal #57 child. It adds the transport-neutral actor-bound participant-private Event-Registration composition path while preserving the existing legacy HTTP-facing composition contracts unchanged until the later external contract/security-boundary adaptation.
+- No executable Goal #57 child is currently active. Participant-private Event-Registration orchestration #79 is complete through PR #80; the remaining Goal outcome must now be decomposed from the accepted post-#79 `development` state.
 
 ## Known gaps
 
-- No external technical authentication implementation exists yet. #79 implements Event-Registration-owned participant authorization only at the transport-neutral composition boundary; concrete authentication technology, external actor establishment, and actor-reference derivation remain unselected.
+- No external technical authentication implementation exists yet. Event-Registration-owned participant authorization is now implemented at the transport-neutral composition boundary through #79/PR #80, while concrete authentication technology, external actor establishment, and actor-reference derivation remain unselected.
 - No durable provider-to-platform identity-mapping store or new security component is accepted; any concrete need for one requires separate decision/architecture control.
 - No production deployment, TLS, secrets-management, or production database-operations baseline has been accepted.
 - No artifact/package publication process has been accepted.
 
 ## Next priority
 
-Complete #79 as the current actor-bound Event-Registration composition subgoal, then re-read accepted `development` and progressively decompose the remaining external contract/security-boundary adaptation and complete end-to-end evidence. Registration lifecycle implementation #67 and Event publication/discovery implementation #74 are complete and must not be decomposed again.
+Progressively decompose the remaining Goal #57 outcome from the accepted post-#79 `development` state into the smallest independently verifiable subgoals for external Event-facing contract/security-boundary adaptation and complete end-to-end lifecycle evidence. Registration lifecycle implementation #67, Event publication/discovery implementation #74, and participant-private Event-Registration orchestration #79 are complete and must not be decomposed again.
 
 Before any authentication/security-boundary implementation becomes ready, verify whether its concrete design can use already accepted technology and existing architectural relationships. Any new security technology, durable identity mapping, persistence owner, component, or significant relationship requires the applicable decision/ADR/architecture gate first.
 
