@@ -80,12 +80,13 @@ This document is the authoritative concise statement of where the project curren
 - Research issue #83 determined the minimum external participant authentication boundary candidates and established that caller-controlled identity is not authentication, no durable identity mapping is demonstrated as necessary, and Spring Security is the least-bespoke in-process candidate for the existing Spring Boot runtime.
 - Decision issue #84 selected Spring Security with stateless HTTP Basic for the minimum non-browser participant-authentication proof, externally supplied encoded runtime credential verifiers, direct opaque stable platform principal pseudonyms as `AuthenticatedActorReference`, and Event-Registration-owned participant authorization.
 - Documentation issue #85 was accepted through PR #86 as ADR-0012, recording the selected authentication boundary without changing the architecture model or admitting implementation by itself.
+- Scope issue #87 was accepted through PR #88, admitting Spring Security with stateless HTTP Basic for the bounded Goal #57 participant-authentication proof, externally configured encoded password verifiers, direct opaque stable platform-principal adaptation, and no new modeled architecture relationship.
 
 ## In progress
 
 - Goal issue #57 remains active with `priority: now`.
-- Scope subgoal #87 is the active Goal #57 child. It admits only the ADR-0012 participant-authentication boundary into `docs/scope.md`, records Spring Security as an accepted technology direction, aligns the architecture narrative, and synchronizes project status. It does not implement authentication.
-- External participant authentication/security-boundary implementation remains not-ready until #87 is accepted into `development`.
+- Documentation subgoal #89 is the active Goal #57 child and owns only synchronization of this project-status artifact after #87/PR #88.
+- No external participant authentication/security-boundary implementation child is currently active; no authentication implementation is claimed by this status synchronization.
 
 ## Known gaps
 
@@ -96,8 +97,8 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Accept scope/technology-admission subgoal #87 into `development`. After that merge, re-read Goal #57 and the accepted authoritative artifacts before decomposing the minimum external Event-facing authentication/security-boundary implementation.
+Complete documentation synchronization #89, then re-read accepted `development`, Goal #57, and the relevant authoritative artifacts before decomposing the smallest coherent external Event-facing participant authentication/security-boundary implementation child.
 
-That later implementation may use only the bounded Spring Security/stateless HTTP Basic design admitted by #87 and ADR-0012. Any need for OAuth/OIDC, JWT, sessions/cookies, a specific identity provider, durable identity mapping, a new persistence owner/component, or another significant relationship requires separate change control.
+That later implementation child must define explicit ownership/non-ownership, exact contract/runtime changes, validation, exclusions, and execution dependencies. It may use only the bounded Spring Security/stateless HTTP Basic design admitted by #87 and ADR-0012. Any need for OAuth/OIDC, JWT, sessions/cookies, a specific identity provider, durable identity mapping, a new persistence owner/component, or another significant relationship requires separate change control.
 
 Person/Account, participant profiles, capacity/waitlists, re-registration/reactivation, payment/ticketing, notifications/messaging, frontend, deployment/infrastructure expansion, and other exclusions in `docs/scope.md` remain outside accepted scope.
