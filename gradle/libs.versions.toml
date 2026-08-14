@@ -24,6 +24,7 @@ junit-jupiter.module = "org.junit.jupiter:junit-jupiter"
 junit-platform-launcher.module = "org.junit.platform:junit-platform-launcher"
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-context = { module = "org.springframework:spring-context" }

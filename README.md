@@ -53,11 +53,15 @@ cd "$RUNTIME_DIR"
 PLATFORM_DATABASE_URL='jdbc:postgresql://localhost:5432/platform' \
 PLATFORM_DATABASE_USERNAME='platform' \
 PLATFORM_DATABASE_PASSWORD='platform' \
+PLATFORM_SECURITY_PARTICIPANTS_0_PRINCIPAL='opaque-participant-a' \
+PLATFORM_SECURITY_PARTICIPANTS_0_PASSWORDVERIFIER='{bcrypt}<externally-supplied-verifier-a>' \
+PLATFORM_SECURITY_PARTICIPANTS_1_PRINCIPAL='opaque-participant-b' \
+PLATFORM_SECURITY_PARTICIPANTS_1_PASSWORDVERIFIER='{bcrypt}<externally-supplied-verifier-b>' \
 SERVER_PORT='8080' \
 java -jar platform.jar
 ~~~
 
-The runtime host must provide a compatible Java runtime, reachable PostgreSQL, the three database settings above, network reachability, and an available HTTP port. It does not require the repository, an IDE, or Gradle at runtime.
+The runtime host must provide a compatible Java runtime, reachable PostgreSQL, the three database settings above, externally supplied participant credential entries, network reachability, and an available HTTP port. Participant entries contain only an opaque stable platform principal and a supported encoded password verifier; missing or structurally invalid participant authentication configuration fails servlet startup closed. Production credential values are not committed to the repository. The runtime host does not require the repository, an IDE, or Gradle at runtime.
 
 Machine-checkable readiness is available at:
 
@@ -79,20 +83,28 @@ After readiness, the accepted external business surface is:
 - `GET /api/v1/events/{eventId}`
 - `POST /api/v1/event-registrations`
 - `GET /api/v1/event-registrations/{registrationId}`
+- `DELETE /api/v1/event-registrations/{registrationId}`
 
 The authoritative business wire contract is [`platform/contracts/http/v1/event.yaml`](platform/contracts/http/v1/event.yaml). Generated OpenAPI Java sources are derived build output and are not edited independently.
+
+Event definition/retrieval and readiness remain public. Event-registration create/retrieve/cancel require HTTP Basic authentication. The authenticated opaque stable platform principal is adapted directly to the participant actor reference; participant ownership authorization remains in Event-Registration composition. HTTP Basic requires secure transport across untrusted networks; production TLS termination remains an external deployment concern.
 
 ## Development run
 
 For repository-local development, the same externally configured PostgreSQL boundary can be used with Gradle `bootRun`:
 
 ~~~bash
-PLATFORM_DATABASE_URL='jdbc:postgresql://localhost:5432/platform' PLATFORM_DATABASE_USERNAME='platform' PLATFORM_DATABASE_PASSWORD='platform' ./gradlew --no-daemon :platform-app:bootRun
+PLATFORM_DATABASE_URL='jdbc:postgresql://localhost:5432/platform' \
+PLATFORM_DATABASE_USERNAME='platform' \
+PLATFORM_DATABASE_PASSWORD='platform' \
+PLATFORM_SECURITY_PARTICIPANTS_0_PRINCIPAL='opaque-participant-a' \
+PLATFORM_SECURITY_PARTICIPANTS_0_PASSWORDVERIFIER='{bcrypt}<externally-supplied-verifier-a>' \
+./gradlew --no-daemon :platform-app:bootRun
 ~~~
 
 `bootRun` is a development workflow; it is not the accepted operational runtime boundary.
 
-Production secrets management, infrastructure provisioning, deployment automation, TLS, authentication, authorization, and production database operations remain outside the current phase.
+Production secrets-management products, infrastructure provisioning, deployment automation, TLS termination, external identity-provider integration, credential enrollment/reset/recovery/admin flows, and production database operations remain outside the current phase.
 
 ## Validate
 

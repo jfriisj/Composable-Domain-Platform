@@ -87,6 +87,26 @@ class PlatformArchitectureTest {
     }
 
     @Test
+    void spring_security_must_remain_confined_to_application_runtime() {
+        noClasses()
+                .that().resideInAnyPackage(
+                        CORE_PACKAGE,
+                        EVENT_API_PACKAGE,
+                        EVENT_APPLICATION_PACKAGE,
+                        EVENT_DOMAIN_PACKAGE,
+                        EVENT_PERSISTENCE_PACKAGE,
+                        REGISTRATION_API_PACKAGE,
+                        REGISTRATION_APPLICATION_PACKAGE,
+                        REGISTRATION_DOMAIN_PACKAGE,
+                        REGISTRATION_PERSISTENCE_PACKAGE,
+                        EVENT_REGISTRATION_COMPOSITION_PACKAGE,
+                        HTTP_PACKAGE)
+                .should().dependOnClassesThat().resideInAPackage(
+                        "org.springframework.security..")
+                .check(PRODUCTION_CLASSES);
+    }
+
+    @Test
     void application_runtime_may_only_depend_on_current_composition_packages() {
         classes()
                 .that().resideInAPackage(APP_PACKAGE)

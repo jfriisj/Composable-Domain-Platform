@@ -1,14 +1,16 @@
 package composable.domain.platform.app;
 
-import composable.domain.platform.composition.eventregistration.EventRegistrationService;
+import composable.domain.platform.composition.eventregistration.ParticipantEventRegistrationService;
 import composable.domain.platform.event.api.DefineEvent;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.application.DefineEventService;
 import composable.domain.platform.event.application.EventRepository;
 import composable.domain.platform.event.application.FindEventService;
 import composable.domain.platform.event.persistence.JooqEventRepository;
+import composable.domain.platform.registration.api.CancelRegistration;
 import composable.domain.platform.registration.api.CreateRegistration;
 import composable.domain.platform.registration.api.FindRegistration;
+import composable.domain.platform.registration.application.CancelRegistrationService;
 import composable.domain.platform.registration.application.CreateRegistrationService;
 import composable.domain.platform.registration.application.FindRegistrationService;
 import composable.domain.platform.registration.application.RegistrationRepository;
@@ -94,13 +96,20 @@ class PlatformRuntimeConfiguration {
     }
 
     @Bean
-    EventRegistrationService eventRegistrationService(
+    CancelRegistration cancelRegistration(RegistrationRepository repository) {
+        return new CancelRegistrationService(repository);
+    }
+
+    @Bean
+    ParticipantEventRegistrationService participantEventRegistrationService(
             FindEvent findEvent,
             CreateRegistration createRegistration,
-            FindRegistration findRegistration) {
-        return new EventRegistrationService(
+            FindRegistration findRegistration,
+            CancelRegistration cancelRegistration) {
+        return new ParticipantEventRegistrationService(
                 findEvent,
                 createRegistration,
-                findRegistration);
+                findRegistration,
+                cancelRegistration);
     }
 }
