@@ -74,6 +74,41 @@ The current conforming domain modules are:
 
 Both use separate public API and private implementation Gradle projects.
 
+## Planned Security module
+
+ADR-0013 and scope #97 classify Security as an independently owned platform module. Decision #99 / ADR-0014 define its minimum public boundary. The module remains **Planned** until corrective implementation is accepted.
+
+Its planned physical shape is:
+
+~~~text
+platform/modules/security/
+├── api/
+└── impl/
+~~~
+
+`security-api` owns the framework- and transport-neutral public Security collaboration surface:
+
+- `AuthenticatedActorReference` — opaque authenticated platform actor semantic;
+- `AuthenticatedActorProvider` — narrow Authentication boundary returning the current actor;
+- `ResourceOwnerReference` — opaque expected-owner policy input;
+- `AuthorizationDecision` — `ALLOWED` / `DENIED`;
+- `AuthorizeResourceOwnership` — the current ownership Authorization decision.
+
+The public API does not use `ExecutionContext` and does not depend on `core`. It contains no Spring, Servlet, HTTP Basic, provider, credential, role/authority, Event, Registration, Event-Registration, or persistence types.
+
+`security-impl` privately owns the admitted Spring Security/stateless HTTP Basic proof, encoded verifier validation, externally configured in-memory proof participants, technical-principal extraction, actor adaptation, Authentication implementation, ownership Authorization implementation, and Security-specific mechanism adapters.
+
+The planned functional consumers depend only on `security-api`:
+
+- the HTTP interface consumes the Authentication boundary;
+- Event-Registration consumes the ownership Authorization boundary.
+
+The application runtime may reference `security-impl` only to select, construct, configure, and wire Security. Event and Registration acquire no Security dependency.
+
+Event-Registration retains Event/Registration workflow and domain-fact interpretation. It derives the participant Registration reference for creation and, for retrieval/cancellation, validates the Event target and participant registrant namespaces before translating only the opaque registrant reference value into Security's `ResourceOwnerReference`. Security owns the final actor-versus-owner decision.
+
+No role model, permission model, generic policy engine, Person/Account capability, provider-specific identity, durable identity mapping, or Security persistence is admitted by this boundary.
+
 ## Composition
 
 **Responsibility:** coordinate a workflow spanning independent modules/capabilities.
@@ -150,7 +185,7 @@ Selection, construction, configuration, and wiring are not ownership.
 
 The runtime must not become the permanent implementation location for a capability/module merely because a framework is configured there.
 
-The current participant authentication/security proof is implemented in the application runtime as accepted executable state from ADR-0012/#91. Under ADR-0013 this is explicit migration debt, not the target module ownership model. Authentication and authorization belong to the Security module, which receives no exception from the universal module invariant.
+The current participant authentication/security proof is implemented in the application runtime as accepted executable state from ADR-0012/#91, and the current Event-Registration composition still performs the final participant owner comparison. Under ADR-0013/#97 this is explicit migration debt, not the target module ownership model. Decision #99 / ADR-0014 define the target: Authentication + Authorization belong to the independent Security module; the runtime wires it and Event-Registration supplies workflow/domain facts.
 
 ## Contracts
 
@@ -187,7 +222,7 @@ Conforming/near-conforming current module boundaries:
 
 Known architecture migration debt:
 
-- participant authentication/security behavior currently resides in `platform/apps/platform`;
+- participant authentication/security behavior currently resides in `platform/apps/platform`, while the final participant owner comparison currently resides in Event-Registration; ADR-0014 defines their Planned Security-module correction;
 - Event-Registration is currently one composition Gradle project and therefore is not a conforming module if classified as one;
 - existing terminology for interfaces, integrations, compositions, and foundation must not call a construct a module unless it satisfies the universal invariant.
 
