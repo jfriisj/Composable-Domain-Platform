@@ -107,11 +107,23 @@ Architecture diagrams have three conceptual states:
 
 Current views must never visually imply that planned or exploratory capabilities are already implemented.
 
+## Universal module control
+
+Every architectural construct classified as a module must satisfy ADR-0013 and `docs/modules.md`.
+
+A module is independently owned, selectable in application composition, exposes an explicit public API, hides its private implementation, and collaborates through public contracts/adapters.
+
+The application runtime may select, construct, configure, and wire modules but must not own or implement them. Another module or a composition must not own or implement a module.
+
+A construct that does not satisfy the universal module invariant must be classified explicitly as a non-module architectural construct rather than receiving a weaker module rule.
+
 ## Module admission
 
-A new bounded context must have a concrete use case, clear ownership, clear non-ownership, meaningful business rules or lifecycle, and an explicit public contract.
+Before admitting a new module, establish a concrete use case, independent ownership and non-ownership, the smallest public API, the private implementation boundary, explicit public dependencies, selectable composition semantics, and objective independent validation.
 
-A module is not created merely because a concept can be separated technically.
+A new bounded business context additionally requires meaningful business rules, invariants, policy, or independently evolving lifecycle.
+
+A module is not created merely because a concept can be separated technically. Once accepted as a module, its implementation is not placed in the application runtime, another module, or a composition.
 
 ## Technology admission
 
@@ -125,6 +137,7 @@ Every accepted change must satisfy the applicable definition of done:
 
 - The change is inside accepted scope or explicitly changes scope.
 - Ownership is placed in the correct architectural area.
+- Every affected module preserves the universal independent-module invariant from ADR-0013.
 - Relevant authoritative documentation is updated.
 - Architecture diagrams are updated when architecture changes.
 - Automated tests cover behavior and invariants introduced or changed by implementation work.

@@ -82,24 +82,32 @@ This document is the authoritative concise statement of where the project curren
 - Documentation issue #85 was accepted through PR #86 as ADR-0012, recording the selected authentication boundary without changing the architecture model or admitting implementation by itself.
 - Scope issue #87 was accepted through PR #88, admitting Spring Security with stateless HTTP Basic for the bounded Goal #57 participant-authentication proof, externally configured encoded password verifiers, direct opaque stable platform-principal adaptation, and no new modeled architecture relationship.
 - Implementation issue #91 replaces the transitional caller-owned Event-registration HTTP path with the actor-bound participant-private create/retrieve/cancel path, adds the admitted Spring Security stateless HTTP Basic runtime boundary, derives the opaque actor directly from the authenticated stable platform principal, exposes Registration lifecycle/cancellation, conceals authenticated non-owner existence, preserves correlation/privacy behavior, and validates restart durability against real PostgreSQL.
+- Research #93 identified that the accepted module model was weaker than the required project-wide independent-module architecture.
+- Decision #94 selected the universal independent-module invariant: every module is independently owned, selectable in application composition, exposes its own public API, hides its private implementation, collaborates through public contracts/adapters, and is never owned or implemented by the runtime, another module, or a composition.
+- Documentation #95 records that decision as ADR-0013 and synchronizes module, architecture, governance, and status truth without changing executable module structure or accepted product behavior.
 
 ## In progress
 
 - Goal issue #57 remains active with `priority: now`.
-- The external participant-authenticated Event-registration boundary from implementation #91 is now represented in the repository state: create/retrieve/cancel are participant-private, caller-authoritative ownership is removed, lifecycle is externally visible, and the admitted Spring Security/stateless HTTP Basic mechanism is implemented inside the existing Platform Application runtime.
-- Event HTTP publication/discovery remains the next separate Goal #57 external gap. Transport-neutral Event publication/discovery already exists through #74/PR #78 and is intentionally not implemented by #91.
+- The external participant-authenticated Event-registration boundary from implementation #91 remains accepted executable state: create/retrieve/cancel are participant-private, caller-authoritative ownership is removed, lifecycle is externally visible, and the admitted Spring Security/stateless HTTP Basic proof is currently implemented inside the existing Platform Application runtime.
+- ADR-0013 now makes the universal independent-module invariant authoritative. Corrective architecture migration must be admitted to scope before Security is moved out of the runtime or a current composition is split into public/private projects.
+- Event HTTP publication/discovery remains a product-facing Goal #57 gap, but further product implementation waits until the required module-boundary correction is scoped.
 
 ## Known gaps
 
+- The current participant authentication/security proof is implemented in `platform/apps/platform`; under ADR-0013 this is migration debt because a Security module must be independently owned behind its own public API/private implementation boundary.
+- `platform/compositions/event-registration` is currently one Gradle project. It remains an accepted composition, but it is not a conforming module if classified as one until a later accepted migration provides explicit public/private separation.
 - Event publication/discovery is implemented at the transport-neutral Event capability boundary, but no Event HTTP publication/discovery operations are exposed yet.
-- No durable provider-to-platform identity-mapping store, Person/Account capability, external identity provider, or new modeled security component is accepted. HMAC derivation remains deferred unless a future raw provider subject creates that need.
+- No durable provider-to-platform identity-mapping store, Person/Account capability, or external identity provider is accepted. HMAC derivation remains deferred unless a future raw provider subject creates that need.
 - Production TLS termination, secrets-management products, deployment/infrastructure, credential enrollment/reset/recovery/admin APIs, and production database operations remain outside the current accepted proof.
 - No artifact/package publication process has been accepted.
 
 ## Next priority
 
-After #91 is accepted into `development`, re-read `development`, Goal #57, and the directly affected authoritative artifacts, then decompose the smallest coherent Event HTTP publication/discovery child needed to close the remaining external discovery gap.
+After #95 is accepted into `development`, re-read `development`, Goal #57, ADR-0013, and the directly affected authoritative artifacts.
 
-That later child must preserve Event ownership of publication/discovery, keep publication separate from Registration eligibility, and must not broaden participant authentication/security scope without separate accepted need and change control.
+Create the smallest explicit `type: scope` subgoal required to admit corrective module-boundary migration. That scope must identify the minimum current deviations to correct, their ownership/non-ownership, dependency direction, adapter boundaries, and executable architecture validation before any source/build migration begins.
+
+Security relocation and any Event-Registration public/private split must not be bundled with unrelated product work. Event HTTP publication/discovery resumes only after the architecture correction path leaves the Goal in a valid module-composition state.
 
 Person/Account, participant profiles, capacity/waitlists, re-registration/reactivation, payment/ticketing, notifications/messaging, frontend, deployment/infrastructure expansion, and other exclusions in `docs/scope.md` remain outside accepted scope.
