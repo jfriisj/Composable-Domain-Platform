@@ -42,6 +42,7 @@ Accepted ADRs are not silently rewritten to change historical rationale. A later
 - [ADR-0010: Executable JVM operational-runtime boundary](0010-executable-jvm-operational-runtime-boundary.md)
 - [ADR-0011: Registration-owned cancellation lifecycle](0011-registration-owned-cancellation-lifecycle.md)
 - [ADR-0012: Minimum participant authentication boundary](0012-minimum-participant-authentication-boundary.md)
+- [ADR-0013: Universal independent module invariant](0013-universal-independent-module-invariant.md)
 
 ## Template
 

@@ -2,25 +2,35 @@
 
 ## Purpose
 
-This document defines the allowed architectural module categories and the ownership rules they must follow.
+This document defines what **module** means in Composable Domain Platform and the ownership rules every module must obey.
 
-It does not define future business capabilities in advance.
+It also distinguishes modules from other architectural constructs such as the application runtime, compositions, interfaces, integrations, contracts, and shared foundation.
 
-## 1. Core
+It does not define future capabilities in advance.
 
-**Responsibility:** platform mechanisms required for modules to participate in the runtime.
+## Universal module invariant
 
-Core must remain business-domain neutral and must not become a shared dumping ground.
+Every architectural construct classified as a **module**:
 
-The current `core` Gradle project contains only the minimum execution-context primitives required by the first external entry point: `CorrelationId` and `ExecutionContext`.
+- is independently owned;
+- can be selected into or out of a valid platform composition;
+- exposes an explicit public API;
+- hides its private implementation behind that API;
+- collaborates with other modules only through explicit public contracts and adapters;
+- does not depend on another module's private implementation or persistence;
+- is not owned or implemented by the application runtime;
+- is not owned or implemented by another module;
+- is not owned or implemented by a composition.
 
-Cross-boundary execution metadata such as Correlation ID and Causation ID may be represented by small core primitives because their semantics apply uniformly across module boundaries. Business modules must not place business meaning in those identifiers.
+The invariant applies to every module. Domain, technical, security, workflow, or future module classifications do not receive weaker ownership rules.
 
-## 2. Domain module
+A construct that should not or cannot satisfy this invariant must be classified as something other than a module. The architecture must not weaken the word "module" to preserve an existing folder or implementation shape.
 
-**Responsibility:** one bounded business capability with its own language, rules, lifecycle, ownership, and persistence boundary.
+## Public API and private implementation
 
-The standard Gradle shape for a domain module is:
+A module has an explicit public API and a hidden private implementation.
+
+For current Gradle-based modules the standard physical shape is:
 
 ~~~text
 platform/modules/<name>/
@@ -28,73 +38,157 @@ platform/modules/<name>/
 └── impl/
 ~~~
 
-The public API may expose only concepts deliberately intended for collaboration, such as identifiers, commands, queries, views, published events, and the minimum shared execution context required at the application boundary.
+Equivalent future layouts may be accepted, but the public/private boundary must remain explicit and mechanically enforceable where practical.
 
-The implementation owns domain, application services, outbound ports, persistence, and internal adapters.
+The public API contains only concepts deliberately intended for collaboration, such as identifiers, commands, queries, views, published events, policies explicitly exposed as contracts, and the minimum shared execution context required at application boundaries.
 
-Business modules, compositions, integrations, and interfaces may depend on a domain module's public API but not on its implementation. The executable application composition root is the only current exception: it may depend on a private implementation when explicit scope requires that dependency solely to construct and wire runtime adapters and services.
+The private implementation owns the module's behavior and internal adapters. Where the module owns persistence, its persistence ports, adapters, migrations, and schema remain private implementation concerns.
 
-The Event reference module is the first implemented instance of this shape.
+Other modules, compositions, interfaces, integrations, and runtimes collaborate with a module through its public API. They do not use its private implementation as a functional collaboration surface.
 
-## 3. Composition module
+The application runtime may reference private implementation types only to construct and wire the module. That technical construction dependency does not transfer ownership to the runtime.
 
-**Responsibility:** coordinate a workflow spanning multiple independent capabilities.
+## Selectable composition
 
-A composition may depend on the public APIs of participating domain modules. It must not depend on their implementation modules or persistence.
+A platform application is assembled from an explicit set of modules and other architectural constructs.
 
-Composition exists to avoid forcing one bounded context to understand another bounded context's internals.
+A module can be selected into or out of a valid platform composition. This means:
 
-## 4. Integration module
+- application assembly chooses participating modules explicitly;
+- unrelated modules remain buildable and testable without an omitted module;
+- an omitted module's private implementation is not a hidden compile/runtime requirement of unrelated modules;
+- a composition with declared module dependencies is valid only when those required public capabilities are supplied.
 
-**Responsibility:** adapt an internal outbound contract to an external system or provider.
+Selectable does not mean that every workflow works without every dependency. It means dependencies are explicit at composition boundaries rather than hidden through shared implementation ownership.
+
+## Domain module
+
+**Responsibility:** one bounded business capability with its own language, rules, lifecycle, ownership, and—when durable state is required—its own persistence boundary.
+
+A domain module obeys the universal module invariant and additionally owns the business rules and invariants that justify its bounded context.
+
+The current conforming domain modules are:
+
+- Event;
+- Registration.
+
+Both use separate public API and private implementation Gradle projects.
+
+## Composition
+
+**Responsibility:** coordinate a workflow spanning independent modules/capabilities.
+
+A composition:
+
+- depends only on public module APIs for participating module behavior;
+- owns the cross-module workflow;
+- does not own participating modules;
+- does not use participating modules' private implementations or persistence.
+
+A composition is an architectural construct and is not automatically a module.
+
+If a composition is deliberately classified as a module, it must itself satisfy the universal module invariant, including its own explicit public API and private implementation boundary.
+
+The current `platform/compositions/event-registration` project is an accepted cross-capability composition. It is currently one Gradle project and therefore must not be treated as conforming to a module classification until a later accepted migration provides the required public/private separation.
+
+## Integration
+
+**Responsibility:** adapt an internal public/outbound contract to an external system or provider.
+
+An integration is an adapter boundary and is not automatically a module.
 
 Examples may eventually include payment, accounting, identity, messaging, or storage providers when concrete requirements exist.
 
-An integration must not leak provider-specific models into domain code.
+Provider-specific models must not leak through module public APIs or into unrelated domain code.
 
-## 5. Interface module
+If an integration is deliberately classified as a module, the universal module invariant applies.
 
-**Responsibility:** expose platform capabilities through an external protocol or user-facing boundary.
+## Interface
 
-Interface modules translate transport contracts into application contracts and must not contain business rules. They are responsible for establishing or accepting correlation context at external entry points and propagating it into the platform execution context.
+**Responsibility:** expose accepted platform capabilities through an external protocol or user-facing boundary.
 
-The current `platform/interfaces/http` Gradle project is the first implemented interface module. It:
+An interface is an inbound adapter boundary and is not automatically a module.
+
+The current `platform/interfaces/http` Gradle project:
 
 - implements the server surface generated from `platform/contracts/http/v1/event.yaml`;
-- depends on `event-api` and `core`, not on `event-impl` or Event persistence;
-- maps HTTP transport types manually to Event public application contracts;
+- maps transport contracts to public module/composition contracts;
 - owns HTTP status/error mapping and structural transport validation;
-- preserves a supplied `X-Correlation-Id` or creates one when absent and propagates it through `ExecutionContext`.
+- establishes or preserves correlation context at the external boundary.
 
-Generated OpenAPI types remain transport-layer build output and are not Event domain or application models.
+It must not own business-module behavior merely because it adapts that behavior to HTTP.
 
-## 6. Application runtime
+If an interface is deliberately classified as a module, the universal module invariant applies.
 
-**Responsibility:** provide the executable technical composition root.
+## Shared platform foundation
 
-The current `platform/apps/platform` Gradle project is the first application runtime. It owns Spring Boot startup, technical dependency injection, minimal externalized PostgreSQL configuration, Event Flyway startup migration, and construction of the Event persistence and application adapters.
+The current `platform/core` Gradle project is shared business-neutral platform foundation, not a business module.
 
-The application runtime may depend on private implementation types only where required for explicit technical wiring. It must not contain Event business rules, reinterpret Event failures, or become a general shared implementation module.
+It contains the minimum execution-context primitives required across current boundaries: `CorrelationId` and `ExecutionContext`.
 
-## Contracts are not bounded contexts
+Cross-boundary execution metadata may live in foundation only when its semantics apply uniformly across boundaries and a concrete accepted need exists.
 
-OpenAPI documents, JSON Schemas, event schemas, and similar artifacts are contracts, not business modules.
+Foundation must remain small and must not become a shared dumping ground for business or capability implementation.
 
-The current authoritative HTTP contract is stored at `platform/contracts/http/v1/event.yaml`. Generated sources derived from that contract belong to build output rather than `platform/contracts/`.
+If a future decision classifies a foundation construct as a module, the universal module invariant applies.
 
-## Module admission rule
+## Application runtime / composition root
 
-Before creating a new domain module, establish:
+`platform/apps/platform` is the executable technical composition root. It is not a module owner.
 
-1. A concrete use case.
-2. A clear business capability.
-3. Ownership of concepts and lifecycle.
-4. Explicit non-ownership.
-5. At least one meaningful invariant, policy, or independently evolving lifecycle.
-6. The smallest required public contract.
+The runtime may:
 
-Do not create a bounded context merely because a technical concept can be extracted.
+- start the executable process;
+- select accepted modules and compositions;
+- construct private module implementations;
+- provide technical dependency injection;
+- supply external runtime configuration;
+- wire public contracts to adapters;
+- configure shared process-level infrastructure required to assemble the application.
 
-## Independence target
+Selection, construction, configuration, and wiring are not ownership.
 
-A domain module should eventually be capable of being built and tested without other feature implementations, owning its own schema/migrations, exposing only explicit contracts, and being disabled without breaking unrelated business capabilities.
+The runtime must not become the permanent implementation location for a capability/module merely because a framework is configured there.
+
+The current participant authentication/security proof is implemented in the application runtime as accepted executable state from ADR-0012/#91. Under ADR-0013 this is explicit migration debt, not the target module ownership model. Authentication and authorization belong to the Security module, which receives no exception from the universal module invariant.
+
+## Contracts
+
+OpenAPI documents, JSON Schemas, event schemas, and similar artifacts are contracts, not modules or bounded contexts.
+
+The current authoritative HTTP contract is stored at `platform/contracts/http/v1/event.yaml`. Generated sources derived from that contract belong to build output.
+
+## Module admission
+
+Before admitting a new module, establish:
+
+1. a concrete use case;
+2. the capability or responsibility it independently owns;
+3. explicit non-ownership;
+4. the smallest required public API;
+5. the private implementation boundary;
+6. required public dependencies on other modules;
+7. selectable composition semantics;
+8. objective independent build/test evidence appropriate to the module;
+9. adapter boundaries required for external protocols/providers/mechanisms.
+
+A new domain module additionally requires meaningful business rules, invariants, policy, or independently evolving lifecycle sufficient to justify a bounded context.
+
+Do not create a module merely because a technical concept can be extracted. Conversely, once a capability is accepted as a module, do not place its implementation in the runtime, another module, or a composition.
+
+## Current conformance and migration debt
+
+Current accepted executable state must be distinguished from the accepted target invariant.
+
+Conforming/near-conforming current module boundaries:
+
+- Event — separate `api` and `impl`;
+- Registration — separate `api` and `impl`.
+
+Known architecture migration debt:
+
+- participant authentication/security behavior currently resides in `platform/apps/platform`;
+- Event-Registration is currently one composition Gradle project and therefore is not a conforming module if classified as one;
+- existing terminology for interfaces, integrations, compositions, and foundation must not call a construct a module unless it satisfies the universal invariant.
+
+Corrective source/build changes require explicit accepted scope. ADR-0013 and this document establish the rule but do not authorize migration by themselves.

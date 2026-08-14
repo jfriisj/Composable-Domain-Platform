@@ -14,26 +14,40 @@ The baseline combines:
 - Hexagonal Architecture inside business modules.
 - A modular monolith as the initial deployment model.
 - Explicit contracts for collaboration.
-- Composition modules for cross-capability workflows.
+- Explicit compositions for cross-capability workflows.
 - Adapter-based integrations for external systems.
 
 The modular monolith is an implementation and deployment choice, not permission for modules to share internals.
 
+## Universal module invariant
+
+ADR-0013 defines one meaning of **module** across the platform.
+
+Every module is independently owned, selectable into or out of a valid platform composition, exposes an explicit public API, hides its private implementation, and collaborates with other modules only through public contracts and adapters.
+
+A module is never owned or implemented by the application runtime, another module, or a composition. No module depends on another module's private implementation or persistence.
+
+The modular monolith does not weaken this rule. Co-location in one process or repository is a deployment/build choice, not shared ownership.
+
+A composition owns only cross-module workflow. The application runtime owns only technical assembly. Interfaces and integrations are adapter boundaries and are not automatically modules. Shared `core` is current business-neutral foundation and is not automatically a module.
+
+If a construct is called a module, it must satisfy the invariant. Constructs that should not satisfy it must be classified explicitly as something else.
+
 ## Hard boundaries
 
-A business module owns its domain model, application use cases, persistence, migrations, and internal adapters.
+A business module owns its domain model, application use cases, and internal adapters. When it owns durable state it also owns its persistence and migrations.
 
-Other business modules must not:
+Other modules and architectural constructs must not:
 
-- Import its internal domain or implementation classes.
-- Access its repositories.
-- Read or write its database tables directly.
-- Depend on its persistence records.
-- Reuse internal DTOs as shared contracts.
+- import its internal domain or implementation classes for collaboration;
+- access its repositories;
+- read or write its database tables directly;
+- depend on its persistence records;
+- reuse internal DTOs as shared contracts.
 
-Collaboration happens only through explicit public module APIs, published events, or composition modules.
+Collaboration happens only through explicit public module APIs, published events, contracts, and adapters/compositions that themselves respect module ownership.
 
-The executable application composition root may depend on private implementation types only for explicit technical wiring authorized by scope. That exception does not permit business logic or cross-module implementation collaboration.
+The executable application composition root may depend on private implementation types only to construct and wire module implementations. That technical dependency does not transfer ownership and does not permit business logic or cross-module implementation collaboration.
 
 ## Hexagonal rule
 
@@ -79,13 +93,15 @@ Correlation is independent of distributed tracing. W3C trace/span context or Ope
 
 ## Composition over coupling
 
-When two independent capabilities need to cooperate, prefer a composition that depends on their public APIs rather than making either capability depend on the other's implementation.
+When two independent modules/capabilities need to cooperate, use a composition that depends on their public APIs rather than making either capability depend on the other's implementation.
 
 ~~~text
 module A API <- composition -> module B API
 ~~~
 
-A composition owns the cross-capability workflow; neither participating bounded context owns the other's business rules.
+A composition owns the cross-capability workflow only. It does not own or implement participating modules.
+
+A composition is not automatically a module. If a composition is deliberately classified as a module, it must have its own public API/private implementation boundary and satisfy ADR-0013.
 
 ## Current Registration composition baseline
 
@@ -130,7 +146,9 @@ The unified OpenAPI document may use separate `Event` and `EventRegistration` ta
 
 The participant-private transport contract uses only `registrationId` and `eventId` as caller-supplied creation inputs, exposes Registration lifecycle state, and does not accept caller-authoritative participant ownership or expose generic Registration namespace/reference mechanics.
 
-Technical authentication identity and Registration registrant identity remain separate concepts. The existing Platform Application runtime now implements the bounded Spring Security/stateless HTTP Basic mechanism accepted by ADR-0012/#87, while participant authorization and actor-to-registrant mapping remain in Event-Registration composition. No Person/Account capability is introduced.
+Technical authentication identity and Registration registrant identity remain separate concepts. The existing Platform Application runtime currently implements the bounded Spring Security/stateless HTTP Basic mechanism accepted by ADR-0012/#87, while participant authorization and actor-to-registrant mapping remain in Event-Registration composition. No Person/Account capability is introduced.
+
+ADR-0013 now establishes that application-runtime ownership of Security is migration debt rather than the permanent module ownership model. Security is a module; its authentication and authorization capability must move behind its own public API/private implementation boundary through later accepted scope. This documentation change does not perform that migration.
 
 The existing HTTP interface and Spring Boot application remain the external adapter and technical composition root respectively.
 
@@ -162,7 +180,9 @@ Event-Registration composition continues to own `AuthenticatedActorReference(x) 
 
 The proof is stateless and non-browser: no form login, session/cookie authentication, remember-me, logout/session lifecycle, OAuth/OIDC login, or JWT bearer authentication is accepted. Any CSRF exclusion is bounded to that stateless non-browser API proof and does not establish a browser security design. HTTP Basic requires secure transport across untrusted networks, while TLS termination/deployment infrastructure remains outside Goal #57.
 
-This selected mechanism introduces no new bounded context, Gradle module, application container, persistence owner, external authenticator, identity provider, identity-mapping store, Event/Registration dependency, or modeled relationship. Spring Security is implementation technology inside the existing Platform Application/runtime boundary rather than a new architectural participant. Therefore `docs/architecture/workspace.dsl` remains structurally unchanged.
+ADR-0012's selected mechanism introduced no new bounded context, Gradle module, application container, persistence owner, external authenticator, identity provider, identity-mapping store, Event/Registration dependency, or modeled relationship. Spring Security therefore remains part of the current executable Platform Application/runtime state.
+
+ADR-0013 does not pretend that current state is already migrated. It establishes that a capability classified as Security module cannot remain owned or implemented by the application runtime. A later accepted scope/migration must introduce the compliant boundary. Because #95 changes the accepted invariant and records migration debt without changing the implemented participants or relationships, `docs/architecture/workspace.dsl` remains structurally unchanged in this documentation slice.
 
 ## Current reference module
 
@@ -222,7 +242,11 @@ platform/apps/platform
   Registration Flyway startup migration
 ~~~
 
-`platform/apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, Event-Registration composition, and the bounded participant authentication runtime. Spring Security, externally supplied encoded participant credential verification, stateless HTTP Basic, and authenticated-principal-to-actor adaptation remain technical runtime concerns in this application boundary. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests. Runtime wiring contains technical composition only; Event-registration workflow and participant authorization rules remain in the composition.
+`platform/apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, Event-Registration composition, and the currently embedded participant-authentication proof. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests.
+
+The current Spring Security, encoded participant credential verification, stateless HTTP Basic, and authenticated-principal-to-actor adaptation are accepted executable state from ADR-0012/#91. Under ADR-0013 they are explicit migration debt: the composition root may wire the Security module but must not remain its implementation owner.
+
+Runtime wiring remains technical composition only. Event-registration workflow remains in the composition. Corrective Security ownership and any composition public/private split require later accepted scope.
 
 ## Accepted operational-runtime boundary
 
@@ -297,6 +321,16 @@ The currently implemented architectural structure includes:
 ~~~
 
 `platform/modules/registration` and `platform/compositions/event-registration` are current architecture. `integrations/` remains an architectural category only and must not be created until later accepted scope requires it.
+
+### Current ADR-0013 conformance
+
+Event and Registration already use separate public API/private implementation Gradle projects.
+
+The current Event-Registration composition remains one Gradle project. It is an accepted composition, but it is not a conforming module if classified as one until a later accepted migration creates an explicit public/private boundary.
+
+Participant authentication/security remains implemented in `platform/apps/platform` as current accepted executable state from ADR-0012/#91. ADR-0013 defines Security as a module and makes that runtime ownership explicit migration debt.
+
+The current HTTP interface, application runtime, contracts, and `core` foundation remain their existing architectural constructs. This documentation slice does not relabel them as implemented modules or change their current Structurizr relationships.
 
 ## Architecture enforcement
 
