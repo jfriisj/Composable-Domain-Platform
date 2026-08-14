@@ -85,18 +85,21 @@ This document is the authoritative concise statement of where the project curren
 - Research #93 identified that the accepted module model was weaker than the required project-wide independent-module architecture.
 - Decision #94 selected the universal independent-module invariant: every module is independently owned, selectable in application composition, exposes its own public API, hides its private implementation, collaborates through public contracts/adapters, and is never owned or implemented by the runtime, another module, or a composition.
 - Documentation #95 records that decision as ADR-0013 and synchronizes module, architecture, governance, and status truth without changing executable module structure or accepted product behavior.
+- Scope #97 admits the corrective planned Security module boundary required by ADR-0013: Authentication + Authorization belong to an independently owned `security-api` / `security-impl` module, while the application runtime becomes wiring-only for Security and Event-Registration remains a non-module workflow composition.
 
 ## In progress
 
 - Goal issue #57 remains active with `priority: now`.
 - The external participant-authenticated Event-registration boundary from implementation #91 remains accepted executable state: create/retrieve/cancel are participant-private, caller-authoritative ownership is removed, lifecycle is externally visible, and the admitted Spring Security/stateless HTTP Basic proof is currently implemented inside the existing Platform Application runtime.
-- ADR-0013 now makes the universal independent-module invariant authoritative. Corrective architecture migration must be admitted to scope before Security is moved out of the runtime or a current composition is split into public/private projects.
-- Event HTTP publication/discovery remains a product-facing Goal #57 gap, but further product implementation waits until the required module-boundary correction is scoped.
+- ADR-0013 plus scope #97 now make the corrective Security target explicit: Authentication + Authorization move behind planned `security-api` / `security-impl`; runtime ownership is migration debt, not the target.
+- Corrective implementation is not ready until a focused decision defines the framework-neutral Security Authentication/Authorization contracts, actor/principal boundary, domain-fact input, and dependency direction.
+- Event HTTP publication/discovery remains a product-facing Goal #57 gap and waits until the Security boundary correction reaches a valid implemented state.
 
 ## Known gaps
 
-- The current participant authentication/security proof is implemented in `platform/apps/platform`; under ADR-0013 this is migration debt because a Security module must be independently owned behind its own public API/private implementation boundary.
-- `platform/compositions/event-registration` is currently one Gradle project. It remains an accepted composition, but it is not a conforming module if classified as one until a later accepted migration provides explicit public/private separation.
+- The current participant authentication/security proof is still implemented in `platform/apps/platform`; scope #97 admits its migration to planned `platform/modules/security/api` + `impl`, but implementation has not happened yet.
+- The exact framework-neutral Security Authentication/Authorization contracts, actor/principal boundary, action/resource representation, and Event-Registration domain-fact input remain unresolved and require a focused decision.
+- `platform/compositions/event-registration` is currently one Gradle project and remains a non-module composition under the accepted ADR-0013 classification; no split is required by #97.
 - Event publication/discovery is implemented at the transport-neutral Event capability boundary, but no Event HTTP publication/discovery operations are exposed yet.
 - No durable provider-to-platform identity-mapping store, Person/Account capability, or external identity provider is accepted. HMAC derivation remains deferred unless a future raw provider subject creates that need.
 - Production TLS termination, secrets-management products, deployment/infrastructure, credential enrollment/reset/recovery/admin APIs, and production database operations remain outside the current accepted proof.
@@ -104,10 +107,12 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-After #95 is accepted into `development`, re-read `development`, Goal #57, ADR-0013, and the directly affected authoritative artifacts.
+After #97 is accepted into `development`, re-read `development`, Goal #57, ADR-0013, and the accepted Security scope.
 
-Create the smallest explicit `type: scope` subgoal required to admit corrective module-boundary migration. That scope must identify the minimum current deviations to correct, their ownership/non-ownership, dependency direction, adapter boundaries, and executable architecture validation before any source/build migration begins.
+Create one focused `type: decision` subgoal for the framework-neutral Security public boundary. It must decide the minimum Authentication contract, Authorization contract, actor/principal ownership, domain-fact/context input, and dependency direction needed to migrate the current proof without moving Event/Registration business truth into Security.
 
-Security relocation and any Event-Registration public/private split must not be bundled with unrelated product work. Event HTTP publication/discovery resumes only after the architecture correction path leaves the Goal in a valid module-composition state.
+Only after that decision is accepted may the corrective Security implementation be decomposed as ready work.
+
+Event-Registration remains a non-module composition and is not split by this correction. Event HTTP publication/discovery resumes only after the Security correction leaves accepted `development` in a valid module-composition state.
 
 Person/Account, participant profiles, capacity/waitlists, re-registration/reactivation, payment/ticketing, notifications/messaging, frontend, deployment/infrastructure expansion, and other exclusions in `docs/scope.md` remain outside accepted scope.

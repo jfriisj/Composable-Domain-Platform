@@ -17,6 +17,9 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         registrationPersistence = element "Registration Persistence" "PostgreSQL schema" "Registration-owned durable namespaced registrant-to-target state with no Event-specific columns or cross-capability persistence coupling." "Current,Registration Module,Persistence"
         eventRegistrationComposition = element "Event-Registration Composition" "Gradle project" "Event-specific workflow that verifies Event existence and translates Event workflow identities into Registration references through public APIs." "Current,Composition"
 
+        securityApi = element "Security API" "Planned Gradle project" "Framework-neutral public Authentication + Authorization boundary. Exact contracts remain subject to the focused post-#97 decision." "Planned,Security Module,API"
+        securityImpl = element "Security Implementation" "Planned Gradle project" "Private Security implementation and adapters, including the admitted Spring Security/stateless HTTP Basic proof and encoded credential verification." "Planned,Security Module,Implementation"
+
         stakeholder -> platform "Uses and shapes"
         eventHttpContract -> httpInterface "Generates server transport interface and models"
         httpInterface -> core "Establishes and propagates correlation context"
@@ -38,6 +41,11 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         platformApp -> eventRegistrationComposition "Wires the cross-capability workflow"
         platformApp -> registrationImpl "Constructs private Registration implementation"
         platformApp -> registrationPersistence "Configures DataSource and applies Registration-owned Flyway migrations"
+
+        securityImpl -> securityApi "Planned implements the Security public boundary"
+        httpInterface -> securityApi "Planned consumes framework-neutral Authentication boundary"
+        eventRegistrationComposition -> securityApi "Planned requests Authorization decisions through the public boundary"
+        platformApp -> securityImpl "Planned constructs, configures, and wires private Security implementation"
     }
 
     views {
@@ -56,6 +64,11 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
             autolayout lr
         }
 
+        custom "PlannedSecurityBoundary" "Planned Security module boundary" "Accepted scope #97: future Security API/Implementation and high-level consumers. Current executable views remain unchanged until implementation." {
+            include httpInterface platformApp eventRegistrationComposition registrationApi securityApi securityImpl
+            autolayout lr
+        }
+
         styles {
             element "Person" {
                 shape person
@@ -66,6 +79,10 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
             }
 
             element "Registration Module" {
+                shape component
+            }
+
+            element "Security Module" {
                 shape component
             }
 
