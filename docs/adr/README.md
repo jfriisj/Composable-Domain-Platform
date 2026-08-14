@@ -43,6 +43,7 @@ Accepted ADRs are not silently rewritten to change historical rationale. A later
 - [ADR-0011: Registration-owned cancellation lifecycle](0011-registration-owned-cancellation-lifecycle.md)
 - [ADR-0012: Minimum participant authentication boundary](0012-minimum-participant-authentication-boundary.md)
 - [ADR-0013: Universal independent module invariant](0013-universal-independent-module-invariant.md)
+- [ADR-0014: Security public authentication and authorization boundary](0014-security-public-authentication-authorization-boundary.md)
 
 ## Template
 

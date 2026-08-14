@@ -148,7 +148,7 @@ The participant-private transport contract uses only `registrationId` and `event
 
 Technical authentication identity and Registration registrant identity remain separate concepts. The existing Platform Application runtime currently implements the bounded Spring Security/stateless HTTP Basic mechanism accepted by ADR-0012/#87, while participant authorization and actor-to-registrant mapping remain in Event-Registration composition. No Person/Account capability is introduced.
 
-ADR-0013 establishes that application-runtime ownership of Security is migration debt rather than the permanent module ownership model. Scope #97 now admits the corrective planned Security module boundary: Authentication + Authorization belong behind Security's own public API/private implementation boundary. The migration remains unimplemented until the required focused Security-contract decision and implementation work are accepted.
+ADR-0013 establishes that application-runtime ownership of Security is migration debt rather than the permanent module ownership model. Scope #97 admits the corrective Planned Security module boundary, and decision #99, recorded by ADR-0014, now defines its minimum public Authentication + Authorization contracts. The source/build migration remains unimplemented.
 
 The existing HTTP interface and Spring Boot application remain the external adapter and technical composition root respectively.
 
@@ -178,7 +178,7 @@ Current executable state still has `platform/apps/platform` configuring the Spri
 
 Under accepted scope #97, that runtime-owned Authentication/Authorization behavior is migration debt. The planned target moves framework-specific authentication behavior into `security-impl`; the runtime only constructs/configures/wires the Security module, and consumers use `security-api`.
 
-Event-Registration continues to own `AuthenticatedActorReference(x) -> RegistrantReference("participant", x)` and Event-specific orchestration/domain fact preparation. The final participant authorization decision moves to Security through a framework-neutral public Authorization contract whose exact shape requires the focused follow-up decision. Registration remains security-neutral and has no dependency on Spring Security, HTTP authentication, credentials, actor semantics, or Security implementation.
+Event-Registration continues to own `AuthenticatedActorReference(x) -> RegistrantReference("participant", x)` and Event-specific orchestration/domain fact preparation. Decision #99, recorded by ADR-0014, moves ownership of `AuthenticatedActorReference` itself to `security-api` and selects the final ownership Authorization contract. For retrieve/cancel, Event-Registration validates the Event target and participant registrant namespaces, translates only the opaque registrant reference value to Security's `ResourceOwnerReference`, and asks `AuthorizeResourceOwnership` for `ALLOWED` / `DENIED`. Create requires Authentication but no separate Authorization call. Registration remains security-neutral and has no dependency on Spring Security, HTTP authentication, credentials, actor semantics, or Security implementation.
 
 The proof is stateless and non-browser: no form login, session/cookie authentication, remember-me, logout/session lifecycle, OAuth/OIDC login, or JWT bearer authentication is accepted. Any CSRF exclusion is bounded to that stateless non-browser API proof and does not establish a browser security design. HTTP Basic requires secure transport across untrusted networks, while TLS termination/deployment infrastructure remains outside Goal #57.
 
@@ -198,31 +198,47 @@ platform/modules/security/
 └── impl/
 ~~~
 
-The planned dependency intent is:
+Decision #99, recorded by ADR-0014, selects the public collaboration surface.
+
+`security-api` owns:
+
+- `AuthenticatedActorReference` — opaque authenticated platform actor;
+- `AuthenticatedActorProvider` — narrow Authentication boundary returning the current actor;
+- `ResourceOwnerReference` — opaque expected-owner policy input;
+- `AuthorizationDecision` — `ALLOWED` / `DENIED`;
+- `AuthorizeResourceOwnership` — the current ownership Authorization decision.
+
+Neither public contract uses `ExecutionContext`; `security-api` has no dependency on `core`. No Spring Security, Servlet, HTTP Basic, password-verifier, provider, role/authority, Event, Registration, Event-Registration, or persistence type belongs in the API.
+
+The planned dependency direction is:
 
 ~~~text
-platform/interfaces/http ---------------------> security-api
-                                                   ^
-                                                   |
-platform/compositions/event-registration --------+
-                                                   ^
-                                                   |
-                                              security-impl
-                                                   ^
-                                                   |
-                                      platform/apps/platform
-                                      constructs/configures/wires
+security-impl -> security-api
+
+platform/interfaces/http -> security-api
+
+platform/compositions/event-registration -> security-api
+
+platform/apps/platform -> security-impl
+platform/apps/platform -> security-api
+  construction/configuration/wiring only
 ~~~
 
-`security-api` is framework- and transport-neutral and owns the public Authentication + Authorization capability boundary.
+`security-impl` privately owns the admitted Spring Security/stateless HTTP Basic implementation, encoded verifier validation, externally configured in-memory proof participants, technical-principal extraction, principal-to-actor adaptation, Authentication/Authorization implementations, and Security-specific Servlet/HTTP Basic adapters.
 
-`security-impl` privately owns the admitted Spring Security/stateless HTTP Basic implementation, encoded credential verification, and other Security-specific adapters required by the current proof.
+The HTTP interface consumes `AuthenticatedActorProvider` but does not own credential verification or Security policy.
 
-The application runtime selects, constructs, configures, and wires Security but does not own its behavior. Event-Registration remains a composition rather than a Security owner. It owns Event-registration orchestration and domain fact/context preparation, while the final participant authorization decision belongs to Security.
+Event-Registration retains Event/Registration workflow and fact interpretation. For participant-private retrieval/cancellation it verifies the Event target and participant registrant namespaces, translates only the registrant reference value into `ResourceOwnerReference`, and asks Security for the final actor-versus-owner decision. It maps `DENIED` into its workflow authorization-denied semantic; HTTP retains the existing external `404` concealment mapping.
 
-The exact Authentication/Authorization contracts, actor/principal boundary, action/resource representation, and domain-fact input remain deliberately undecided by #97 and require a focused decision before implementation.
+Creation requires Authentication only and continues to derive `RegistrantReference("participant", actorReference)` in Event-Registration. No action enum or generic policy engine is introduced because retrieve and cancel share the same ownership rule and create has no independent owner-authorization predicate.
 
-No Security persistence, Person/Account capability, external identity provider, OAuth/OIDC, JWT, RBAC/role model, new application container, or dynamic plugin mechanism is admitted.
+The application runtime selects, constructs, configures, and wires Security but does not own its behavior. A participant-private Goal #57 assembly is valid only when the required Security public capabilities are supplied.
+
+The following dependencies remain prohibited: `security-api -> core/Event/Registration/Event-Registration/HTTP`; `security-impl -> Event/Registration/Event-Registration/HTTP`; functional consumers -> `security-impl`; and Event/Registration private implementation or persistence -> Security.
+
+Security remains **Planned** in the authoritative Structurizr model until corrective implementation is accepted. Current views continue to describe the executable pre-migration state.
+
+No Security persistence, Person/Account capability, external identity provider, OAuth/OIDC, JWT, RBAC/ABAC/role model, generic policy engine, new application container, or dynamic plugin mechanism is admitted.
 
 ## Current reference module
 
@@ -286,7 +302,7 @@ platform/apps/platform
 
 The current Spring Security, encoded participant credential verification, stateless HTTP Basic, and authenticated-principal-to-actor adaptation are accepted executable state from ADR-0012/#91. Under ADR-0013 they are explicit migration debt.
 
-Scope #97 now accepts the planned Security ownership correction: the composition root may construct/configure/wire `security-impl` but must not own its Authentication/Authorization behavior. Event-registration workflow remains in the composition; the final authorization decision moves to Security after the focused public-contract decision and implementation.
+Scope #97 and decision #99, recorded by ADR-0014, define the planned Security ownership correction: the composition root may construct/configure/wire `security-impl` but must not own Authentication/Authorization behavior. Event-registration workflow/domain facts remain in the composition; the final opaque actor-versus-owner decision belongs to Security. Corrective source/build implementation is still pending.
 
 Event-Registration remains a non-module composition under the current ADR-0013 classification, so #97 does not require a composition `api`/`impl` split.
 

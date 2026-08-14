@@ -70,9 +70,9 @@ The external caller must not choose participant ownership through an arbitrary `
 
 `AuthenticatedActorReference(x) -> RegistrantReference("participant", x)`
 
-The participant-owns-registration **authorization decision** moves to Security. Event-Registration may supply only the minimum domain facts/context required for that decision through the future Security public Authorization contract; Security must not become owner of Event publication truth, Registration lifecycle/ownership state, Event-registration orchestration, or other domain invariants.
+The participant-owns-registration **authorization decision** moves to Security. Decision #99, recorded by ADR-0014, selects the minimum public boundary: Security owns `AuthenticatedActorReference`, `AuthenticatedActorProvider`, opaque `ResourceOwnerReference`, `AuthorizationDecision`, and `AuthorizeResourceOwnership`. Event-Registration retains Event/Registration interpretation and supplies only the opaque expected-owner reference after validating the Event target and participant registrant namespaces. Security must not become owner of Event publication truth, Registration lifecycle/ownership state, Event-registration orchestration, or other domain invariants.
 
-The exact framework-neutral Authentication contract, Authorization contract, actor/principal boundary, action/resource representation, and domain-fact input are not selected by this scope change. A focused decision is required before corrective implementation becomes ready.
+Create requires Authentication but no separate Authorization decision: Event-Registration continues to derive `RegistrantReference("participant", actorReference)`. Retrieve and cancel use the same Security ownership decision. No action enum, role/permission model, generic policy engine, or `security-api -> core` dependency is accepted.
 
 Registration remains security-neutral. It does not authenticate, authorize, inspect credentials or tokens, know identity-provider semantics, interpret actor semantics, or depend on Security implementation.
 
@@ -87,7 +87,7 @@ ADR-0012 and #87 remain the accepted historical rationale/technology admission f
 
 Participant proof credentials remain externally supplied runtime configuration. Each configured proof participant contains only an opaque stable platform principal identifier and an encoded password verifier. The application runtime supplies configuration while the Security implementation owns credential-verification behavior. Plain-text/no-op password storage remains prohibited. No credential database, participant user repository, Person/Account persistence, identity database, credential migration subsystem, enrollment/reset/recovery/admin API, or identity-provider integration is introduced.
 
-After successful authentication, the current platform-facing actor rule remains behaviorally required until a focused Security-contract decision changes only its architectural representation:
+After successful authentication, decision #99, recorded by ADR-0014, preserves the platform-facing actor behavior while moving ownership of the semantic to `security-api`:
 
 `authenticatedPrincipalName -> AuthenticatedActorReference(authenticatedPrincipalName)`
 
@@ -159,23 +159,26 @@ No additional participant-data retention/deletion mechanism is accepted beyond t
 
 ### Implementation-readiness boundary
 
-ADR-0012/#87 already admit Spring Security and stateless HTTP Basic, and #91 already implements that bounded proof. Scope #97 admits only the corrective Security-module ownership migration required by ADR-0013; it does not admit a new authentication mechanism.
+ADR-0012/#87 already admit Spring Security and stateless HTTP Basic, and #91 already implements that bounded proof. Scope #97 admits the corrective Security-module ownership migration required by ADR-0013; decision #99 and ADR-0014 now define the minimum public Security boundary without admitting a new authentication mechanism.
 
-Corrective implementation is **not ready** merely because #97 is accepted. A focused decision must first establish:
+The selected public boundary is implementation-ready at architecture-contract level:
 
-1. the exact framework-neutral Security public Authentication contract;
-2. the exact framework-neutral Security public Authorization contract;
-3. actor/principal ownership and representation at the Security boundary;
-4. how Event-Registration supplies minimum domain facts/context without transferring domain truth to Security;
-5. dependency direction among `security-api`, HTTP, Event-Registration, and the application composition root;
-6. the private placement of Spring Security/stateless HTTP Basic implementation/adapters;
-7. executable Gradle/ArchUnit rules for `security-api` / `security-impl`.
+1. `security-api` owns `AuthenticatedActorReference` and `AuthenticatedActorProvider`;
+2. `security-api` owns opaque `ResourceOwnerReference`, `AuthorizationDecision`, and `AuthorizeResourceOwnership`;
+3. neither public contract uses `ExecutionContext` or depends on `core`;
+4. Event-Registration retains Event/Registration interpretation, registrant mapping, and namespace/domain-fact validation;
+5. create uses Authentication only, while retrieve/cancel use the same ownership Authorization decision;
+6. `security-impl` privately owns Spring Security/stateless HTTP Basic, credential verification, technical-principal extraction/adaptation, and Security mechanism adapters;
+7. HTTP and Event-Registration depend only on `security-api`, while the application runtime may reference `security-impl` only for construction/configuration/wiring;
+8. later Gradle/ArchUnit rules must enforce those directions.
+
+A later implementation child must still define the exact source/build migration slice and validation against this accepted boundary before executable work begins.
 
 Required authentication configuration must continue to fail closed when absent or structurally invalid. Production credential values must not be committed to repository configuration. Deterministic test-only credentials may be supplied through test configuration. No secrets-management product is selected.
 
-A concrete provider-to-platform identity mapping store remains unauthorized. A later need for HMAC derivation, durable mapping, a persistence owner, external authenticator, identity provider, or other significant architectural relationship must return to normal decision and architecture control.
+A concrete provider-to-platform identity mapping store remains unauthorized. A later need for HMAC derivation, durable mapping, a persistence owner, external authenticator, identity provider, broader authorization policy, or other significant architectural relationship must return to normal decision and architecture control.
 
-Scope #97 admits a **Planned** Security module with separate API and implementation projects. It introduces no new application container, persistence owner, Event/Registration dependency, Person/Account capability, or Security persistence. `docs/architecture/workspace.dsl` represents the Security API/Implementation and high-level planned collaboration as Planned only; Current views remain unchanged until implementation is accepted.
+The Security module remains **Planned** with separate API and implementation projects until corrective implementation is accepted. It introduces no new application container, persistence owner, Event/Registration dependency, Person/Account capability, or Security persistence. `docs/architecture/workspace.dsl` continues to represent Security API/Implementation and collaboration as Planned only; Current views remain unchanged until implementation is accepted.
 
 ### Required implementation validation
 
