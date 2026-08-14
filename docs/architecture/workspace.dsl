@@ -17,7 +17,7 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         registrationPersistence = element "Registration Persistence" "PostgreSQL schema" "Registration-owned durable namespaced registrant-to-target state with no Event-specific columns or cross-capability persistence coupling." "Current,Registration Module,Persistence"
         eventRegistrationComposition = element "Event-Registration Composition" "Gradle project" "Event-specific workflow that verifies Event existence and translates Event workflow identities into Registration references through public APIs." "Current,Composition"
 
-        securityApi = element "Security API" "Planned Gradle project" "Framework-neutral authenticated-actor Authentication boundary plus opaque resource-ownership Authorization decision selected by #99 / ADR-0014." "Planned,Security Module,API"
+        securityApi = element "Security API" "Planned Gradle project" "Framework-neutral authenticated-actor Authentication boundary plus opaque resource-ownership Authorization decision selected by decision #99 and recorded by ADR-0014." "Planned,Security Module,API"
         securityImpl = element "Security Implementation" "Planned Gradle project" "Private Security implementation and adapters: Spring Security/stateless HTTP Basic, encoded verifier validation, principal-to-actor adaptation, and ownership authorization." "Planned,Security Module,Implementation"
 
         stakeholder -> platform "Uses and shapes"

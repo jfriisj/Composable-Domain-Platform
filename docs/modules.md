@@ -76,7 +76,7 @@ Both use separate public API and private implementation Gradle projects.
 
 ## Planned Security module
 
-ADR-0013 and scope #97 classify Security as an independently owned platform module. Decision #99 / ADR-0014 define its minimum public boundary. The module remains **Planned** until corrective implementation is accepted.
+ADR-0013 and scope #97 classify Security as an independently owned platform module. Decision #99, recorded by ADR-0014, defines its minimum public boundary. The module remains **Planned** until corrective implementation is accepted.
 
 Its planned physical shape is:
 
@@ -185,7 +185,7 @@ Selection, construction, configuration, and wiring are not ownership.
 
 The runtime must not become the permanent implementation location for a capability/module merely because a framework is configured there.
 
-The current participant authentication/security proof is implemented in the application runtime as accepted executable state from ADR-0012/#91, and the current Event-Registration composition still performs the final participant owner comparison. Under ADR-0013/#97 this is explicit migration debt, not the target module ownership model. Decision #99 / ADR-0014 define the target: Authentication + Authorization belong to the independent Security module; the runtime wires it and Event-Registration supplies workflow/domain facts.
+The current participant authentication/security proof is implemented in the application runtime as accepted executable state from ADR-0012/#91, and the current Event-Registration composition still performs the final participant owner comparison. Under ADR-0013/#97 this is explicit migration debt, not the target module ownership model. Decision #99, recorded by ADR-0014, defines the target: Authentication + Authorization belong to the independent Security module; the runtime wires it and Event-Registration supplies workflow/domain facts.
 
 ## Contracts
 

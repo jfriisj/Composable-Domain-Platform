@@ -70,7 +70,7 @@ The external caller must not choose participant ownership through an arbitrary `
 
 `AuthenticatedActorReference(x) -> RegistrantReference("participant", x)`
 
-The participant-owns-registration **authorization decision** moves to Security. Decision #99 / ADR-0014 select the minimum public boundary: Security owns `AuthenticatedActorReference`, `AuthenticatedActorProvider`, opaque `ResourceOwnerReference`, `AuthorizationDecision`, and `AuthorizeResourceOwnership`. Event-Registration retains Event/Registration interpretation and supplies only the opaque expected-owner reference after validating the Event target and participant registrant namespaces. Security must not become owner of Event publication truth, Registration lifecycle/ownership state, Event-registration orchestration, or other domain invariants.
+The participant-owns-registration **authorization decision** moves to Security. Decision #99, recorded by ADR-0014, selects the minimum public boundary: Security owns `AuthenticatedActorReference`, `AuthenticatedActorProvider`, opaque `ResourceOwnerReference`, `AuthorizationDecision`, and `AuthorizeResourceOwnership`. Event-Registration retains Event/Registration interpretation and supplies only the opaque expected-owner reference after validating the Event target and participant registrant namespaces. Security must not become owner of Event publication truth, Registration lifecycle/ownership state, Event-registration orchestration, or other domain invariants.
 
 Create requires Authentication but no separate Authorization decision: Event-Registration continues to derive `RegistrantReference("participant", actorReference)`. Retrieve and cancel use the same Security ownership decision. No action enum, role/permission model, generic policy engine, or `security-api -> core` dependency is accepted.
 
@@ -87,7 +87,7 @@ ADR-0012 and #87 remain the accepted historical rationale/technology admission f
 
 Participant proof credentials remain externally supplied runtime configuration. Each configured proof participant contains only an opaque stable platform principal identifier and an encoded password verifier. The application runtime supplies configuration while the Security implementation owns credential-verification behavior. Plain-text/no-op password storage remains prohibited. No credential database, participant user repository, Person/Account persistence, identity database, credential migration subsystem, enrollment/reset/recovery/admin API, or identity-provider integration is introduced.
 
-After successful authentication, decision #99 / ADR-0014 preserve the platform-facing actor behavior while moving ownership of the semantic to `security-api`:
+After successful authentication, decision #99, recorded by ADR-0014, preserves the platform-facing actor behavior while moving ownership of the semantic to `security-api`:
 
 `authenticatedPrincipalName -> AuthenticatedActorReference(authenticatedPrincipalName)`
 
