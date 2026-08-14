@@ -81,24 +81,25 @@ This document is the authoritative concise statement of where the project curren
 - Decision issue #84 selected Spring Security with stateless HTTP Basic for the minimum non-browser participant-authentication proof, externally supplied encoded runtime credential verifiers, direct opaque stable platform principal pseudonyms as `AuthenticatedActorReference`, and Event-Registration-owned participant authorization.
 - Documentation issue #85 was accepted through PR #86 as ADR-0012, recording the selected authentication boundary without changing the architecture model or admitting implementation by itself.
 - Scope issue #87 was accepted through PR #88, admitting Spring Security with stateless HTTP Basic for the bounded Goal #57 participant-authentication proof, externally configured encoded password verifiers, direct opaque stable platform-principal adaptation, and no new modeled architecture relationship.
+- Implementation issue #91 replaces the transitional caller-owned Event-registration HTTP path with the actor-bound participant-private create/retrieve/cancel path, adds the admitted Spring Security stateless HTTP Basic runtime boundary, derives the opaque actor directly from the authenticated stable platform principal, exposes Registration lifecycle/cancellation, conceals authenticated non-owner existence, preserves correlation/privacy behavior, and validates restart durability against real PostgreSQL.
 
 ## In progress
 
 - Goal issue #57 remains active with `priority: now`.
-- Documentation subgoal #89 is the active Goal #57 child and owns only synchronization of this project-status artifact after #87/PR #88.
-- No external participant authentication/security-boundary implementation child is currently active; no authentication implementation is claimed by this status synchronization.
+- The external participant-authenticated Event-registration boundary from implementation #91 is now represented in the repository state: create/retrieve/cancel are participant-private, caller-authoritative ownership is removed, lifecycle is externally visible, and the admitted Spring Security/stateless HTTP Basic mechanism is implemented inside the existing Platform Application runtime.
+- Event HTTP publication/discovery remains the next separate Goal #57 external gap. Transport-neutral Event publication/discovery already exists through #74/PR #78 and is intentionally not implemented by #91.
 
 ## Known gaps
 
-- No external technical authentication implementation exists yet. The mechanism is selected by #84/ADR-0012: Spring Security with stateless HTTP Basic, externally configured encoded password verifiers, and direct opaque stable platform principal pseudonyms adapted to `AuthenticatedActorReference`. Event-Registration-owned participant authorization is already implemented at the transport-neutral composition boundary through #79/PR #80.
-- No durable provider-to-platform identity-mapping store, Person/Account capability, identity provider, or new modeled security component is accepted. HMAC derivation remains deferred unless a future raw provider subject creates that need.
-- No production deployment, TLS, secrets-management, or production database-operations baseline has been accepted.
+- Event publication/discovery is implemented at the transport-neutral Event capability boundary, but no Event HTTP publication/discovery operations are exposed yet.
+- No durable provider-to-platform identity-mapping store, Person/Account capability, external identity provider, or new modeled security component is accepted. HMAC derivation remains deferred unless a future raw provider subject creates that need.
+- Production TLS termination, secrets-management products, deployment/infrastructure, credential enrollment/reset/recovery/admin APIs, and production database operations remain outside the current accepted proof.
 - No artifact/package publication process has been accepted.
 
 ## Next priority
 
-Complete documentation synchronization #89, then re-read accepted `development`, Goal #57, and the relevant authoritative artifacts before decomposing the smallest coherent external Event-facing participant authentication/security-boundary implementation child.
+After #91 is accepted into `development`, re-read `development`, Goal #57, and the directly affected authoritative artifacts, then decompose the smallest coherent Event HTTP publication/discovery child needed to close the remaining external discovery gap.
 
-That later implementation child must define explicit ownership/non-ownership, exact contract/runtime changes, validation, exclusions, and execution dependencies. It may use only the bounded Spring Security/stateless HTTP Basic design admitted by #87 and ADR-0012. Any need for OAuth/OIDC, JWT, sessions/cookies, a specific identity provider, durable identity mapping, a new persistence owner/component, or another significant relationship requires separate change control.
+That later child must preserve Event ownership of publication/discovery, keep publication separate from Registration eligibility, and must not broaden participant authentication/security scope without separate accepted need and change control.
 
 Person/Account, participant profiles, capacity/waitlists, re-registration/reactivation, payment/ticketing, notifications/messaging, frontend, deployment/infrastructure expansion, and other exclusions in `docs/scope.md` remain outside accepted scope.

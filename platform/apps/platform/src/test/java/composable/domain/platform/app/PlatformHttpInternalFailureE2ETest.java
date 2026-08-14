@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 class PlatformHttpInternalFailureE2ETest {
@@ -26,11 +28,17 @@ class PlatformHttpInternalFailureE2ETest {
 
         ConfigurableApplicationContext application = null;
         try {
-            application = new SpringApplication(PlatformApplication.class).run(
+            PasswordEncoder participantPasswordEncoder =
+        PasswordEncoderFactories.createDelegatingPasswordEncoder();
+
+application = new SpringApplication(PlatformApplication.class).run(
                     "--server.port=0",
                     "--platform.database.url=" + postgresql.getJdbcUrl(),
                     "--platform.database.username=" + postgresql.getUsername(),
-                    "--platform.database.password=" + postgresql.getPassword());
+                    "--platform.database.password=" + postgresql.getPassword(),
+                    "--platform.security.participants[0].principal=opaque-platform-internal-e2e",
+                    "--platform.security.participants[0].password-verifier="
+                            + participantPasswordEncoder.encode("unused-test-secret"));
 
             Integer port = application.getEnvironment()
                     .getRequiredProperty("local.server.port", Integer.class);

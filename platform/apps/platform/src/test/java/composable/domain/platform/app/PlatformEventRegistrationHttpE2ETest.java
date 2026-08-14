@@ -8,9 +8,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Base64;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterAll;
@@ -18,11 +20,18 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 class PlatformEventRegistrationHttpE2ETest {
 
     private static final String CORRELATION_HEADER = "X-Correlation-Id";
+    private static final String PRINCIPAL_A = "opaque-7f31a";
+    private static final String PRINCIPAL_B = "opaque-9c42b";
+    private static final String PASSWORD_A = "test-proof-secret-a";
+    private static final String PASSWORD_B = "test-proof-secret-b";
+
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final PostgreSQLContainer POSTGRESQL =
             new PostgreSQLContainer("postgres:18.4");
@@ -34,17 +43,7 @@ class PlatformEventRegistrationHttpE2ETest {
     @BeforeAll
     static void startRuntime() {
         POSTGRESQL.start();
-
-        application = new SpringApplication(PlatformApplication.class).run(
-                "--server.port=0",
-                "--platform.database.url=" + POSTGRESQL.getJdbcUrl(),
-                "--platform.database.username=" + POSTGRESQL.getUsername(),
-                "--platform.database.password=" + POSTGRESQL.getPassword());
-
-        Integer port = application.getEnvironment()
-                .getRequiredProperty("local.server.port", Integer.class);
-        baseUri = URI.create("http://127.0.0.1:" + port);
-        dataSource = application.getBean(DataSource.class);
+        startApplication();
     }
 
     @AfterAll
@@ -55,17 +54,39 @@ class PlatformEventRegistrationHttpE2ETest {
         POSTGRESQL.stop();
     }
 
+    private static void startApplication() {
+        PasswordEncoder encoder =
+                PasswordEncoderFactories.createDelegatingPasswordEncoder();
+
+        application = new SpringApplication(PlatformApplication.class).run(
+                "--server.port=0",
+                "--platform.database.url=" + POSTGRESQL.getJdbcUrl(),
+                "--platform.database.username=" + POSTGRESQL.getUsername(),
+                "--platform.database.password=" + POSTGRESQL.getPassword(),
+                "--platform.security.participants[0].principal=" + PRINCIPAL_A,
+                "--platform.security.participants[0].password-verifier="
+                        + encoder.encode(PASSWORD_A),
+                "--platform.security.participants[1].principal=" + PRINCIPAL_B,
+                "--platform.security.participants[1].password-verifier="
+                        + encoder.encode(PASSWORD_B));
+
+        Integer port = application.getEnvironment()
+                .getRequiredProperty("local.server.port", Integer.class);
+        baseUri = URI.create("http://127.0.0.1:" + port);
+        dataSource = application.getBean(DataSource.class);
+    }
+
     @Test
-    void registersExistingEventAndRetrievesDurableEventRegistrationWithCorrelation()
-            throws Exception {
+    void authenticatesOwnerAndDerivesDurableParticipantOwnership() throws Exception {
         defineEvent("registration-event-1");
 
         HttpResponse<String> created = postRegistration(
                 registrationJson(
                         "registration-http-1",
-                        "registration-event-1",
-                        "participant-alpha"),
-                "corr-registration-create");
+                        "registration-event-1"),
+                "corr-registration-create",
+                PRINCIPAL_A,
+                PASSWORD_A);
 
         assertEquals(201, created.statusCode());
         assertCorrelation(created, "corr-registration-create");
@@ -73,16 +94,20 @@ class PlatformEventRegistrationHttpE2ETest {
                 created.body(),
                 "registration-http-1",
                 "registration-event-1",
-                "participant-alpha");
+                "active");
+        assertFalse(created.body().contains("participantReference"));
         assertPersistedRegistration(
                 "registration-http-1",
                 "participant",
-                "participant-alpha",
+                PRINCIPAL_A,
                 "event",
                 "registration-event-1");
 
-        HttpResponse<String> retrieved =
-                getRegistration("registration-http-1", null);
+        HttpResponse<String> retrieved = getRegistration(
+                "registration-http-1",
+                null,
+                PRINCIPAL_A,
+                PASSWORD_A);
 
         assertEquals(200, retrieved.statusCode());
         assertGeneratedCorrelation(retrieved);
@@ -90,7 +115,270 @@ class PlatformEventRegistrationHttpE2ETest {
                 retrieved.body(),
                 "registration-http-1",
                 "registration-event-1",
-                "participant-alpha");
+                "active");
+    }
+
+    @Test
+    void missingAndInvalidCredentialsUseSameAuthenticationFailureSemantics()
+            throws Exception {
+        defineEvent("registration-event-auth");
+
+        HttpResponse<String> missing = postRegistration(
+                registrationJson(
+                        "registration-http-auth-missing",
+                        "registration-event-auth"),
+                "corr-auth-missing",
+                null,
+                null);
+
+        HttpResponse<String> invalid = postRegistration(
+                registrationJson(
+                        "registration-http-auth-invalid",
+                        "registration-event-auth"),
+                "corr-auth-invalid",
+                PRINCIPAL_A,
+                "wrong-secret");
+
+        assertEquals(401, missing.statusCode());
+        assertEquals(401, invalid.statusCode());
+        assertCorrelation(missing, "corr-auth-missing");
+        assertCorrelation(invalid, "corr-auth-invalid");
+        assertJsonString(missing.body(), "code", "authentication_required");
+        assertJsonString(invalid.body(), "code", "authentication_required");
+        assertJsonString(missing.body(), "message", "Authentication required");
+        assertJsonString(invalid.body(), "message", "Authentication required");
+        assertEquals(0, registrationCount("registration-http-auth-missing"));
+        assertEquals(0, registrationCount("registration-http-auth-invalid"));
+    }
+
+    @Test
+    void unauthenticatedRetrieveRemainsDistinctAuthenticationFailure() throws Exception {
+        HttpResponse<String> response = getRegistration(
+                "registration-http-unauthenticated",
+                "corr-unauthenticated-retrieve",
+                null,
+                null);
+
+        assertEquals(401, response.statusCode());
+        assertCorrelation(response, "corr-unauthenticated-retrieve");
+        assertJsonString(response.body(), "code", "authentication_required");
+    }
+
+    @Test
+    void authenticatedNonOwnerAndUnknownRegistrationHaveSameExternalDisclosure()
+            throws Exception {
+        defineEvent("registration-event-private");
+
+        assertEquals(
+                201,
+                postRegistration(
+                                registrationJson(
+                                        "registration-http-private",
+                                        "registration-event-private"),
+                                "corr-private-create",
+                                PRINCIPAL_A,
+                                PASSWORD_A)
+                        .statusCode());
+
+        HttpResponse<String> nonOwner = getRegistration(
+                "registration-http-private",
+                "corr-private-non-owner",
+                PRINCIPAL_B,
+                PASSWORD_B);
+
+        HttpResponse<String> unknown = getRegistration(
+                "registration-http-private-unknown",
+                "corr-private-unknown",
+                PRINCIPAL_B,
+                PASSWORD_B);
+
+        assertEquals(404, nonOwner.statusCode());
+        assertEquals(404, unknown.statusCode());
+        assertJsonString(nonOwner.body(), "code", "event_registration_not_found");
+        assertJsonString(unknown.body(), "code", "event_registration_not_found");
+        assertJsonString(nonOwner.body(), "message", "Event registration was not found");
+        assertJsonString(unknown.body(), "message", "Event registration was not found");
+    }
+
+    @Test
+    void ownerCancelsIdempotentlyAndObservesCancelledLifecycle() throws Exception {
+        defineEvent("registration-event-cancel");
+
+        assertEquals(
+                201,
+                postRegistration(
+                                registrationJson(
+                                        "registration-http-cancel",
+                                        "registration-event-cancel"),
+                                "corr-cancel-create",
+                                PRINCIPAL_A,
+                                PASSWORD_A)
+                        .statusCode());
+
+        HttpResponse<String> cancelled = cancelRegistration(
+                "registration-http-cancel",
+                "corr-cancel-first",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        assertEquals(200, cancelled.statusCode());
+        assertCorrelation(cancelled, "corr-cancel-first");
+        assertRegistrationBody(
+                cancelled.body(),
+                "registration-http-cancel",
+                "registration-event-cancel",
+                "cancelled");
+
+        HttpResponse<String> repeated = cancelRegistration(
+                "registration-http-cancel",
+                "corr-cancel-repeat",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        assertEquals(200, repeated.statusCode());
+        assertRegistrationBody(
+                repeated.body(),
+                "registration-http-cancel",
+                "registration-event-cancel",
+                "cancelled");
+
+        HttpResponse<String> retrieved = getRegistration(
+                "registration-http-cancel",
+                "corr-cancel-retrieve",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        assertEquals(200, retrieved.statusCode());
+        assertRegistrationBody(
+                retrieved.body(),
+                "registration-http-cancel",
+                "registration-event-cancel",
+                "cancelled");
+
+        HttpResponse<String> nonOwnerCancel = cancelRegistration(
+                "registration-http-cancel",
+                "corr-cancel-non-owner",
+                PRINCIPAL_B,
+                PASSWORD_B);
+
+        assertEquals(404, nonOwnerCancel.statusCode());
+        assertJsonString(
+                nonOwnerCancel.body(),
+                "code",
+                "event_registration_not_found");
+
+        HttpResponse<String> duplicateAfterCancellation = postRegistration(
+                registrationJson(
+                        "registration-http-cancel-conflict",
+                        "registration-event-cancel"),
+                "corr-cancel-conflict",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        assertEquals(409, duplicateAfterCancellation.statusCode());
+        assertJsonString(
+                duplicateAfterCancellation.body(),
+                "code",
+                "registration_conflict");
+        assertEquals(0, registrationCount("registration-http-cancel-conflict"));
+    }
+
+    @Test
+    void ownerAndCancelledLifecycleSurviveApplicationRestartAgainstSamePostgresql()
+            throws Exception {
+        defineEvent("registration-event-restart");
+
+        assertEquals(
+                201,
+                postRegistration(
+                                registrationJson(
+                                        "registration-http-restart",
+                                        "registration-event-restart"),
+                                "corr-restart-create",
+                                PRINCIPAL_A,
+                                PASSWORD_A)
+                        .statusCode());
+
+        assertEquals(
+                200,
+                cancelRegistration(
+                                "registration-http-restart",
+                                "corr-restart-cancel",
+                                PRINCIPAL_A,
+                                PASSWORD_A)
+                        .statusCode());
+
+        application.close();
+        application = null;
+        startApplication();
+
+        HttpResponse<String> owner = getRegistration(
+                "registration-http-restart",
+                "corr-restart-owner",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        assertEquals(200, owner.statusCode());
+        assertRegistrationBody(
+                owner.body(),
+                "registration-http-restart",
+                "registration-event-restart",
+                "cancelled");
+        assertPersistedRegistration(
+                "registration-http-restart",
+                "participant",
+                PRINCIPAL_A,
+                "event",
+                "registration-event-restart");
+
+        HttpResponse<String> nonOwner = getRegistration(
+                "registration-http-restart",
+                "corr-restart-non-owner",
+                PRINCIPAL_B,
+                PASSWORD_B);
+
+        assertEquals(404, nonOwner.statusCode());
+        assertJsonString(
+                nonOwner.body(),
+                "code",
+                "event_registration_not_found");
+    }
+
+    @Test
+    void eventDefineAndRetrieveRemainPublicOutsideParticipantSecurityChain()
+            throws Exception {
+        String eventId = "registration-event-public-security-isolation";
+        String body = "{"
+                + "\"eventId\":\"" + eventId + "\","
+                + "\"name\":\"Registration Event\","
+                + "\"slug\":\"" + eventId + "\","
+                + "\"startsAt\":\"2026-09-01T08:00:00Z\","
+                + "\"endsAt\":\"2026-09-01T10:00:00Z\","
+                + "\"timezone\":\"Europe/Copenhagen\""
+                + "}";
+
+        HttpRequest define = HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"))
+                .header("Content-Type", "application/json")
+                .header(CORRELATION_HEADER, "corr-public-event-define")
+                .header("Authorization", basicAuthorization(PRINCIPAL_A, "wrong-secret"))
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> defined =
+                HTTP.send(define, HttpResponse.BodyHandlers.ofString());
+        assertEquals(201, defined.statusCode());
+
+        HttpRequest retrieve = HttpRequest.newBuilder(
+                        baseUri.resolve("/api/v1/events/" + eventId))
+                .header(CORRELATION_HEADER, "corr-public-event-retrieve")
+                .header("Authorization", basicAuthorization(PRINCIPAL_A, "wrong-secret"))
+                .GET()
+                .build();
+
+        HttpResponse<String> retrieved =
+                HTTP.send(retrieve, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, retrieved.statusCode());
+        assertJsonString(retrieved.body(), "eventId", eventId);
     }
 
     @Test
@@ -98,21 +386,15 @@ class PlatformEventRegistrationHttpE2ETest {
         HttpResponse<String> create = postRegistration(
                 registrationJson(
                         "registration-http-missing-event",
-                        "event-does-not-exist",
-                        "participant-beta"),
-                "corr-unknown-event");
+                        "event-does-not-exist"),
+                "corr-unknown-event",
+                PRINCIPAL_A,
+                PASSWORD_A);
 
         assertEquals(404, create.statusCode());
         assertCorrelation(create, "corr-unknown-event");
         assertJsonString(create.body(), "code", "event_not_found");
         assertEquals(0, registrationCount("registration-http-missing-event"));
-
-        HttpResponse<String> retrieve =
-                getRegistration("registration-http-missing-event", "corr-after-unknown");
-
-        assertEquals(404, retrieve.statusCode());
-        assertCorrelation(retrieve, "corr-after-unknown");
-        assertJsonString(retrieve.body(), "code", "event_registration_not_found");
     }
 
     @Test
@@ -123,19 +405,21 @@ class PlatformEventRegistrationHttpE2ETest {
         assertEquals(
                 201,
                 postRegistration(
-                        registrationJson(
-                                "registration-http-original",
-                                "registration-event-duplicate",
-                                "participant-duplicate"),
-                        "corr-original")
+                                registrationJson(
+                                        "registration-http-original",
+                                        "registration-event-duplicate"),
+                                "corr-original",
+                                PRINCIPAL_A,
+                                PASSWORD_A)
                         .statusCode());
 
         HttpResponse<String> duplicate = postRegistration(
                 registrationJson(
                         "registration-http-conflicting",
-                        "registration-event-duplicate",
-                        "participant-duplicate"),
-                "corr-conflict");
+                        "registration-event-duplicate"),
+                "corr-conflict",
+                PRINCIPAL_A,
+                PASSWORD_A);
 
         assertEquals(409, duplicate.statusCode());
         assertCorrelation(duplicate, "corr-conflict");
@@ -144,21 +428,23 @@ class PlatformEventRegistrationHttpE2ETest {
         assertPersistedRegistration(
                 "registration-http-original",
                 "participant",
-                "participant-duplicate",
+                PRINCIPAL_A,
                 "event",
                 "registration-event-duplicate");
         assertEquals(0, registrationCount("registration-http-conflicting"));
     }
 
     @Test
-    void structurallyInvalidRequestReturnsBadRequest() throws Exception {
+    void structurallyInvalidAuthenticatedRequestReturnsBadRequest() throws Exception {
         String body = "{"
-                + "\"registrationId\":\"registration-http-invalid\","
-                + "\"eventId\":\"registration-event-invalid\""
+                + "\"registrationId\":\"registration-http-invalid\""
                 + "}";
 
-        HttpResponse<String> response =
-                postRegistration(body, "corr-invalid-registration");
+        HttpResponse<String> response = postRegistration(
+                body,
+                "corr-invalid-registration",
+                PRINCIPAL_A,
+                PASSWORD_A);
 
         assertEquals(400, response.statusCode());
         assertCorrelation(response, "corr-invalid-registration");
@@ -167,9 +453,12 @@ class PlatformEventRegistrationHttpE2ETest {
     }
 
     @Test
-    void unknownRegistrationReturnsNotFound() throws Exception {
-        HttpResponse<String> response =
-                getRegistration("registration-http-unknown", "corr-unknown-registration");
+    void authenticatedUnknownRegistrationReturnsNotFound() throws Exception {
+        HttpResponse<String> response = getRegistration(
+                "registration-http-unknown",
+                "corr-unknown-registration",
+                PRINCIPAL_A,
+                PASSWORD_A);
 
         assertEquals(404, response.statusCode());
         assertCorrelation(response, "corr-unknown-registration");
@@ -199,14 +488,14 @@ class PlatformEventRegistrationHttpE2ETest {
 
     private static HttpResponse<String> postRegistration(
             String body,
-            String correlationId) throws Exception {
+            String correlationId,
+            String principal,
+            String password) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(
                         baseUri.resolve("/api/v1/event-registrations"))
                 .header("Content-Type", "application/json");
 
-        if (correlationId != null) {
-            builder.header(CORRELATION_HEADER, correlationId);
-        }
+        addCommonHeaders(builder, correlationId, principal, password);
 
         return HTTP.send(
                 builder.POST(HttpRequest.BodyPublishers.ofString(body)).build(),
@@ -215,27 +504,62 @@ class PlatformEventRegistrationHttpE2ETest {
 
     private static HttpResponse<String> getRegistration(
             String registrationId,
-            String correlationId) throws Exception {
+            String correlationId,
+            String principal,
+            String password) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(
                 baseUri.resolve("/api/v1/event-registrations/" + registrationId));
 
-        if (correlationId != null) {
-            builder.header(CORRELATION_HEADER, correlationId);
-        }
+        addCommonHeaders(builder, correlationId, principal, password);
 
         return HTTP.send(
                 builder.GET().build(),
                 HttpResponse.BodyHandlers.ofString());
     }
 
+    private static HttpResponse<String> cancelRegistration(
+            String registrationId,
+            String correlationId,
+            String principal,
+            String password) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(
+                baseUri.resolve("/api/v1/event-registrations/" + registrationId));
+
+        addCommonHeaders(builder, correlationId, principal, password);
+
+        return HTTP.send(
+                builder.DELETE().build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static void addCommonHeaders(
+            HttpRequest.Builder builder,
+            String correlationId,
+            String principal,
+            String password) {
+        if (correlationId != null) {
+            builder.header(CORRELATION_HEADER, correlationId);
+        }
+
+        if (principal != null && password != null) {
+            builder.header(
+                    "Authorization",
+                    basicAuthorization(principal, password));
+        }
+    }
+
+    private static String basicAuthorization(String principal, String password) {
+        String credentials = principal + ":" + password;
+        return "Basic " + Base64.getEncoder().encodeToString(
+                credentials.getBytes(StandardCharsets.UTF_8));
+    }
+
     private static String registrationJson(
             String registrationId,
-            String eventId,
-            String participantReference) {
+            String eventId) {
         return "{"
                 + "\"registrationId\":\"" + registrationId + "\","
-                + "\"eventId\":\"" + eventId + "\","
-                + "\"participantReference\":\"" + participantReference + "\""
+                + "\"eventId\":\"" + eventId + "\""
                 + "}";
     }
 
@@ -280,10 +604,10 @@ class PlatformEventRegistrationHttpE2ETest {
             String body,
             String registrationId,
             String eventId,
-            String participantReference) {
+            String lifecycle) {
         assertJsonString(body, "registrationId", registrationId);
         assertJsonString(body, "eventId", eventId);
-        assertJsonString(body, "participantReference", participantReference);
+        assertJsonString(body, "lifecycle", lifecycle);
     }
 
     private static void assertJsonString(String body, String field, String value) {

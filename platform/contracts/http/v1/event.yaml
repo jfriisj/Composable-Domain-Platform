@@ -113,7 +113,9 @@ paths:
       tags:
         - EventRegistration
       operationId: createEventRegistration
-      summary: Register participation in an existing Event
+      summary: Register the authenticated participant in an existing Event
+      security:
+        - ParticipantBasicAuth: []
       parameters:
         - $ref: '#/components/parameters/CorrelationId'
       requestBody:
@@ -134,6 +136,15 @@ paths:
                 $ref: '#/components/schemas/EventRegistrationResponse'
         '400':
           description: Structurally or domain-invalid Event registration request
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Participant authentication is required or credentials are invalid
           headers:
             X-Correlation-Id:
               $ref: '#/components/headers/CorrelationId'
@@ -173,7 +184,9 @@ paths:
       tags:
         - EventRegistration
       operationId: findEventRegistrationById
-      summary: Retrieve Event-registration state by identity
+      summary: Retrieve the authenticated participant's Event-registration state
+      security:
+        - ParticipantBasicAuth: []
       parameters:
         - $ref: '#/components/parameters/RegistrationId'
         - $ref: '#/components/parameters/CorrelationId'
@@ -187,8 +200,82 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventRegistrationResponse'
+        '400':
+          description: Structurally invalid Registration identity
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Participant authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Registration is unknown or is not Event-target Registration state
+          description: Private Event registration is unknown or not visible to this participant
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - EventRegistration
+      operationId: cancelEventRegistration
+      summary: Cancel the authenticated participant's Event registration
+      security:
+        - ParticipantBasicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RegistrationId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Event registration cancelled
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationResponse'
+        '400':
+          description: Structurally invalid Registration identity
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Participant authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Private Event registration is unknown or not visible to this participant
           headers:
             X-Correlation-Id:
               $ref: '#/components/headers/CorrelationId'
@@ -206,6 +293,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
+  securitySchemes:
+    ParticipantBasicAuth:
+      type: http
+      scheme: basic
   parameters:
     CorrelationId:
       name: X-Correlation-Id
@@ -309,15 +400,11 @@ components:
       required:
         - registrationId
         - eventId
-        - participantReference
       properties:
         registrationId:
           type: string
           minLength: 1
         eventId:
-          type: string
-          minLength: 1
-        participantReference:
           type: string
           minLength: 1
     EventRegistrationResponse:
@@ -326,7 +413,7 @@ components:
       required:
         - registrationId
         - eventId
-        - participantReference
+        - lifecycle
       properties:
         registrationId:
           type: string
@@ -334,9 +421,13 @@ components:
         eventId:
           type: string
           minLength: 1
-        participantReference:
-          type: string
-          minLength: 1
+        lifecycle:
+          $ref: '#/components/schemas/EventRegistrationLifecycle'
+    EventRegistrationLifecycle:
+      type: string
+      enum:
+        - active
+        - cancelled
     ErrorResponse:
       type: object
       additionalProperties: false
@@ -348,6 +439,7 @@ components:
           type: string
           enum:
             - invalid_request
+            - authentication_required
             - event_not_found
             - event_already_defined
             - event_registration_not_found

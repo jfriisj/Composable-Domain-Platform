@@ -14,6 +14,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 class PlatformHttpE2ETest {
@@ -30,11 +32,17 @@ class PlatformHttpE2ETest {
     static void startRuntime() {
         POSTGRESQL.start();
 
-        application = new SpringApplication(PlatformApplication.class).run(
+        PasswordEncoder participantPasswordEncoder =
+        PasswordEncoderFactories.createDelegatingPasswordEncoder();
+
+application = new SpringApplication(PlatformApplication.class).run(
                 "--server.port=0",
                 "--platform.database.url=" + POSTGRESQL.getJdbcUrl(),
                 "--platform.database.username=" + POSTGRESQL.getUsername(),
-                "--platform.database.password=" + POSTGRESQL.getPassword());
+                "--platform.database.password=" + POSTGRESQL.getPassword(),
+                "--platform.security.participants[0].principal=opaque-platform-http-e2e",
+                "--platform.security.participants[0].password-verifier="
+                        + participantPasswordEncoder.encode("unused-test-secret"));
 
         Integer port = application.getEnvironment()
                 .getRequiredProperty("local.server.port", Integer.class);

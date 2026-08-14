@@ -123,13 +123,14 @@ The Registration persistence boundary is a Registration-owned PostgreSQL `regist
 The authoritative external Event-facing contract remains `platform/contracts/http/v1/event.yaml`. It contains the existing Event operations and is the accepted location for:
 
 - `POST /api/v1/event-registrations` through the cross-capability composition;
-- `GET /api/v1/event-registrations/{registrationId}` through the cross-capability composition.
+- `GET /api/v1/event-registrations/{registrationId}` through the cross-capability composition;
+- `DELETE /api/v1/event-registrations/{registrationId}` through the cross-capability composition.
 
 The unified OpenAPI document may use separate `Event` and `EventRegistration` tags. Contract-file grouping represents the coherent external Event-facing surface; it does not merge internal ownership. Event and Registration remain independent, and the Event-Registration composition continues to own orchestration.
 
-The transport contract keeps the current Event workflow language (`registrationId`, `eventId`, and `participantReference`) and does not expose generic Registration namespace/reference mechanics or a generic target dispatcher.
+The participant-private transport contract uses only `registrationId` and `eventId` as caller-supplied creation inputs, exposes Registration lifecycle state, and does not accept caller-authoritative participant ownership or expose generic Registration namespace/reference mechanics.
 
-Authentication identity and Registration registrant identity remain separate concepts. Authentication/authorization implementation and a Person capability are not introduced by this phase.
+Technical authentication identity and Registration registrant identity remain separate concepts. The existing Platform Application runtime now implements the bounded Spring Security/stateless HTTP Basic mechanism accepted by ADR-0012/#87, while participant authorization and actor-to-registrant mapping remain in Event-Registration composition. No Person/Account capability is introduced.
 
 The existing HTTP interface and Spring Boot application remain the external adapter and technical composition root respectively.
 
@@ -143,9 +144,9 @@ The scope preserves the current bounded contexts, composition, persistence owner
 
 Within the existing Event bounded context, Event now implements durable Event-owned publication state with `unpublished` and `published` states, initial `unpublished` state, a one-way `unpublished -> published` transition, and transport-neutral public discovery of published Events. Known-id Event retrieval remains independent of publication. Publication does not own Registration eligibility, capacity, waitlists, payment, participant identity, or authorization.
 
-Within the existing Registration bounded context, the generic lifecycle accepted by ADR-0011 is now implemented: initial `active` state, idempotent `active -> cancelled` behavior, lifecycle state in Registration retrieval, a transport-neutral generic cancellation operation, and Registration-owned durable persistence. Cancellation preserves Registration identity and the existing complete registrant-target uniqueness rule; cancelled pairs remain occupied. Registration remains domain-neutral and security-neutral. Event-facing participant cancellation remains planned through Event-Registration composition.
+Within the existing Registration bounded context, the generic lifecycle accepted by ADR-0011 is now implemented: initial `active` state, idempotent `active -> cancelled` behavior, lifecycle state in Registration retrieval, a transport-neutral generic cancellation operation, and Registration-owned durable persistence. Cancellation preserves Registration identity and the existing complete registrant-target uniqueness rule; cancelled pairs remain occupied. Registration remains domain-neutral and security-neutral. Event-facing participant cancellation is exposed through the actor-bound Event-Registration composition and participant-private HTTP boundary.
 
-The Event-Registration composition now implements an additive transport-neutral participant-private path for create, retrieve, and cancel. That path accepts an opaque stable authenticated actor reference, derives `RegistrantReference("participant", actorReference)`, authorizes retrieval/cancellation against Registration-owned registrant state, exposes Registration lifecycle state, and invokes Registration-owned cancellation only after authorization. The existing legacy HTTP-facing composition create/find contracts remain temporarily unchanged for compatibility and are not the accepted participant-private path. Technical authentication identity and establishment of the platform-facing actor reference remain external to Event, Registration, and this composition implementation.
+The Event-Registration composition implements the transport-neutral participant-private path for create, retrieve, and cancel. That path accepts an opaque stable authenticated actor reference, derives `RegistrantReference("participant", actorReference)`, authorizes retrieval/cancellation against Registration-owned registrant state, exposes Registration lifecycle state, and invokes Registration-owned cancellation only after authorization. The HTTP boundary now uses this actor-bound path, and the transitional caller-owned compatibility contracts have been removed. Technical authentication identity and establishment of the platform-facing actor reference remain external to Event, Registration, and the composition implementation.
 
 The actor reference is participant-linked private data for project handling. Registration persists only its own opaque participant reference; raw upstream/provider security-subject identifiers are not accepted as Registration durable state. Authenticated non-owner access keeps an internal authorization-denied semantic but uses the same external not-found resource-existence disclosure as an unknown private Event-registration. Normal structured logs exclude actor and participant registrant-reference values. Correlation and causation identifiers remain identity-free.
 
@@ -221,7 +222,7 @@ platform/apps/platform
   Registration Flyway startup migration
 ~~~
 
-`platform/apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, and Event-Registration composition. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests. Runtime wiring contains technical composition only; Event-registration workflow rules remain in the composition.
+`platform/apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, Event-Registration composition, and the bounded participant authentication runtime. Spring Security, externally supplied encoded participant credential verification, stateless HTTP Basic, and authenticated-principal-to-actor adaptation remain technical runtime concerns in this application boundary. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests. Runtime wiring contains technical composition only; Event-registration workflow and participant authorization rules remain in the composition.
 
 ## Accepted operational-runtime boundary
 
@@ -253,7 +254,7 @@ Database permission enforcement remains deferred until operational scope require
 
 ## External contracts
 
-`platform/contracts/http/v1/event.yaml` is the authoritative external HTTP contract for the current Event define/retrieve and Event-registration create/retrieve surfaces.
+`platform/contracts/http/v1/event.yaml` is the authoritative external HTTP contract for the current Event define/retrieve and participant-private Event-registration create/retrieve/cancel surfaces.
 
 OpenAPI Generator derives the server interface and transport models during the build. Generated sources are adapter-layer build output and must not become Event domain or application models.
 
