@@ -20,7 +20,7 @@ Status meanings:
 | Module dependency boundary | Gradle `java-library` | Accepted direction | Separate public `api` dependencies from internal `implementation` dependencies. |
 | Continuous integration | GitHub Actions | Accepted direction | Execute repository validation gates and expose required pull request status checks. |
 | Application runtime | Spring Boot | Accepted direction | Bootstrap, dependency injection, HTTP/runtime configuration, and technical adapters. |
-| Technical authentication | Spring Security | Accepted direction | Authenticate participant-private HTTP requests inside the existing Spring Boot runtime boundary; current Goal #57 scope admits stateless HTTP Basic only for the minimum non-browser proof. |
+| Security implementation | Spring Security | Accepted direction | Private Security-module implementation/adapter technology for the admitted participant-private proof; stateless HTTP Basic remains the bounded Goal #57 mechanism. The application runtime constructs/configures/wires Security but does not own Authentication/Authorization behavior. |
 | Modular verification | Spring Modulith | Accepted direction | Verify application-module boundaries and cycles. |
 | Architecture verification | ArchUnit | Accepted direction | Enforce Hexagonal Architecture and forbidden dependency rules. |
 | External HTTP contract | OpenAPI | Accepted direction | Authoritative HTTP contract for external clients and interfaces. |
