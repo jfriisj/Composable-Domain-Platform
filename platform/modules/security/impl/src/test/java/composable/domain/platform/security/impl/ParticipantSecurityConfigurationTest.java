@@ -1,10 +1,11 @@
-package composable.domain.platform.app;
+package composable.domain.platform.security.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import composable.domain.platform.http.AuthenticatedActorProvider;
+import composable.domain.platform.security.api.AuthenticatedActorProvider;
+import composable.domain.platform.security.api.AuthenticationRequiredException;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -118,6 +119,16 @@ class ParticipantSecurityConfigurationTest {
         assertEquals(
                 "opaque-proof-a",
                 actorProvider.authenticatedActor().reference());
+    }
+
+    @Test
+    void absentTechnicalPrincipalUsesFrameworkNeutralAuthenticationFailure() {
+        AuthenticatedActorProvider actorProvider =
+                configuration.authenticatedActorProvider();
+
+        assertThrows(
+                AuthenticationRequiredException.class,
+                actorProvider::authenticatedActor);
     }
 
     @Test

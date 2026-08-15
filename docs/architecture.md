@@ -146,9 +146,9 @@ The unified OpenAPI document may use separate `Event` and `EventRegistration` ta
 
 The participant-private transport contract uses only `registrationId` and `eventId` as caller-supplied creation inputs, exposes Registration lifecycle state, and does not accept caller-authoritative participant ownership or expose generic Registration namespace/reference mechanics.
 
-Technical authentication identity and Registration registrant identity remain separate concepts. The existing Platform Application runtime currently implements the bounded Spring Security/stateless HTTP Basic mechanism accepted by ADR-0012/#87, while participant authorization and actor-to-registrant mapping remain in Event-Registration composition. No Person/Account capability is introduced.
+Technical authentication identity and Registration registrant identity remain separate concepts. The independent Security module implements the bounded Spring Security/stateless HTTP Basic mechanism accepted by ADR-0012/#87 and the final opaque ownership Authorization selected by #99/ADR-0014. Actor-to-registrant mapping and Event/Registration workflow facts remain in Event-Registration composition. No Person/Account capability is introduced.
 
-ADR-0013 establishes that application-runtime ownership of Security is migration debt rather than the permanent module ownership model. Scope #97 admits the corrective Planned Security module boundary, and decision #99, recorded by ADR-0014, now defines its minimum public Authentication + Authorization contracts. The source/build migration remains unimplemented.
+ADR-0013 establishes Security as an independently owned module. Scope #97 admits its `api`/`impl` boundary, decision #99 and ADR-0014 define its public Authentication + Authorization contracts, and implementation #102 establishes that source/build ownership in the executable architecture.
 
 The existing HTTP interface and Spring Boot application remain the external adapter and technical composition root respectively.
 
@@ -158,39 +158,37 @@ ADR-0008 supersedes ADR-0007 and records the domain-neutral Registration boundar
 
 The minimum usable adult Event Registration lifecycle is accepted implementation scope and is being implemented incrementally. Current architecture statements below distinguish accepted implemented state from remaining planned behavior.
 
-The original lifecycle scope preserves the current Event/Registration bounded contexts, composition, persistence owners, external HTTP adapter, executable application container, and Event/Registration dependency direction. Scope #97 additionally admits a planned Security module with separate public API/private implementation projects, without adding a new application container, persistence owner, Person/Account capability, or Event/Registration dependency.
+The original lifecycle scope preserves the current Event/Registration bounded contexts, composition, persistence owners, external HTTP adapter, executable application container, and Event/Registration dependency direction. Scope #97 additionally admits the Security module with separate public API/private implementation projects, without adding a new application container, persistence owner, Person/Account capability, or Event/Registration dependency.
 
 Within the existing Event bounded context, Event now implements durable Event-owned publication state with `unpublished` and `published` states, initial `unpublished` state, a one-way `unpublished -> published` transition, and transport-neutral public discovery of published Events. Known-id Event retrieval remains independent of publication. Publication does not own Registration eligibility, capacity, waitlists, payment, participant identity, or authorization.
 
 Within the existing Registration bounded context, the generic lifecycle accepted by ADR-0011 is now implemented: initial `active` state, idempotent `active -> cancelled` behavior, lifecycle state in Registration retrieval, a transport-neutral generic cancellation operation, and Registration-owned durable persistence. Cancellation preserves Registration identity and the existing complete registrant-target uniqueness rule; cancelled pairs remain occupied. Registration remains domain-neutral and security-neutral. Event-facing participant cancellation is exposed through the actor-bound Event-Registration composition and participant-private HTTP boundary.
 
-The Event-Registration composition implements the transport-neutral participant-private path for create, retrieve, and cancel. That path accepts an opaque stable authenticated actor reference, derives `RegistrantReference("participant", actorReference)`, authorizes retrieval/cancellation against Registration-owned registrant state, exposes Registration lifecycle state, and invokes Registration-owned cancellation only after authorization. The HTTP boundary now uses this actor-bound path, and the transitional caller-owned compatibility contracts have been removed. Technical authentication identity and establishment of the platform-facing actor reference remain external to Event, Registration, and the composition implementation.
+The Event-Registration composition implements the transport-neutral participant-private path for create, retrieve, and cancel. That path accepts Security's opaque stable authenticated actor reference, derives `RegistrantReference("participant", actorReference)` for create, validates Event/participant namespace facts for retrieve/cancel, delegates the final ownership decision to `AuthorizeResourceOwnership`, exposes Registration lifecycle state, and invokes Registration-owned cancellation only after authorization. The HTTP boundary now uses this actor-bound path, and the transitional caller-owned compatibility contracts have been removed. Technical authentication identity and establishment of the platform-facing actor reference remain external to Event, Registration, and the composition implementation.
 
 The actor reference is participant-linked private data for project handling. Registration persists only its own opaque participant reference; raw upstream/provider security-subject identifiers are not accepted as Registration durable state. Authenticated non-owner access keeps an internal authorization-denied semantic but uses the same external not-found resource-existence disclosure as an unknown private Event-registration. Normal structured logs exclude actor and participant registrant-reference values. Correlation and causation identifiers remain identity-free.
 
-ADR-0012 and scope #87 select the minimum external participant authentication boundary. Spring Security is the accepted technical authentication framework inside the existing `platform/apps/platform` Spring Boot runtime, with stateless HTTP Basic as the minimum non-browser proof for participant-private Event-registration create, retrieve, and cancel operations. Published Event discovery remains public.
+ADR-0012 and scope #87 select the minimum external participant authentication mechanism. Spring Security remains the accepted technical framework, now privately owned by `platform/modules/security/impl`, with stateless HTTP Basic as the minimum non-browser proof for participant-private Event-registration create, retrieve, and cancel operations. Published Event discovery remains public.
 
 Participant proof credentials are supplied through external runtime configuration as an opaque stable platform principal identifier plus an encoded password verifier. The runtime may hold those entries in memory; no credential database, Person/Account persistence, identity database, provider integration, or durable identity-mapping store is introduced. The configured principal identifier is itself the platform-facing pseudonym and is adapted directly as:
 
 `authenticatedPrincipalName -> AuthenticatedActorReference(authenticatedPrincipalName)`
 
-Current executable state still has `platform/apps/platform` configuring the Spring Security filter chain, stateless HTTP Basic, runtime credential verification, authenticated technical-principal establishment, and actor adaptation. `platform/interfaces/http` currently receives that actor reference and remains responsible for HTTP adaptation and external error/privacy mapping.
+Current executable state has `security-impl` configuring the Spring Security filter chain, stateless HTTP Basic, encoded credential verification, authenticated technical-principal establishment, actor adaptation, and opaque resource-ownership Authorization. `platform/interfaces/http` receives the actor through `security-api` and remains responsible for HTTP adaptation and external error/privacy mapping.
 
-Under accepted scope #97, that runtime-owned Authentication/Authorization behavior is migration debt. The planned target moves framework-specific authentication behavior into `security-impl`; the runtime only constructs/configures/wires the Security module, and consumers use `security-api`.
+The application runtime selects `security-impl` and wires `security-api` contracts to consumers. It does not own Authentication/Authorization behavior.
 
 Event-Registration continues to own `AuthenticatedActorReference(x) -> RegistrantReference("participant", x)` and Event-specific orchestration/domain fact preparation. Decision #99, recorded by ADR-0014, moves ownership of `AuthenticatedActorReference` itself to `security-api` and selects the final ownership Authorization contract. For retrieve/cancel, Event-Registration validates the Event target and participant registrant namespaces, translates only the opaque registrant reference value to Security's `ResourceOwnerReference`, and asks `AuthorizeResourceOwnership` for `ALLOWED` / `DENIED`. Create requires Authentication but no separate Authorization call. Registration remains security-neutral and has no dependency on Spring Security, HTTP authentication, credentials, actor semantics, or Security implementation.
 
 The proof is stateless and non-browser: no form login, session/cookie authentication, remember-me, logout/session lifecycle, OAuth/OIDC login, or JWT bearer authentication is accepted. Any CSRF exclusion is bounded to that stateless non-browser API proof and does not establish a browser security design. HTTP Basic requires secure transport across untrusted networks, while TLS termination/deployment infrastructure remains outside Goal #57.
 
-ADR-0012's selected mechanism introduced no new bounded context, Gradle module, application container, persistence owner, external authenticator, identity provider, identity-mapping store, Event/Registration dependency, or modeled relationship. Spring Security therefore remains part of the current executable Platform Application/runtime state.
+ADR-0012's selected mechanism originally introduced no new bounded context, application container, persistence owner, external authenticator, identity provider, identity-mapping store, or Event/Registration dependency. ADR-0013/#97 subsequently establish Security as an independent module without changing those product/persistence exclusions.
 
-ADR-0013 does not pretend that current state is already migrated. Scope #97 now accepts the future Security module boundary while keeping the current executable state explicit until implementation.
+`docs/architecture/workspace.dsl` now represents Security API/Implementation and their collaboration as **Current** executable elements/relationships.
 
-`docs/architecture/workspace.dsl` therefore adds Security API/Implementation and high-level collaboration as **Planned** elements/relationships only. Current views remain unchanged.
+## Current Security module boundary
 
-## Planned Security module boundary
-
-Accepted scope #97 introduces the planned physical boundary:
+Accepted scope #97 introduces the physical boundary:
 
 ~~~text
 platform/modules/security/
@@ -210,7 +208,7 @@ Decision #99, recorded by ADR-0014, selects the public collaboration surface.
 
 Neither public contract uses `ExecutionContext`; `security-api` has no dependency on `core`. No Spring Security, Servlet, HTTP Basic, password-verifier, provider, role/authority, Event, Registration, Event-Registration, or persistence type belongs in the API.
 
-The planned dependency direction is:
+The current dependency direction is:
 
 ~~~text
 security-impl -> security-api
@@ -236,7 +234,7 @@ The application runtime selects, constructs, configures, and wires Security but 
 
 The following dependencies remain prohibited: `security-api -> core/Event/Registration/Event-Registration/HTTP`; `security-impl -> Event/Registration/Event-Registration/HTTP`; functional consumers -> `security-impl`; and Event/Registration private implementation or persistence -> Security.
 
-Security remains **Planned** in the authoritative Structurizr model until corrective implementation is accepted. Current views continue to describe the executable pre-migration state.
+Security is **Current** in the authoritative Structurizr model. Current views include the Security API/Implementation and their executable collaboration with HTTP, Event-Registration, and the application composition root.
 
 No Security persistence, Person/Account capability, external identity provider, OAuth/OIDC, JWT, RBAC/ABAC/role model, generic policy engine, new application container, or dynamic plugin mechanism is admitted.
 
@@ -298,11 +296,11 @@ platform/apps/platform
   Registration Flyway startup migration
 ~~~
 
-`platform/apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, Event-Registration composition, and the currently embedded participant-authentication proof. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests.
+`platform/apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, Event-Registration composition, and Security public contracts. It explicitly selects the private Security implementation. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests.
 
-The current Spring Security, encoded participant credential verification, stateless HTTP Basic, and authenticated-principal-to-actor adaptation are accepted executable state from ADR-0012/#91. Under ADR-0013 they are explicit migration debt.
+Spring Security, encoded participant credential verification, stateless HTTP Basic, authenticated-principal-to-actor adaptation, and final opaque resource-ownership Authorization are privately owned by `security-impl`. The runtime provides selection/configuration/wiring only.
 
-Scope #97 and decision #99, recorded by ADR-0014, define the planned Security ownership correction: the composition root may construct/configure/wire `security-impl` but must not own Authentication/Authorization behavior. Event-registration workflow/domain facts remain in the composition; the final opaque actor-versus-owner decision belongs to Security. Corrective source/build implementation is still pending.
+Scope #97 and decision #99, recorded by ADR-0014, define this Security ownership boundary. Event-registration workflow/domain facts remain in the composition; the final opaque actor-versus-owner decision belongs to Security.
 
 Event-Registration remains a non-module composition under the current ADR-0013 classification, so #97 does not require a composition `api`/`impl` split.
 
@@ -363,7 +361,10 @@ The currently implemented architectural structure includes:
 │   │   │   ├── api/
 │   │   │   ├── impl/
 │   │   │   └── module.md
-│   │   └── registration/
+│   │   ├── registration/
+│   │   │   ├── api/
+│   │   │   └── impl/
+│   │   └── security/
 │   │       ├── api/
 │   │       └── impl/
 │   ├── compositions/

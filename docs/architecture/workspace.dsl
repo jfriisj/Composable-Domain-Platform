@@ -17,8 +17,8 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         registrationPersistence = element "Registration Persistence" "PostgreSQL schema" "Registration-owned durable namespaced registrant-to-target state with no Event-specific columns or cross-capability persistence coupling." "Current,Registration Module,Persistence"
         eventRegistrationComposition = element "Event-Registration Composition" "Gradle project" "Event-specific workflow that verifies Event existence and translates Event workflow identities into Registration references through public APIs." "Current,Composition"
 
-        securityApi = element "Security API" "Planned Gradle project" "Framework-neutral authenticated-actor Authentication boundary plus opaque resource-ownership Authorization decision selected by decision #99 and recorded by ADR-0014." "Planned,Security Module,API"
-        securityImpl = element "Security Implementation" "Planned Gradle project" "Private Security implementation and adapters: Spring Security/stateless HTTP Basic, encoded verifier validation, principal-to-actor adaptation, and ownership authorization." "Planned,Security Module,Implementation"
+        securityApi = element "Security API" "Gradle project" "Framework-neutral authenticated-actor Authentication boundary plus opaque resource-ownership Authorization decision selected by decision #99 and recorded by ADR-0014." "Current,Security Module,API"
+        securityImpl = element "Security Implementation" "Gradle project" "Private Security implementation and adapters: Spring Security/stateless HTTP Basic, encoded verifier validation, principal-to-actor adaptation, and ownership authorization." "Current,Security Module,Implementation"
 
         stakeholder -> platform "Uses and shapes"
         eventHttpContract -> httpInterface "Generates server transport interface and models"
@@ -42,30 +42,30 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         platformApp -> registrationImpl "Constructs private Registration implementation"
         platformApp -> registrationPersistence "Configures DataSource and applies Registration-owned Flyway migrations"
 
-        securityImpl -> securityApi "Planned implements the Security public boundary"
-        httpInterface -> securityApi "Planned consumes authenticated-actor Authentication boundary"
-        eventRegistrationComposition -> securityApi "Planned requests opaque resource-ownership Authorization decisions"
-        platformApp -> securityImpl "Planned constructs, configures, and wires private Security implementation"
-        platformApp -> securityApi "Planned wires Security public contracts to consumers"
+        securityImpl -> securityApi "Implements the Security public boundary"
+        httpInterface -> securityApi "Consumes authenticated-actor Authentication boundary"
+        eventRegistrationComposition -> securityApi "Requests opaque resource-ownership Authorization decisions"
+        platformApp -> securityImpl "Selects and configures private Security implementation"
+        platformApp -> securityApi "Wires Security public contracts to consumers"
     }
 
     views {
         systemContext platform "CurrentSystemContext" {
-            include stakeholder core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition
+            include stakeholder core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
             autolayout lr
         }
 
         custom "CurrentModuleMap" "Current module map" "Implemented runtime, contract, capability, composition, and persistence boundaries for Event and Registration." {
-            include core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition
+            include core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
             autolayout lr
         }
 
         custom "RegistrationComposition" "Registration composition" "Implemented Registration capability and Event-Registration cross-capability composition." {
-            include core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition
+            include core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
             autolayout lr
         }
 
-        custom "PlannedSecurityBoundary" "Planned Security module boundary" "Accepted #97/#99/ADR-0014 Security API/Implementation and high-level consumers. Current executable views remain unchanged until implementation." {
+        custom "SecurityBoundary" "Security module boundary" "Current Security API/Implementation and high-level consumers established by #97/#99/ADR-0014 and implementation #102." {
             include httpInterface platformApp eventRegistrationComposition registrationApi securityApi securityImpl
             autolayout lr
         }

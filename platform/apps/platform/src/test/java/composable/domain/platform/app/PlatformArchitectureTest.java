@@ -26,6 +26,8 @@ class PlatformArchitectureTest {
             ROOT + ".registration.persistence..";
     private static final String EVENT_REGISTRATION_COMPOSITION_PACKAGE =
             ROOT + ".composition.eventregistration..";
+    private static final String SECURITY_API_PACKAGE = ROOT + ".security.api..";
+    private static final String SECURITY_IMPL_PACKAGE = ROOT + ".security.impl..";
     private static final String HTTP_PACKAGE = ROOT + ".http..";
 
     private static final JavaClasses PRODUCTION_CLASSES = new ClassFileImporter()
@@ -87,7 +89,7 @@ class PlatformArchitectureTest {
     }
 
     @Test
-    void spring_security_must_remain_confined_to_application_runtime() {
+    void spring_security_must_remain_confined_to_security_implementation() {
         noClasses()
                 .that().resideInAnyPackage(
                         CORE_PACKAGE,
@@ -100,9 +102,23 @@ class PlatformArchitectureTest {
                         REGISTRATION_DOMAIN_PACKAGE,
                         REGISTRATION_PERSISTENCE_PACKAGE,
                         EVENT_REGISTRATION_COMPOSITION_PACKAGE,
-                        HTTP_PACKAGE)
+                        HTTP_PACKAGE,
+                        APP_PACKAGE)
                 .should().dependOnClassesThat().resideInAPackage(
                         "org.springframework.security..")
+                .check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void security_implementation_may_only_depend_on_security_api_framework_and_java_platform() {
+        classes()
+                .that().resideInAPackage(SECURITY_IMPL_PACKAGE)
+                .should().onlyDependOnClassesThat().resideInAnyPackage(
+                        SECURITY_IMPL_PACKAGE,
+                        SECURITY_API_PACKAGE,
+                        "java..",
+                        "jakarta.servlet..",
+                        "org.springframework..")
                 .check(PRODUCTION_CLASSES);
     }
 
@@ -120,12 +136,43 @@ class PlatformArchitectureTest {
                         REGISTRATION_APPLICATION_PACKAGE,
                         REGISTRATION_PERSISTENCE_PACKAGE,
                         EVENT_REGISTRATION_COMPOSITION_PACKAGE,
+                        SECURITY_API_PACKAGE,
+                        SECURITY_IMPL_PACKAGE,
                         HTTP_PACKAGE,
                         "java..",
                         "javax.sql..",
                         "org.flywaydb..",
                         "org.postgresql..",
                         "org.springframework..")
+                .check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void security_api_may_only_depend_on_security_api_and_java_platform() {
+        classes()
+                .that().resideInAPackage(SECURITY_API_PACKAGE)
+                .should().onlyDependOnClassesThat().resideInAnyPackage(
+                        SECURITY_API_PACKAGE,
+                        "java..")
+                .check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void functional_consumers_must_not_depend_on_security_implementation() {
+        noClasses()
+                .that().resideInAnyPackage(
+                        HTTP_PACKAGE,
+                        EVENT_REGISTRATION_COMPOSITION_PACKAGE,
+                        EVENT_API_PACKAGE,
+                        EVENT_APPLICATION_PACKAGE,
+                        EVENT_DOMAIN_PACKAGE,
+                        EVENT_PERSISTENCE_PACKAGE,
+                        REGISTRATION_API_PACKAGE,
+                        REGISTRATION_APPLICATION_PACKAGE,
+                        REGISTRATION_DOMAIN_PACKAGE,
+                        REGISTRATION_PERSISTENCE_PACKAGE)
+                .should().dependOnClassesThat().resideInAPackage(
+                        SECURITY_IMPL_PACKAGE)
                 .check(PRODUCTION_CLASSES);
     }
 

@@ -74,11 +74,11 @@ The current conforming domain modules are:
 
 Both use separate public API and private implementation Gradle projects.
 
-## Planned Security module
+## Security module
 
-ADR-0013 and scope #97 classify Security as an independently owned platform module. Decision #99, recorded by ADR-0014, defines its minimum public boundary. The module remains **Planned** until corrective implementation is accepted.
+ADR-0013 and scope #97 classify Security as an independently owned platform module. Decision #99, recorded by ADR-0014, defines its minimum public boundary. Implementation #102 establishes that boundary in executable source/build structure.
 
-Its planned physical shape is:
+Its current physical shape is:
 
 ~~~text
 platform/modules/security/
@@ -98,7 +98,7 @@ The public API does not use `ExecutionContext` and does not depend on `core`. It
 
 `security-impl` privately owns the admitted Spring Security/stateless HTTP Basic proof, encoded verifier validation, externally configured in-memory proof participants, technical-principal extraction, actor adaptation, Authentication implementation, ownership Authorization implementation, and Security-specific mechanism adapters.
 
-The planned functional consumers depend only on `security-api`:
+The functional consumers depend only on `security-api`:
 
 - the HTTP interface consumes the Authentication boundary;
 - Event-Registration consumes the ownership Authorization boundary.
@@ -185,7 +185,7 @@ Selection, construction, configuration, and wiring are not ownership.
 
 The runtime must not become the permanent implementation location for a capability/module merely because a framework is configured there.
 
-The current participant authentication/security proof is implemented in the application runtime as accepted executable state from ADR-0012/#91, and the current Event-Registration composition still performs the final participant owner comparison. Under ADR-0013/#97 this is explicit migration debt, not the target module ownership model. Decision #99, recorded by ADR-0014, defines the target: Authentication + Authorization belong to the independent Security module; the runtime wires it and Event-Registration supplies workflow/domain facts.
+The application runtime selects the Security implementation and wires its public contracts but does not own Authentication or Authorization behavior. `security-impl` owns the admitted Spring Security/stateless HTTP Basic mechanism, encoded verifier validation, actor adaptation, and opaque resource-ownership authorization. Event-Registration supplies workflow/domain facts and delegates the final actor-versus-owner decision through `security-api`.
 
 ## Contracts
 
@@ -218,11 +218,11 @@ Current accepted executable state must be distinguished from the accepted target
 Conforming/near-conforming current module boundaries:
 
 - Event — separate `api` and `impl`;
-- Registration — separate `api` and `impl`.
+- Registration — separate `api` and `impl`;
+- Security — separate `api` and `impl`, with framework-neutral public Authentication/Authorization contracts and private Spring Security implementation.
 
 Known architecture migration debt:
 
-- participant authentication/security behavior currently resides in `platform/apps/platform`, while the final participant owner comparison currently resides in Event-Registration; ADR-0014 defines their Planned Security-module correction;
 - Event-Registration is currently one composition Gradle project and therefore is not a conforming module if classified as one;
 - existing terminology for interfaces, integrations, compositions, and foundation must not call a construct a module unless it satisfies the universal invariant.
 

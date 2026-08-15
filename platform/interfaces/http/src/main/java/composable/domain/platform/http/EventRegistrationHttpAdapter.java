@@ -1,6 +1,5 @@
 package composable.domain.platform.http;
 
-import composable.domain.platform.composition.eventregistration.AuthenticatedActorReference;
 import composable.domain.platform.composition.eventregistration.CancelParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.CreateParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.CreateParticipantEventRegistrationCommand;
@@ -14,6 +13,8 @@ import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.http.generated.api.EventRegistrationApi;
 import composable.domain.platform.http.generated.model.CreateEventRegistrationRequest;
 import composable.domain.platform.http.generated.model.EventRegistrationResponse;
+import composable.domain.platform.security.api.AuthenticatedActorProvider;
+import composable.domain.platform.security.api.AuthenticatedActorReference;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

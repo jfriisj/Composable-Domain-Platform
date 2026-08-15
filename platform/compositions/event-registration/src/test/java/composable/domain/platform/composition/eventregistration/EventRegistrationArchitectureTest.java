@@ -25,6 +25,7 @@ class EventRegistrationArchitectureTest {
                         "composable.domain.platform.core.execution..",
                         "composable.domain.platform.event.api..",
                         "composable.domain.platform.registration.api..",
+                        "composable.domain.platform.security.api..",
                         "java..")
                 .check(PRODUCTION_CLASSES);
     }

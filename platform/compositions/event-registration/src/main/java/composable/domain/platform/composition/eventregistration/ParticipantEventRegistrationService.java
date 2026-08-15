@@ -12,6 +12,10 @@ import composable.domain.platform.registration.api.RegistrationLifecycle;
 import composable.domain.platform.registration.api.RegistrationUniquenessConflictException;
 import composable.domain.platform.registration.api.RegistrationView;
 import composable.domain.platform.registration.api.TargetReference;
+import composable.domain.platform.security.api.AuthenticatedActorReference;
+import composable.domain.platform.security.api.AuthorizationDecision;
+import composable.domain.platform.security.api.AuthorizeResourceOwnership;
+import composable.domain.platform.security.api.ResourceOwnerReference;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -27,12 +31,14 @@ public final class ParticipantEventRegistrationService
     private final CreateRegistration createRegistration;
     private final FindRegistration findRegistration;
     private final CancelRegistration cancelRegistration;
+    private final AuthorizeResourceOwnership authorizeResourceOwnership;
 
     public ParticipantEventRegistrationService(
             FindEvent findEvent,
             CreateRegistration createRegistration,
             FindRegistration findRegistration,
-            CancelRegistration cancelRegistration) {
+            CancelRegistration cancelRegistration,
+            AuthorizeResourceOwnership authorizeResourceOwnership) {
         this.findEvent = Objects.requireNonNull(findEvent, "findEvent must not be null");
         this.createRegistration =
                 Objects.requireNonNull(createRegistration, "createRegistration must not be null");
@@ -40,6 +46,10 @@ public final class ParticipantEventRegistrationService
                 Objects.requireNonNull(findRegistration, "findRegistration must not be null");
         this.cancelRegistration =
                 Objects.requireNonNull(cancelRegistration, "cancelRegistration must not be null");
+        this.authorizeResourceOwnership =
+                Objects.requireNonNull(
+                        authorizeResourceOwnership,
+                        "authorizeResourceOwnership must not be null");
     }
 
     @Override
@@ -80,9 +90,9 @@ public final class ParticipantEventRegistrationService
             AuthenticatedActorReference actorReference,
             String registrationId) {
         Objects.requireNonNull(context, "context must not be null");
-        RegistrantReference participantReference = participantReference(actorReference);
+        requireActorReference(actorReference);
 
-        return findOwnedRegistration(context, participantReference, registrationId)
+        return findOwnedRegistration(context, actorReference, registrationId)
                 .map(ParticipantEventRegistrationService::toView);
     }
 
@@ -92,10 +102,10 @@ public final class ParticipantEventRegistrationService
             AuthenticatedActorReference actorReference,
             String registrationId) {
         Objects.requireNonNull(context, "context must not be null");
-        RegistrantReference participantReference = participantReference(actorReference);
+        requireActorReference(actorReference);
 
         Optional<RegistrationView> ownedRegistration =
-                findOwnedRegistration(context, participantReference, registrationId);
+                findOwnedRegistration(context, actorReference, registrationId);
         if (ownedRegistration.isEmpty()) {
             return Optional.empty();
         }
@@ -106,7 +116,7 @@ public final class ParticipantEventRegistrationService
 
     private Optional<RegistrationView> findOwnedRegistration(
             ExecutionContext context,
-            RegistrantReference participantReference,
+            AuthenticatedActorReference actorReference,
             String registrationId) {
         Optional<RegistrationView> found = findRegistration.findById(context, registrationId);
         if (found.isEmpty()) {
@@ -118,7 +128,18 @@ public final class ParticipantEventRegistrationService
             return Optional.empty();
         }
 
-        if (!participantReference.equals(registration.registrantReference())) {
+        if (!PARTICIPANT_NAMESPACE.equals(
+                registration.registrantReference().namespace())) {
+            return Optional.empty();
+        }
+
+        AuthorizationDecision decision = Objects.requireNonNull(
+                authorizeResourceOwnership.authorize(
+                        actorReference,
+                        new ResourceOwnerReference(
+                                registration.registrantReference().reference())),
+                "authorization decision must not be null");
+        if (decision == AuthorizationDecision.DENIED) {
             throw new EventRegistrationAuthorizationDeniedException();
         }
 
@@ -127,11 +148,15 @@ public final class ParticipantEventRegistrationService
 
     private static RegistrantReference participantReference(
             AuthenticatedActorReference actorReference) {
+        requireActorReference(actorReference);
+        return new RegistrantReference(PARTICIPANT_NAMESPACE, actorReference.reference());
+    }
+
+    private static void requireActorReference(
+            AuthenticatedActorReference actorReference) {
         if (actorReference == null) {
             throw new IllegalArgumentException("actorReference must not be null");
         }
-
-        return new RegistrantReference(PARTICIPANT_NAMESPACE, actorReference.reference());
     }
 
     private static ParticipantEventRegistrationView toView(RegistrationView registration) {

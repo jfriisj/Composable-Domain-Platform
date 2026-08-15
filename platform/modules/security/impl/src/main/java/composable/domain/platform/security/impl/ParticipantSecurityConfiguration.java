@@ -1,8 +1,9 @@
-package composable.domain.platform.app;
+package composable.domain.platform.security.impl;
 
-import composable.domain.platform.composition.eventregistration.AuthenticatedActorReference;
-import composable.domain.platform.http.AuthenticatedActorProvider;
-import composable.domain.platform.http.ParticipantAuthenticationFailureResponder;
+import composable.domain.platform.security.api.AuthenticatedActorProvider;
+import composable.domain.platform.security.api.AuthenticatedActorReference;
+import composable.domain.platform.security.api.AuthenticationRequiredException;
+import composable.domain.platform.security.api.AuthorizeResourceOwnership;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +29,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ParticipantSecurityProperties.class)
-class ParticipantSecurityConfiguration {
+public class ParticipantSecurityConfiguration {
 
     private static final String EVENT_REGISTRATION_COLLECTION =
             "/api/v1/event-registrations";
@@ -96,12 +97,21 @@ class ParticipantSecurityConfiguration {
                     || authentication
                             instanceof org.springframework.security.authentication
                                     .AnonymousAuthenticationToken) {
-                throw new IllegalStateException(
-                        "authenticated participant is required");
+                throw new AuthenticationRequiredException();
             }
 
             return new AuthenticatedActorReference(authentication.getName());
         };
+    }
+
+    @Bean
+    AuthorizeResourceOwnership authorizeResourceOwnership() {
+        return new ResourceOwnershipAuthorization();
+    }
+
+    @Bean
+    ParticipantAuthenticationFailureResponder participantAuthenticationFailureResponder() {
+        return new ParticipantAuthenticationFailureResponder();
     }
 
     @Bean
