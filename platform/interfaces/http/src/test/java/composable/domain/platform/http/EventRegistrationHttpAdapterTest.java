@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import composable.domain.platform.composition.eventregistration.AuthenticatedActorReference;
+import composable.domain.platform.security.api.AuthenticatedActorReference;
 import composable.domain.platform.composition.eventregistration.CancelParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.CreateParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.CreateParticipantEventRegistrationCommand;

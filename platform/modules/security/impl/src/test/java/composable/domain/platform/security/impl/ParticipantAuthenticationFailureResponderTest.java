@@ -1,4 +1,4 @@
-package composable.domain.platform.http;
+package composable.domain.platform.security.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -16,7 +16,9 @@ class ParticipantAuthenticationFailureResponderTest {
     void returnsIdentityFreeAuthenticationFailureWithSuppliedCorrelation()
             throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader(HttpCorrelation.HEADER_NAME, "corr-auth-failure");
+        request.addHeader(
+                ParticipantAuthenticationFailureResponder.CORRELATION_HEADER,
+                "corr-auth-failure");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         responder.respond(request, response);
@@ -24,7 +26,8 @@ class ParticipantAuthenticationFailureResponderTest {
         assertEquals(401, response.getStatus());
         assertEquals(
                 "corr-auth-failure",
-                response.getHeader(HttpCorrelation.HEADER_NAME));
+                response.getHeader(
+                        ParticipantAuthenticationFailureResponder.CORRELATION_HEADER));
         assertEquals(
                 "Basic realm=\"platform\"",
                 response.getHeader("WWW-Authenticate"));
@@ -45,7 +48,8 @@ class ParticipantAuthenticationFailureResponderTest {
         responder.respond(request, response);
 
         String correlation =
-                response.getHeader(HttpCorrelation.HEADER_NAME);
+                response.getHeader(
+                        ParticipantAuthenticationFailureResponder.CORRELATION_HEADER);
         assertFalse(correlation == null || correlation.isBlank());
         assertEquals(401, response.getStatus());
     }

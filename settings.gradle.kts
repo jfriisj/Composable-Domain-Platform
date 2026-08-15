@@ -19,6 +19,12 @@ project(":registration-api").projectDir = file("platform/modules/registration/ap
 include(":registration-impl")
 project(":registration-impl").projectDir = file("platform/modules/registration/impl")
 
+include(":security-api")
+project(":security-api").projectDir = file("platform/modules/security/api")
+
+include(":security-impl")
+project(":security-impl").projectDir = file("platform/modules/security/impl")
+
 include(":event-registration-composition")
 project(":event-registration-composition").projectDir = file("platform/compositions/event-registration")
 

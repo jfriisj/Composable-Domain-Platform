@@ -1,4 +1,4 @@
-package composable.domain.platform.composition.eventregistration;
+package composable.domain.platform.security.api;
 
 public record AuthenticatedActorReference(String reference) {
 

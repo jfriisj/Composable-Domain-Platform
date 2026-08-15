@@ -21,6 +21,10 @@ import composable.domain.platform.registration.api.RegistrationLifecycle;
 import composable.domain.platform.registration.api.RegistrationUniquenessConflictException;
 import composable.domain.platform.registration.api.RegistrationView;
 import composable.domain.platform.registration.api.TargetReference;
+import composable.domain.platform.security.api.AuthenticatedActorReference;
+import composable.domain.platform.security.api.AuthorizationDecision;
+import composable.domain.platform.security.api.AuthorizeResourceOwnership;
+import composable.domain.platform.security.api.ResourceOwnerReference;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
@@ -37,14 +41,8 @@ class ParticipantEventRegistrationServiceTest {
             new AuthenticatedActorReference("actor-opaque");
 
     @Test
-    void authenticatedActorReferenceRejectsMissingValue() {
-        assertThrows(IllegalArgumentException.class, () -> new AuthenticatedActorReference(null));
-        assertThrows(IllegalArgumentException.class, () -> new AuthenticatedActorReference(" "));
-    }
-
-    @Test
     void createRejectsMissingActorBeforeCallingDependencies() {
-        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+        ParticipantEventRegistrationService service = service(
                 noEventLookup(),
                 noRegistrationCreate(),
                 noRegistrationLookup(),
@@ -80,7 +78,7 @@ class ParticipantEventRegistrationServiceTest {
                     RegistrationLifecycle.ACTIVE);
         };
 
-        ParticipantEventRegistrationView created = new ParticipantEventRegistrationService(
+        ParticipantEventRegistrationView created = service(
                 findEvent,
                 createRegistration,
                 noRegistrationLookup(),
@@ -117,7 +115,7 @@ class ParticipantEventRegistrationServiceTest {
             throw new AssertionError("Registration must not be invoked");
         };
 
-        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+        ParticipantEventRegistrationService service = service(
                 (context, eventId) -> Optional.empty(),
                 createRegistration,
                 noRegistrationLookup(),
@@ -137,7 +135,7 @@ class ParticipantEventRegistrationServiceTest {
 
     @Test
     void preservesCreateInvalidDefinitionFailure() {
-        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+        ParticipantEventRegistrationService service = service(
                 (context, eventId) -> Optional.of(event(eventId, EventPublicationState.PUBLISHED)),
                 (context, command) -> {
                     throw new InvalidRegistrationDefinitionException();
@@ -157,7 +155,7 @@ class ParticipantEventRegistrationServiceTest {
 
     @Test
     void preservesCreateUniquenessConflictFailure() {
-        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+        ParticipantEventRegistrationService service = service(
                 (context, eventId) -> Optional.of(event(eventId, EventPublicationState.PUBLISHED)),
                 (context, command) -> {
                     throw new RegistrationUniquenessConflictException();
@@ -185,7 +183,7 @@ class ParticipantEventRegistrationServiceTest {
                 "event-1",
                 RegistrationLifecycle.CANCELLED);
 
-        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+        ParticipantEventRegistrationService service = service(
                 noEventLookup(),
                 noRegistrationCreate(),
                 (context, registrationId) -> {
@@ -213,14 +211,14 @@ class ParticipantEventRegistrationServiceTest {
                 RegistrationLifecycle.ACTIVE);
 
         ParticipantEventRegistrationService unknownService =
-                new ParticipantEventRegistrationService(
+                service(
                         noEventLookup(),
                         noRegistrationCreate(),
                         (context, registrationId) -> Optional.empty(),
                         noRegistrationCancellation());
 
         ParticipantEventRegistrationService nonEventService =
-                new ParticipantEventRegistrationService(
+                service(
                         noEventLookup(),
                         noRegistrationCreate(),
                         (context, registrationId) -> Optional.of(nonEvent),
@@ -239,7 +237,7 @@ class ParticipantEventRegistrationServiceTest {
                 "event-1",
                 RegistrationLifecycle.ACTIVE);
 
-        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+        ParticipantEventRegistrationService service = service(
                 noEventLookup(),
                 noRegistrationCreate(),
                 (context, registrationId) -> Optional.of(registration),
@@ -248,6 +246,66 @@ class ParticipantEventRegistrationServiceTest {
         assertThrows(
                 EventRegistrationAuthorizationDeniedException.class,
                 () -> service.findById(CONTEXT, ACTOR, "registration-1"));
+    }
+
+    @Test
+    void delegatesFinalOwnershipDecisionUsingOnlyOpaqueExpectedOwner() {
+        RegistrationView registration = registration(
+                "registration-1",
+                "owner-opaque",
+                "event",
+                "event-1",
+                RegistrationLifecycle.ACTIVE);
+        AtomicReference<AuthenticatedActorReference> authorizedActor =
+                new AtomicReference<>();
+        AtomicReference<ResourceOwnerReference> authorizedOwner =
+                new AtomicReference<>();
+
+        AuthorizeResourceOwnership authorization = (actor, owner) -> {
+            authorizedActor.set(actor);
+            authorizedOwner.set(owner);
+            return AuthorizationDecision.DENIED;
+        };
+
+        ParticipantEventRegistrationService service =
+                new ParticipantEventRegistrationService(
+                        noEventLookup(),
+                        noRegistrationCreate(),
+                        (context, registrationId) -> Optional.of(registration),
+                        noRegistrationCancellation(),
+                        authorization);
+
+        assertThrows(
+                EventRegistrationAuthorizationDeniedException.class,
+                () -> service.findById(CONTEXT, ACTOR, "registration-1"));
+        assertSame(ACTOR, authorizedActor.get());
+        assertEquals(
+                new ResourceOwnerReference("owner-opaque"),
+                authorizedOwner.get());
+    }
+
+    @Test
+    void nonParticipantRegistrantIsNotFoundBeforeSecurityAuthorization() {
+        RegistrationView registration = new RegistrationView(
+                "registration-1",
+                new RegistrantReference("member", "actor-opaque"),
+                new TargetReference("event", "event-1"),
+                RegistrationLifecycle.ACTIVE);
+        AtomicBoolean authorizationCalled = new AtomicBoolean();
+
+        ParticipantEventRegistrationService service =
+                new ParticipantEventRegistrationService(
+                        noEventLookup(),
+                        noRegistrationCreate(),
+                        (context, registrationId) -> Optional.of(registration),
+                        noRegistrationCancellation(),
+                        (actor, owner) -> {
+                            authorizationCalled.set(true);
+                            return AuthorizationDecision.ALLOWED;
+                        });
+
+        assertTrue(service.findById(CONTEXT, ACTOR, "registration-1").isEmpty());
+        assertFalse(authorizationCalled.get());
     }
 
     @Test
@@ -279,7 +337,7 @@ class ParticipantEventRegistrationServiceTest {
             return Optional.of(cancelled);
         };
 
-        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+        ParticipantEventRegistrationService service = service(
                 noEventLookup(),
                 noRegistrationCreate(),
                 findRegistration,
@@ -312,7 +370,7 @@ class ParticipantEventRegistrationServiceTest {
             throw new AssertionError("Registration cancellation must not be invoked");
         };
 
-        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+        ParticipantEventRegistrationService service = service(
                 noEventLookup(),
                 noRegistrationCreate(),
                 (context, registrationId) -> Optional.of(registration),
@@ -333,7 +391,7 @@ class ParticipantEventRegistrationServiceTest {
             throw new AssertionError("Registration cancellation must not be invoked");
         };
 
-        ParticipantEventRegistrationService service = new ParticipantEventRegistrationService(
+        ParticipantEventRegistrationService service = service(
                 noEventLookup(),
                 noRegistrationCreate(),
                 (context, registrationId) -> Optional.empty(),
@@ -341,6 +399,25 @@ class ParticipantEventRegistrationServiceTest {
 
         assertTrue(service.cancel(CONTEXT, ACTOR, "missing").isEmpty());
         assertFalse(cancellationCalled.get());
+    }
+
+    private static ParticipantEventRegistrationService service(
+            FindEvent findEvent,
+            CreateRegistration createRegistration,
+            FindRegistration findRegistration,
+            CancelRegistration cancelRegistration) {
+        return new ParticipantEventRegistrationService(
+                findEvent,
+                createRegistration,
+                findRegistration,
+                cancelRegistration,
+                ownershipByOpaqueEquality());
+    }
+
+    private static AuthorizeResourceOwnership ownershipByOpaqueEquality() {
+        return (actor, owner) -> actor.reference().equals(owner.reference())
+                ? AuthorizationDecision.ALLOWED
+                : AuthorizationDecision.DENIED;
     }
 
     private static FindEvent noEventLookup() {

@@ -1,4 +1,4 @@
-package composable.domain.platform.app;
+package composable.domain.platform.security.impl;
 
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;

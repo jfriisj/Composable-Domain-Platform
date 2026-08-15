@@ -15,6 +15,7 @@ import composable.domain.platform.registration.application.CreateRegistrationSer
 import composable.domain.platform.registration.application.FindRegistrationService;
 import composable.domain.platform.registration.application.RegistrationRepository;
 import composable.domain.platform.registration.persistence.RegistrationPersistence;
+import composable.domain.platform.security.api.AuthorizeResourceOwnership;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -105,11 +106,13 @@ class PlatformRuntimeConfiguration {
             FindEvent findEvent,
             CreateRegistration createRegistration,
             FindRegistration findRegistration,
-            CancelRegistration cancelRegistration) {
+            CancelRegistration cancelRegistration,
+            AuthorizeResourceOwnership authorizeResourceOwnership) {
         return new ParticipantEventRegistrationService(
                 findEvent,
                 createRegistration,
                 findRegistration,
-                cancelRegistration);
+                cancelRegistration,
+                authorizeResourceOwnership);
     }
 }
