@@ -3,8 +3,8 @@ info:
   title: Composable Domain Platform Event API
   version: 1.0.0
   description: >
-    Version 1 HTTP contract for defining and retrieving the existing Event
-    capability.
+    Version 1 HTTP contract for Event definition, retrieval, publication,
+    discovery, and participant-private Event-registration lifecycle.
 servers:
   - url: /
 tags:
@@ -12,6 +12,34 @@ tags:
   - name: EventRegistration
 paths:
   /api/v1/events:
+    get:
+      tags:
+        - Event
+      operationId: discoverEvents
+      summary: Discover published Events
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Published Events discovered
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       tags:
         - Event
@@ -92,6 +120,57 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Event identity is unknown
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/events/{eventId}/publication:
+    post:
+      tags:
+        - Event
+      operationId: publishEvent
+      summary: Publish an Event for participant discovery
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '204':
+          description: Event published
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          description: Structurally invalid Event identity
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event identity is unknown
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Event is already published
           headers:
             X-Correlation-Id:
               $ref: '#/components/headers/CorrelationId'
@@ -442,6 +521,7 @@ components:
             - authentication_required
             - event_not_found
             - event_already_defined
+            - event_already_published
             - event_registration_not_found
             - registration_conflict
             - internal_error

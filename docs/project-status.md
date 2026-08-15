@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Minimum usable adult Event Registration lifecycle — scope accepted**
+**Minimum usable adult Event Registration lifecycle — scope accepted; implementation complete; Goal acceptance pending**
 
 ## Completed
 
@@ -89,29 +89,28 @@ This document is the authoritative concise statement of where the project curren
 - Decision #99 selects the minimum Security public boundary: Security-owned `AuthenticatedActorReference` / `AuthenticatedActorProvider`, opaque `ResourceOwnerReference`, `AuthorizationDecision`, and `AuthorizeResourceOwnership`; Event-Registration retains workflow/domain-fact translation, create uses Authentication only, and retrieve/cancel use the same ownership decision.
 - Documentation #100 records that boundary as Accepted ADR-0014 and synchronizes Planned module/scope/architecture/status truth without changing executable source/build state.
 - Implementation #102 was accepted into `development` through PR #103, establishing separate `security-api` / `security-impl` Gradle projects, moving actor/provider and Spring Security mechanism ownership to Security, delegating final Event-Registration ownership decisions through `AuthorizeResourceOwnership`, rewiring HTTP/runtime through public Security contracts, and adding executable architecture enforcement while preserving participant-private behavior.
+- Implementation #108 exposes Event-owned publication and published-only discovery over HTTP through `GET /api/v1/events` and `POST /api/v1/events/{eventId}/publication`, preserves correlation, maps unknown publication to `event_not_found` and repeated publication to `event_already_published`, wires the existing Event services without changing Event ownership or persistence, and validates publication/discovery durability plus the discovered-Event participant registration/retrieve/cancel lifecycle against real PostgreSQL.
 
 ## In progress
 
-- Goal issue #57 remains active with `priority: now`.
+- Goal issue #57 remains active with `priority: now`; its executable product-facing lifecycle is implemented and post-merge Goal acceptance/closure remains.
 - The external participant-authenticated Event-registration boundary remains participant-private with caller-authoritative ownership removed, lifecycle externally visible, and the admitted Spring Security/stateless HTTP Basic proof preserved.
 - ADR-0013, scope #97, decision #99, ADR-0014, and accepted implementation #102/PR #103 establish the executable Security boundary: Authentication + Authorization live behind current `security-api` / `security-impl`; runtime is Security wiring-only and Event-Registration retains workflow/domain facts while delegating the final ownership decision.
-- No Goal #57 implementation child is currently active.
-- Event HTTP publication/discovery is the remaining product-facing Goal #57 gap.
+- No additional Goal #57 implementation child is currently required by the accepted scope.
 
 ## Known gaps
 
 - `platform/compositions/event-registration` is currently one Gradle project and remains a non-module composition under the accepted ADR-0013 classification; no split is required by #97/#99/ADR-0014.
 - Security has no persistence, provider-specific identity mapping, Person/Account capability, or role/policy expansion; those remain outside the accepted correction.
-- Event publication/discovery is implemented at the transport-neutral Event capability boundary, but no Event HTTP publication/discovery operations are exposed yet.
 - No durable provider-to-platform identity-mapping store, Person/Account capability, or external identity provider is accepted. HMAC derivation remains deferred unless a future raw provider subject creates that need.
 - Production TLS termination, secrets-management products, deployment/infrastructure, credential enrollment/reset/recovery/admin APIs, and production database operations remain outside the current accepted proof.
 - No artifact/package publication process has been accepted.
 
 ## Next priority
 
-Re-read Goal #57 against accepted `development@970dca768080da5c98e01ba678a79af22cfdb703` and decompose the remaining Event HTTP publication/discovery gap only far enough to establish readiness, ownership/non-ownership, dependencies, accepted contract impact, and objective validation.
+Re-read Goal #57 against the accepted `development` commit containing #108, verify all objective end-to-end acceptance evidence and direct dependencies, and close the Goal if nothing remains unresolved.
 
-Event publication/discovery is already implemented at the transport-neutral Event capability boundary. The remaining work must not be treated as implementation-ready until the required HTTP contract/scope/readiness transition is explicit.
+Do not decompose another Goal #57 implementation child unless that post-merge verification identifies a concrete unresolved acceptance gap.
 
 Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 

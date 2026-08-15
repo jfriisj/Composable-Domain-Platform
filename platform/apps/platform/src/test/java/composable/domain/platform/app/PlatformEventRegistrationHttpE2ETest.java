@@ -382,6 +382,98 @@ class PlatformEventRegistrationHttpE2ETest {
     }
 
     @Test
+    void publishedEventDiscoveryCompletesParticipantLifecycleAcrossRestart()
+            throws Exception {
+        String publishedEventId = "goal-57-published-event";
+        String unpublishedEventId = "goal-57-unpublished-event";
+        String registrationId = "goal-57-registration";
+
+        defineEvent(publishedEventId);
+        defineEvent(unpublishedEventId);
+
+        HttpResponse<String> undiscovered = discoverEvents("corr-goal-discover-before");
+
+        assertEquals(200, undiscovered.statusCode());
+        assertCorrelation(undiscovered, "corr-goal-discover-before");
+        assertFalse(undiscovered.body().contains(publishedEventId));
+        assertFalse(undiscovered.body().contains(unpublishedEventId));
+
+        HttpResponse<String> knownUnpublished = getEvent(
+                unpublishedEventId,
+                "corr-goal-known-unpublished");
+
+        assertEquals(200, knownUnpublished.statusCode());
+        assertCorrelation(knownUnpublished, "corr-goal-known-unpublished");
+        assertJsonString(knownUnpublished.body(), "eventId", unpublishedEventId);
+
+        HttpResponse<String> published =
+                publishEvent(publishedEventId, "corr-goal-publish");
+
+        assertEquals(204, published.statusCode());
+        assertCorrelation(published, "corr-goal-publish");
+
+        HttpResponse<String> repeated =
+                publishEvent(publishedEventId, "corr-goal-republish");
+
+        assertEquals(409, repeated.statusCode());
+        assertCorrelation(repeated, "corr-goal-republish");
+        assertJsonString(repeated.body(), "code", "event_already_published");
+
+        HttpResponse<String> missing =
+                publishEvent("goal-57-missing-event", "corr-goal-publish-missing");
+
+        assertEquals(404, missing.statusCode());
+        assertCorrelation(missing, "corr-goal-publish-missing");
+        assertJsonString(missing.body(), "code", "event_not_found");
+
+        HttpResponse<String> discovered = discoverEvents("corr-goal-discover-after");
+
+        assertEquals(200, discovered.statusCode());
+        assertCorrelation(discovered, "corr-goal-discover-after");
+        assertJsonString(discovered.body(), "eventId", publishedEventId);
+        assertFalse(discovered.body().contains(unpublishedEventId));
+
+        application.close();
+        application = null;
+        startApplication();
+
+        HttpResponse<String> discoveredAfterRestart =
+                discoverEvents("corr-goal-discover-restart");
+
+        assertEquals(200, discoveredAfterRestart.statusCode());
+        assertCorrelation(discoveredAfterRestart, "corr-goal-discover-restart");
+        assertJsonString(discoveredAfterRestart.body(), "eventId", publishedEventId);
+        assertFalse(discoveredAfterRestart.body().contains(unpublishedEventId));
+
+        HttpResponse<String> created = postRegistration(
+                registrationJson(registrationId, publishedEventId),
+                "corr-goal-registration-create",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        assertEquals(201, created.statusCode());
+        assertRegistrationBody(created.body(), registrationId, publishedEventId, "active");
+
+        HttpResponse<String> retrieved = getRegistration(
+                registrationId,
+                "corr-goal-registration-retrieve",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        assertEquals(200, retrieved.statusCode());
+        assertRegistrationBody(retrieved.body(), registrationId, publishedEventId, "active");
+
+        HttpResponse<String> cancelled = cancelRegistration(
+                registrationId,
+                "corr-goal-registration-cancel",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        assertEquals(200, cancelled.statusCode());
+        assertRegistrationBody(cancelled.body(), registrationId, publishedEventId, "cancelled");
+    }
+
+    @Test
     void unknownEventReturnsNotFoundAndCreatesNoRegistration() throws Exception {
         HttpResponse<String> create = postRegistration(
                 registrationJson(
@@ -484,6 +576,48 @@ class PlatformEventRegistrationHttpE2ETest {
         assertEquals(
                 201,
                 HTTP.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
+    }
+
+    private static HttpResponse<String> discoverEvents(String correlationId)
+            throws Exception {
+        HttpRequest.Builder builder =
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"));
+
+        if (correlationId != null) {
+            builder.header(CORRELATION_HEADER, correlationId);
+        }
+
+        return HTTP.send(
+                builder.GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static HttpResponse<String> getEvent(String eventId, String correlationId)
+            throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(
+                baseUri.resolve("/api/v1/events/" + eventId));
+
+        if (correlationId != null) {
+            builder.header(CORRELATION_HEADER, correlationId);
+        }
+
+        return HTTP.send(
+                builder.GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static HttpResponse<String> publishEvent(String eventId, String correlationId)
+            throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(
+                baseUri.resolve("/api/v1/events/" + eventId + "/publication"));
+
+        if (correlationId != null) {
+            builder.header(CORRELATION_HEADER, correlationId);
+        }
+
+        return HTTP.send(
+                builder.POST(HttpRequest.BodyPublishers.noBody()).build(),
+                HttpResponse.BodyHandlers.ofString());
     }
 
     private static HttpResponse<String> postRegistration(

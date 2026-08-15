@@ -2,10 +2,14 @@ package composable.domain.platform.app;
 
 import composable.domain.platform.composition.eventregistration.ParticipantEventRegistrationService;
 import composable.domain.platform.event.api.DefineEvent;
+import composable.domain.platform.event.api.DiscoverEvents;
 import composable.domain.platform.event.api.FindEvent;
+import composable.domain.platform.event.api.PublishEvent;
 import composable.domain.platform.event.application.DefineEventService;
+import composable.domain.platform.event.application.DiscoverEventsService;
 import composable.domain.platform.event.application.EventRepository;
 import composable.domain.platform.event.application.FindEventService;
+import composable.domain.platform.event.application.PublishEventService;
 import composable.domain.platform.event.persistence.JooqEventRepository;
 import composable.domain.platform.registration.api.CancelRegistration;
 import composable.domain.platform.registration.api.CreateRegistration;
@@ -84,6 +88,16 @@ class PlatformRuntimeConfiguration {
     @Bean
     FindEvent findEvent(EventRepository repository) {
         return new FindEventService(repository);
+    }
+
+    @Bean
+    PublishEvent publishEvent(EventRepository repository) {
+        return new PublishEventService(repository);
+    }
+
+    @Bean
+    DiscoverEvents discoverEvents(EventRepository repository) {
+        return new DiscoverEventsService(repository);
     }
 
     @Bean
