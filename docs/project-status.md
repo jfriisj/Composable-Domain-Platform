@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Minimum usable adult Event Registration lifecycle — scope accepted; implementation complete; Goal acceptance pending**
+**Minimum usable adult Event Registration lifecycle — complete in accepted `development`**
 
 ## Completed
 
@@ -90,13 +90,11 @@ This document is the authoritative concise statement of where the project curren
 - Documentation #100 records that boundary as Accepted ADR-0014 and synchronizes Planned module/scope/architecture/status truth without changing executable source/build state.
 - Implementation #102 was accepted into `development` through PR #103, establishing separate `security-api` / `security-impl` Gradle projects, moving actor/provider and Spring Security mechanism ownership to Security, delegating final Event-Registration ownership decisions through `AuthorizeResourceOwnership`, rewiring HTTP/runtime through public Security contracts, and adding executable architecture enforcement while preserving participant-private behavior.
 - Implementation #108 exposes Event-owned publication and published-only discovery over HTTP through `GET /api/v1/events` and `POST /api/v1/events/{eventId}/publication`, preserves correlation, maps unknown publication to `event_not_found` and repeated publication to `event_already_published`, wires the existing Event services without changing Event ownership or persistence, and validates publication/discovery durability plus the discovered-Event participant registration/retrieve/cancel lifecycle against real PostgreSQL.
+- Goal #57 objective acceptance is satisfied in accepted `development`: the minimum usable adult Event Registration lifecycle is proven through published Event discovery, participant-authenticated registration, participant-private retrieval, cancellation to `cancelled`, explicit failure semantics, correlation, application restart against the same real PostgreSQL database, and accepted ownership and architecture boundaries.
 
 ## In progress
 
-- Goal issue #57 remains active with `priority: now`; its executable product-facing lifecycle is implemented and post-merge Goal acceptance/closure remains.
-- The external participant-authenticated Event-registration boundary remains participant-private with caller-authoritative ownership removed, lifecycle externally visible, and the admitted Spring Security/stateless HTTP Basic proof preserved.
-- ADR-0013, scope #97, decision #99, ADR-0014, and accepted implementation #102/PR #103 establish the executable Security boundary: Authentication + Authorization live behind current `security-api` / `security-impl`; runtime is Security wiring-only and Event-Registration retains workflow/domain facts while delegating the final ownership decision.
-- No additional Goal #57 implementation child is currently required by the accepted scope.
+- No product implementation is currently active; no subsequent `priority: now` Goal or product capability has been accepted.
 
 ## Known gaps
 
@@ -108,9 +106,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Re-read Goal #57 against the accepted `development` commit containing #108, verify all objective end-to-end acceptance evidence and direct dependencies, and close the Goal if nothing remains unresolved.
+Select the next Goal or planning action from current accepted repository state through the normal Goal, decision, and scope workflow.
 
-Do not decompose another Goal #57 implementation child unless that post-merge verification identifies a concrete unresolved acceptance gap.
+Completion of Goal #57 does not by itself authorize another product capability, implementation, architecture change, or technology.
 
 Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 
