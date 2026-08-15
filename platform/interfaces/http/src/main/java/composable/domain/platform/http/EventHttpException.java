@@ -49,6 +49,15 @@ final class EventHttpException extends RuntimeException {
                 null);
     }
 
+    static EventHttpException alreadyPublished(ExecutionContext context) {
+        return new EventHttpException(
+                HttpStatus.CONFLICT,
+                ErrorResponse.CodeEnum.EVENT_ALREADY_PUBLISHED,
+                "Event is already published",
+                context,
+                null);
+    }
+
     static EventHttpException notFound(ExecutionContext context) {
         return new EventHttpException(
                 HttpStatus.NOT_FOUND,

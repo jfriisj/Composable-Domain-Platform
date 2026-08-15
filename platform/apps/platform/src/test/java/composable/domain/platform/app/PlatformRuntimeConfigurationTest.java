@@ -2,13 +2,17 @@ package composable.domain.platform.app;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import composable.domain.platform.core.execution.CorrelationId;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.DefineEvent;
 import composable.domain.platform.event.api.DefineEventCommand;
+import composable.domain.platform.event.api.DiscoverEvents;
+import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.FindEvent;
+import composable.domain.platform.event.api.PublishEvent;
 import composable.domain.platform.http.EventHttpAdapter;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -48,6 +52,8 @@ class PlatformRuntimeConfigurationTest {
 
             DefineEvent defineEvent = context.getBean(DefineEvent.class);
             FindEvent findEvent = context.getBean(FindEvent.class);
+            PublishEvent publishEvent = context.getBean(PublishEvent.class);
+            DiscoverEvents discoverEvents = context.getBean(DiscoverEvents.class);
             ExecutionContext executionContext =
                     new ExecutionContext(new CorrelationId("runtime-composition-test"));
 
@@ -60,11 +66,17 @@ class PlatformRuntimeConfigurationTest {
                     ZoneId.of("Europe/Copenhagen"));
 
             EventView defined = defineEvent.define(executionContext, command);
+            assertEquals(EventPublicationState.UNPUBLISHED, defined.publicationState());
+            assertTrue(discoverEvents.discover(executionContext).isEmpty());
+
+            EventView published = publishEvent.publish(executionContext, command.eventId());
             EventView retrieved = findEvent
                     .findById(executionContext, command.eventId())
                     .orElseThrow();
 
-            assertEquals(defined, retrieved);
+            assertEquals(EventPublicationState.PUBLISHED, published.publicationState());
+            assertEquals(published, retrieved);
+            assertTrue(discoverEvents.discover(executionContext).contains(published));
             assertEquals(command.eventId(), retrieved.eventId());
             assertEquals(command.name(), retrieved.name());
             assertEquals(command.slug(), retrieved.slug());

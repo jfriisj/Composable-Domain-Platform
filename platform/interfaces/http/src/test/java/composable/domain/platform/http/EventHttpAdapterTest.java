@@ -8,11 +8,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.DefineEvent;
 import composable.domain.platform.event.api.DefineEventCommand;
+import composable.domain.platform.event.api.DiscoverEvents;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
+import composable.domain.platform.event.api.EventAlreadyPublishedException;
+import composable.domain.platform.event.api.EventNotFoundException;
 import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.InvalidEventDefinitionException;
+import composable.domain.platform.event.api.PublishEvent;
 import composable.domain.platform.http.generated.model.DefineEventRequest;
 import composable.domain.platform.http.generated.model.ErrorResponse;
 import composable.domain.platform.http.generated.model.EventResponse;
@@ -20,6 +24,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -49,7 +54,7 @@ class EventHttpAdapterTest {
         };
 
         EventHttpAdapter adapter =
-                new EventHttpAdapter(defineEvent, missingFindEvent());
+                adapter(defineEvent, missingFindEvent());
 
         ResponseEntity<EventResponse> response =
                 adapter.defineEvent(request(), "corr-supplied");
@@ -79,7 +84,7 @@ class EventHttpAdapterTest {
         };
 
         ResponseEntity<EventResponse> response =
-                new EventHttpAdapter(defineEvent, missingFindEvent()).defineEvent(request(), null);
+                adapter(defineEvent, missingFindEvent()).defineEvent(request(), null);
 
         String responseCorrelation =
                 response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME);
@@ -97,7 +102,7 @@ class EventHttpAdapterTest {
 
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> new EventHttpAdapter(defineEvent, missingFindEvent())
+                () -> adapter(defineEvent, missingFindEvent())
                         .defineEvent(request(), "corr-invalid"));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.status());
@@ -113,7 +118,7 @@ class EventHttpAdapterTest {
 
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> new EventHttpAdapter(defineEvent, missingFindEvent())
+                () -> adapter(defineEvent, missingFindEvent())
                         .defineEvent(request(), "corr-duplicate"));
 
         assertEquals(HttpStatus.CONFLICT, exception.status());
@@ -131,7 +136,7 @@ class EventHttpAdapterTest {
 
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> new EventHttpAdapter(defineEvent, missingFindEvent())
+                () -> adapter(defineEvent, missingFindEvent())
                         .defineEvent(request, "corr-timezone"));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.status());
@@ -146,12 +151,154 @@ class EventHttpAdapterTest {
 
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> new EventHttpAdapter(defineEvent, missingFindEvent())
+                () -> adapter(defineEvent, missingFindEvent())
                         .defineEvent(request(), "corr-internal"));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.status());
         assertEquals(ErrorResponse.CodeEnum.INTERNAL_ERROR, exception.code());
         assertEquals("Internal server error", exception.getMessage());
+    }
+
+    @Test
+    void discoversEventsThroughEventCapabilityAndPreservesCorrelation() {
+        AtomicReference<ExecutionContext> capturedContext = new AtomicReference<>();
+
+        DiscoverEvents discoverEvents = context -> {
+            capturedContext.set(context);
+            return List.of(EVENT);
+        };
+
+        ResponseEntity<List<EventResponse>> response = new EventHttpAdapter(
+                        unusedDefineEvent(),
+                        missingFindEvent(),
+                        unusedPublishEvent(),
+                        discoverEvents)
+                .discoverEvents("corr-discover");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("corr-discover", response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
+        assertEquals("corr-discover", capturedContext.get().correlationId().value());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        assertEventResponse(response.getBody().get(0));
+    }
+
+    @Test
+    void returnsEmptyDiscoveryAsSuccessfulEmptyArrayRepresentation() {
+        ResponseEntity<List<EventResponse>> response = new EventHttpAdapter(
+                        unusedDefineEvent(),
+                        missingFindEvent(),
+                        unusedPublishEvent(),
+                        context -> List.of())
+                .discoverEvents("corr-empty");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(List.of(), response.getBody());
+        assertEquals("corr-empty", response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
+    }
+
+    @Test
+    void mapsUnexpectedDiscoveryFailureToInternalServerError() {
+        DiscoverEvents discoverEvents = context -> {
+            throw new IllegalStateException("database-specific detail");
+        };
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> new EventHttpAdapter(
+                                unusedDefineEvent(),
+                                missingFindEvent(),
+                                unusedPublishEvent(),
+                                discoverEvents)
+                        .discoverEvents("corr-discovery-internal"));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.INTERNAL_ERROR, exception.code());
+        assertEquals("corr-discovery-internal", exception.context().correlationId().value());
+    }
+
+    @Test
+    void publishesEventThroughEventCapabilityAndPreservesCorrelation() {
+        AtomicReference<ExecutionContext> capturedContext = new AtomicReference<>();
+        AtomicReference<String> capturedEventId = new AtomicReference<>();
+
+        PublishEvent publishEvent = (context, eventId) -> {
+            capturedContext.set(context);
+            capturedEventId.set(eventId);
+            return EVENT;
+        };
+
+        ResponseEntity<Void> response = new EventHttpAdapter(
+                        unusedDefineEvent(),
+                        missingFindEvent(),
+                        publishEvent,
+                        emptyDiscoverEvents())
+                .publishEvent("event-1", "corr-publish");
+
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        assertEquals("corr-publish", response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
+        assertEquals("corr-publish", capturedContext.get().correlationId().value());
+        assertEquals("event-1", capturedEventId.get());
+    }
+
+    @Test
+    void mapsUnknownPublicationTargetToNotFound() {
+        PublishEvent publishEvent = (context, eventId) -> {
+            throw new EventNotFoundException(eventId);
+        };
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> new EventHttpAdapter(
+                                unusedDefineEvent(),
+                                missingFindEvent(),
+                                publishEvent,
+                                emptyDiscoverEvents())
+                        .publishEvent("missing-event", "corr-publish-missing"));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.EVENT_NOT_FOUND, exception.code());
+        assertEquals("corr-publish-missing", exception.context().correlationId().value());
+    }
+
+    @Test
+    void mapsAlreadyPublishedEventToConflict() {
+        PublishEvent publishEvent = (context, eventId) -> {
+            throw new EventAlreadyPublishedException(eventId);
+        };
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> new EventHttpAdapter(
+                                unusedDefineEvent(),
+                                missingFindEvent(),
+                                publishEvent,
+                                emptyDiscoverEvents())
+                        .publishEvent("event-1", "corr-already-published"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.EVENT_ALREADY_PUBLISHED, exception.code());
+        assertEquals("corr-already-published", exception.context().correlationId().value());
+    }
+
+    @Test
+    void mapsUnexpectedPublicationFailureToInternalServerError() {
+        PublishEvent publishEvent = (context, eventId) -> {
+            throw new IllegalStateException("database-specific detail");
+        };
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> new EventHttpAdapter(
+                                unusedDefineEvent(),
+                                missingFindEvent(),
+                                publishEvent,
+                                emptyDiscoverEvents())
+                        .publishEvent("event-1", "corr-publish-internal"));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.INTERNAL_ERROR, exception.code());
+        assertEquals("corr-publish-internal", exception.context().correlationId().value());
     }
 
     @Test
@@ -166,7 +313,7 @@ class EventHttpAdapterTest {
         };
 
         ResponseEntity<EventResponse> response =
-                new EventHttpAdapter(unusedDefineEvent(), findEvent)
+                adapter(unusedDefineEvent(), findEvent)
                         .findEventById("event-1", "corr-find");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -182,7 +329,7 @@ class EventHttpAdapterTest {
 
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> new EventHttpAdapter(unusedDefineEvent(), findEvent)
+                () -> adapter(unusedDefineEvent(), findEvent)
                         .findEventById("missing-event", "corr-missing"));
 
         assertEquals(HttpStatus.NOT_FOUND, exception.status());
@@ -204,6 +351,14 @@ class EventHttpAdapterTest {
                 "Europe/Copenhagen");
     }
 
+    private static EventHttpAdapter adapter(DefineEvent defineEvent, FindEvent findEvent) {
+        return new EventHttpAdapter(
+                defineEvent,
+                findEvent,
+                unusedPublishEvent(),
+                emptyDiscoverEvents());
+    }
+
     private static DefineEvent unusedDefineEvent() {
         return (context, command) -> {
             throw new AssertionError("DefineEvent must not be called");
@@ -212,6 +367,16 @@ class EventHttpAdapterTest {
 
     private static FindEvent missingFindEvent() {
         return (context, eventId) -> Optional.empty();
+    }
+
+    private static PublishEvent unusedPublishEvent() {
+        return (context, eventId) -> {
+            throw new AssertionError("PublishEvent must not be called");
+        };
+    }
+
+    private static DiscoverEvents emptyDiscoverEvents() {
+        return context -> List.of();
     }
 
     private static void assertEventResponse(EventResponse response) {
