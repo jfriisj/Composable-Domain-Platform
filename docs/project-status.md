@@ -88,15 +88,15 @@ This document is the authoritative concise statement of where the project curren
 - Scope #97 admits the corrective planned Security module boundary required by ADR-0013: Authentication + Authorization belong to an independently owned `security-api` / `security-impl` module, while the application runtime becomes wiring-only for Security and Event-Registration remains a non-module workflow composition.
 - Decision #99 selects the minimum Security public boundary: Security-owned `AuthenticatedActorReference` / `AuthenticatedActorProvider`, opaque `ResourceOwnerReference`, `AuthorizationDecision`, and `AuthorizeResourceOwnership`; Event-Registration retains workflow/domain-fact translation, create uses Authentication only, and retrieve/cancel use the same ownership decision.
 - Documentation #100 records that boundary as Accepted ADR-0014 and synchronizes Planned module/scope/architecture/status truth without changing executable source/build state.
-- Implementation #102 establishes separate `security-api` / `security-impl` Gradle projects, moves actor/provider and Spring Security mechanism ownership to Security, delegates final Event-Registration ownership decisions through `AuthorizeResourceOwnership`, rewires HTTP/runtime through public Security contracts, and adds executable architecture enforcement while preserving participant-private behavior.
+- Implementation #102 was accepted into `development` through PR #103, establishing separate `security-api` / `security-impl` Gradle projects, moving actor/provider and Spring Security mechanism ownership to Security, delegating final Event-Registration ownership decisions through `AuthorizeResourceOwnership`, rewiring HTTP/runtime through public Security contracts, and adding executable architecture enforcement while preserving participant-private behavior.
 
 ## In progress
 
 - Goal issue #57 remains active with `priority: now`.
 - The external participant-authenticated Event-registration boundary remains participant-private with caller-authoritative ownership removed, lifecycle externally visible, and the admitted Spring Security/stateless HTTP Basic proof preserved.
-- ADR-0013, scope #97, decision #99, ADR-0014, and implementation #102 establish the executable Security boundary: Authentication + Authorization live behind current `security-api` / `security-impl`; runtime is Security wiring-only and Event-Registration retains workflow/domain facts while delegating the final ownership decision.
-- Implementation #102 is the active Goal #57 implementation proposal and must pass the focused and root repository gates before PR acceptance.
-- Event HTTP publication/discovery remains the next product-facing Goal #57 gap after the Security correction is accepted.
+- ADR-0013, scope #97, decision #99, ADR-0014, and accepted implementation #102/PR #103 establish the executable Security boundary: Authentication + Authorization live behind current `security-api` / `security-impl`; runtime is Security wiring-only and Event-Registration retains workflow/domain facts while delegating the final ownership decision.
+- No Goal #57 implementation child is currently active.
+- Event HTTP publication/discovery is the remaining product-facing Goal #57 gap.
 
 ## Known gaps
 
@@ -109,10 +109,10 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Complete implementation #102 validation and acceptance against the accepted `development` baseline.
+Re-read Goal #57 against accepted `development@970dca768080da5c98e01ba678a79af22cfdb703` and decompose the remaining Event HTTP publication/discovery gap only far enough to establish readiness, ownership/non-ownership, dependencies, accepted contract impact, and objective validation.
 
-The proposal must preserve participant-private HTTP behavior, privacy/correlation semantics, restart stability, real-PostgreSQL evidence, the Security API/implementation ownership boundary, and executable dependency enforcement. The canonical final implementation gate remains root `./gradlew --no-daemon check` plus `git diff --check`.
+Event publication/discovery is already implemented at the transport-neutral Event capability boundary. The remaining work must not be treated as implementation-ready until the required HTTP contract/scope/readiness transition is explicit.
 
-Event-Registration remains a non-module composition and is not split by this correction. After #102 is accepted into `development`, re-read Goal #57 and decompose the remaining Event HTTP publication/discovery gap.
+Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 
 Person/Account, participant profiles, capacity/waitlists, re-registration/reactivation, payment/ticketing, notifications/messaging, frontend, deployment/infrastructure expansion, roles/permissions, generic policy-engine work, and other exclusions in `docs/scope.md` remain outside accepted scope.
