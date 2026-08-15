@@ -241,7 +241,147 @@ Use a branch name that describes the outcome, not the implementation detail of t
 
 ## 6. Implement within the accepted boundary
 
-During implementation:
+Implementation follows a **contract-first, capability-driven, module-complete, composition-last** sequence for the accepted use case.
+
+The implementation sequence is an execution order, not a reversal of the architectural dependency rule. Hexagonal dependencies still point inward, module ownership remains authoritative, and transport/infrastructure concerns must not leak into domain code.
+
+For an accepted use case with an external HTTP surface, work normally proceeds in this order:
+
+~~~text
+accepted use case
+        |
+        v
+external OpenAPI contract
+        |
+        v
+generated HTTP API shape + inbound adapter boundary
+        |
+        v
+identify required capabilities and ownership
+        |
+        v
+complete required module public APIs + private implementations
+        |
+        v
+cross-module composition, when required
+        |
+        v
+complete HTTP delegation
+        |
+        v
+runtime assembly
+        |
+        v
+integration and end-to-end proof
+~~~
+
+### 6.1 Complete the accepted external contract first
+
+When the use case changes or adds HTTP behavior, define the complete accepted contract area in the authoritative OpenAPI document before implementing business behavior behind it.
+
+Complete the contract for the accepted use case, including applicable:
+
+- operations and paths;
+- request and response schemas;
+- status and error semantics;
+- correlation headers;
+- authentication requirements;
+- externally visible privacy behavior.
+
+Generated OpenAPI sources are derived transport artifacts. They may establish the inbound adapter shape, but generated types and HTTP handlers do not own business behavior.
+
+Do not expand the contract for speculative future use cases merely because adjacent operations are easy to imagine.
+
+An authoritative Current contract must not be merged into `development` in a state that falsely claims executable behavior which the accepted runtime does not provide. Contract-first describes implementation order inside the coherent workstream; merge boundaries must still leave `development` truthful and usable.
+
+### 6.2 Use the contract to identify required capabilities
+
+After the contract shape is explicit, derive the capabilities required to satisfy it and assign each behavior to its accepted owner.
+
+For every required capability, determine:
+
+- which module owns the behavior;
+- whether an existing public module API already exposes the required capability;
+- whether the module public API needs an accepted extension;
+- which behavior remains private implementation detail;
+- whether persistence or another outbound adapter is required;
+- whether more than one module must collaborate.
+
+Do not create services, modules, abstractions, or dependencies merely to mirror HTTP endpoints. Module APIs describe owned capabilities, not transport structure.
+
+### 6.3 Complete required modules before cross-module composition
+
+Implement each required module as an independently coherent capability behind its public API.
+
+A module stage includes, as applicable:
+
+- the smallest public API required by the accepted capability;
+- domain rules and invariants;
+- application/use-case implementation;
+- outbound ports;
+- private persistence or other outbound adapters;
+- module-level tests and architecture enforcement.
+
+Finish one owned capability area before moving its missing behavior into a composition or transport adapter.
+
+Module APIs should remain useful to later accepted contracts and compositions because they express module-owned capabilities, but they must not pre-design hypothetical future behavior.
+
+Independent required modules may be implemented in parallel only when normal readiness and ownership rules allow it.
+
+### 6.4 Add compositions after participating module capabilities exist
+
+When the use case spans modules, implement the composition after the participating public module capabilities are available.
+
+A composition:
+
+- depends only on participating public module APIs;
+- owns only the cross-module workflow;
+- does not implement missing module behavior;
+- does not access another module's private implementation or persistence;
+- does not absorb transport-specific HTTP behavior.
+
+If composition work reveals that a participating module lacks an owned capability, return to that module stage instead of implementing the capability inside the composition.
+
+### 6.5 Complete the inbound adapter and runtime assembly last
+
+After required module capabilities and compositions exist, complete the HTTP adapter by delegating generated transport operations to the appropriate public module API or composition.
+
+The HTTP interface owns transport adaptation only, including structural request validation, transport mapping, HTTP status/error mapping, correlation boundary behavior, and accepted external privacy mapping.
+
+The application runtime then selects, constructs, configures, and wires the required modules, compositions, and adapters. Runtime wiring must not become business ownership.
+
+### 6.6 Finish with integrated proof
+
+The final implementation stage proves that the complete accepted contract is backed by the assembled capabilities.
+
+Add the applicable:
+
+- focused module tests;
+- composition tests;
+- HTTP adapter tests;
+- architecture/dependency checks;
+- persistence integration tests;
+- real-dependency end-to-end tests;
+- restart/durability evidence;
+- correlation, authentication, authorization, and privacy evidence required by accepted scope.
+
+The root `./gradlew --no-daemon check` remains the final build gate for build-affecting work.
+
+### 6.7 Track the current implementation stage explicitly
+
+Implementation planning should make the active stage visible rather than treating a complete feature as one undifferentiated coding task.
+
+For a sufficiently large use case, decompose executable work around coherent stages such as:
+
+1. accepted external contract;
+2. required module capability or capabilities;
+3. required cross-module composition;
+4. inbound-adapter/runtime completion;
+5. integrated end-to-end acceptance.
+
+These stages are execution/decomposition guidance, not permission to merge incomplete or misleading accepted state. A stage may be its own subgoal or PR only when the resulting `development` state remains coherent, truthful, independently valid, and inside accepted scope.
+
+During all stages:
 
 - Keep domain ownership explicit.
 - Respect public API/private implementation boundaries.
