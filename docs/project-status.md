@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Reproducible developer environment — complete in accepted `development`**
+**Selectable application composition — scope accepted; implementation planning pending**
 
 ## Completed
 
@@ -99,7 +99,8 @@ This document is the authoritative concise statement of where the project curren
 
 ## In progress
 
-- No product or developer-environment implementation is currently active. Goal #116 acceptance is complete; no subsequent `priority: now` Goal or capability has been accepted.
+- Goal #114 `[Goal] Prove selectable application composition` is the current `priority: now` workstream.
+- Scope #115 admits the minimum developer-facing selectable-composition proof. Implementation remains not-ready until the required post-merge re-read establishes the smallest coherent implementation child and its exact readiness.
 
 ## Known gaps
 
@@ -111,9 +112,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Select the next Goal or planning action from the resulting accepted repository state through the normal Goal, decision, scope, and readiness workflow.
+Re-read accepted `development`, Goal #114, accepted scope #115, and relevant architecture/module/build truth before decomposing any implementation child.
 
-Completion of Goal #116 does not by itself authorize another product capability, implementation, architecture change, technology, or infrastructure expansion.
+Do not implement selectable composition, choose a physical mechanism, add a capability, change module ownership, or introduce architecture/technology/infrastructure through this scope transition.
 
 Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 
