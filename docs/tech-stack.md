@@ -36,7 +36,7 @@ Status meanings:
 | Architecture diagrams | Structurizr DSL + C4 | Accepted direction | Version-control the authoritative architecture model and derived stakeholder views. |
 | Frontend language | TypeScript | Candidate | Typed frontend clients and UI implementation when frontend work enters scope. |
 | Frontend framework | Next.js | Candidate | Possible baseline for administrative and public web interfaces when required. |
-| Developer environment | Docker Engine + Docker Compose | Accepted direction | Reproducible repository developer tooling on the admitted Linux host boundary, including host-Docker Testcontainers access and optional manual-development PostgreSQL; not application/runtime/deployment packaging. |
+| Developer environment | Docker Engine + Docker Compose | Accepted direction | Reproducible repository developer tooling on the admitted Linux host boundary, including host-Docker Testcontainers access and optional manual-development PostgreSQL 18.4; not application/runtime/deployment packaging. |
 | Containerization | Docker | Candidate | Reproducible application and infrastructure runtime packaging when deployment enters scope. |
 | Observability | OpenTelemetry | Conditional | Standardize traces, metrics, and logs when an accepted runtime requirement requires observability. |
 

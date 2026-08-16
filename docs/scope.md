@@ -241,7 +241,7 @@ The repository may provide one Docker Compose developer container that:
 - runs normal development work as a non-root user and preserves usable host ownership for generated repository files through host UID/GID handling;
 - uses the host Docker Engine through the Docker socket / sibling-container pattern so Testcontainers can continue to create its own containers;
 - handles Docker-host-visible repository paths and Docker-socket permissions explicitly rather than assuming primary UID/GID mapping alone is sufficient;
-- may persist Gradle user-home/cache data as disposable, non-authoritative performance state.
+- may persist Gradle user-home/cache data in a Docker-managed persistent volume as disposable, non-authoritative performance state.
 
 Docker-daemon access is an explicitly accepted trusted-host privilege boundary for this developer workflow. The developer container and repository code executed inside it are trusted with Docker-daemon authority; the container is not a security-isolation boundary from the host. Docker-in-Docker is not admitted for the minimum Goal #116 proof.
 
