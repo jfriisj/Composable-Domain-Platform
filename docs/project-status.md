@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Minimum usable adult Event Registration lifecycle — complete in accepted `development`**
+**Reproducible developer environment — accepted scope; implementation pending**
 
 ## Completed
 
@@ -52,10 +52,9 @@ This document is the authoritative concise statement of where the project curren
 - Running HTTP-to-Event-to-PostgreSQL end-to-end tests validate success, duplicate, unknown, invalid-input, internal-failure, durability, and correlation behavior against real PostgreSQL through Testcontainers.
 - Executable ArchUnit verification covers the accepted core, Event, HTTP interface, and application-runtime dependency boundaries.
 - The authoritative architecture model reflects the current core, contract, HTTP interface, runtime, Event API/implementation, and Event persistence boundaries.
-- GitHub Actions registers the `validate` job for pull requests targeting both `development` and `production` so the existing required check remains present on both permanent branches.
-- For pull requests targeting `development`, `validate` is skipped before runner allocation; implementation and build-affecting changes use the mandatory local `./gradlew --no-daemon check` integration gate.
-- For pull requests targeting `production`, GitHub Actions executes `./gradlew --no-daemon check` with JDK 21 and `validate` acts as the independent release gate.
-- The `validate` GitHub Actions check remains required by the active rulesets for both permanent branches.
+- GitHub Actions registers the `validate` job for pull requests targeting both `development` and `production`, while hosted validation executes only for `production`.
+- For pull requests targeting `development`, `validate` is skipped before runner allocation; implementation and build-affecting changes use the mandatory local `./gradlew --no-daemon check` integration gate, and the active `development` ruleset does not require `validate`.
+- For pull requests targeting `production`, GitHub Actions executes `./gradlew --no-daemon check` with JDK 21; `validate` acts as the independent release gate and remains required by the active `production` ruleset.
 - Controlled negative CI verification through draft PR #14 confirmed that a failing root `./gradlew --no-daemon check` produces a failing `validate` GitHub status; the validation PR was closed without merge.
 - PR #20 passed the required `validate` check before the Event runtime and HTTP implementation was accepted into `development`.
 - Release PR #23 passed the required `validate` check before the `v0.1.0` state was accepted into `production`.
@@ -91,10 +90,14 @@ This document is the authoritative concise statement of where the project curren
 - Implementation #102 was accepted into `development` through PR #103, establishing separate `security-api` / `security-impl` Gradle projects, moving actor/provider and Spring Security mechanism ownership to Security, delegating final Event-Registration ownership decisions through `AuthorizeResourceOwnership`, rewiring HTTP/runtime through public Security contracts, and adding executable architecture enforcement while preserving participant-private behavior.
 - Implementation #108 exposes Event-owned publication and published-only discovery over HTTP through `GET /api/v1/events` and `POST /api/v1/events/{eventId}/publication`, preserves correlation, maps unknown publication to `event_not_found` and repeated publication to `event_already_published`, wires the existing Event services without changing Event ownership or persistence, and validates publication/discovery durability plus the discovered-Event participant registration/retrieve/cancel lifecycle against real PostgreSQL.
 - Goal #57 objective acceptance is satisfied in accepted `development`: the minimum usable adult Event Registration lifecycle is proven through published Event discovery, participant-authenticated registration, participant-private retrieval, cancellation to `cancelled`, explicit failure semantics, correlation, application restart against the same real PostgreSQL database, and accepted ownership and architecture boundaries.
+- Research #117 completed the minimum reproducible developer-environment technology and trust-boundary analysis for Goal #116.
+- Decision #118 selected Docker Engine + Docker Compose on the admitted Linux host boundary, host-Docker/Testcontainers sibling access, a digest-pinned Temurin JDK 21 developer image, disposable Docker-managed Gradle cache state, and optional PostgreSQL 18.4 for manual development while preserving the executable-JAR runtime boundary.
+- Scope #119 was accepted through PR #120, admitting that bounded developer-tooling direction in `docs/scope.md` and `docs/tech-stack.md` without admitting application/runtime/deployment containerization.
+- Defect #122 corrected the active `development` ruleset so the intentionally skipped `validate` job is no longer required there; the `production` ruleset continues to require hosted `validate`.
 
 ## In progress
 
-- No product implementation is currently active; no subsequent `priority: now` Goal or product capability has been accepted.
+- Goal #116 `[Goal] Reproducible developer environment` is the current `priority: now` workstream. Research #117, decision #118, and scope #119 / PR #120 are complete; executable developer-environment implementation has not yet been created or accepted.
 
 ## Known gaps
 
@@ -106,9 +109,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Select the next Goal or planning action from current accepted repository state through the normal Goal, decision, and scope workflow.
+Create the minimum ready implementation subgoal for Goal #116 from the accepted developer-environment decision and scope, then execute it through the normal implementation and PR workflow.
 
-Completion of Goal #57 does not by itself authorize another product capability, implementation, architecture change, or technology.
+No developer-environment implementation is accepted yet. The implementation must remain inside the bounded developer-tooling scope admitted by #119 / PR #120 and must not expand application runtime or deployment packaging.
 
 Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 

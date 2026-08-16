@@ -442,9 +442,9 @@ For implementation or build-affecting work:
 
 The root `check` task is the final repository build gate unless a later accepted process explicitly replaces or extends it.
 
-For implementation or build-affecting work targeting `development`, this validation is performed locally before merge. The GitHub Actions `validate` job is registered for pull requests targeting `development` but is skipped there before runner allocation so the existing required check remains compatible with the branch ruleset without consuming a validation runner.
+For implementation or build-affecting work targeting `development`, this validation is performed locally before merge. The GitHub Actions `validate` job is registered for pull requests targeting `development` but is skipped there before runner allocation. The active `development` ruleset does not require `validate`; the mandatory local root check is the operative validation gate for those pull requests.
 
-For pull requests targeting `production`, the GitHub Actions `validate` job executes `./gradlew --no-daemon check` with JDK 21 and acts as the independent release validation gate.
+For pull requests targeting `production`, the GitHub Actions `validate` job executes `./gradlew --no-daemon check` with JDK 21, acts as the independent release validation gate, and remains required by the active `production` ruleset.
 
 Run targeted tests or dependency reports when they provide stronger evidence for the change.
 
