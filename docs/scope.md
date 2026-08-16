@@ -12,9 +12,37 @@ Event management is the first reference capability, but it is not the platform c
 
 ## Current accepted phase
 
-**Minimum usable adult Event Registration lifecycle**
+**Selectable application composition proof**
 
-The next product implementation phase proves the participant lifecycle selected by decision issue #53 and accepted for scope through issue #65:
+Goal #114 makes the developer-facing selectable-application-composition proof selected by decision #112 and accepted for scope through issue #115 the current accepted phase.
+
+The accepted outcome is that a platform developer can construct a valid executable application composition using only the already accepted modules and architectural constructs required for that composition's declared outcome.
+
+The proof must demonstrate that:
+
+1. at least one valid executable application composition deliberately omits at least one otherwise accepted module that is unrelated to that composition's declared outcome;
+2. the omitted module's private implementation is absent from that valid composition's functional compile-time dependency graph;
+3. the omitted module is not required at runtime for that valid composition to start and serve its declared behavior;
+4. selected modules collaborate only through accepted public APIs/contracts and adapters;
+5. unrelated modules remain independently buildable and testable when omitted from that application composition;
+6. a composition whose declared workflow requires a missing public capability is invalid and fails explicitly rather than acquiring a hidden dependency;
+7. the application runtime remains technical selection, construction, configuration, and wiring only;
+8. executable architecture/dependency verification covers the accepted selectable-composition property where mechanically practical;
+9. later build-affecting implementation must pass focused validation and the canonical root `./gradlew --no-daemon check` gate.
+
+Existing ownership remains unchanged: Event, Registration, and Security retain their module ownership; Event-Registration remains a non-module cross-module workflow composition; HTTP remains an inbound adapter; `platform/apps/platform` remains a technical composition root; `core` remains small and business-neutral; and no module may depend on another module's private implementation or persistence.
+
+This scope is solution-neutral. It does not select another application project, Gradle feature variants, Spring profiles, conditional wiring, feature flags, dynamic plugins, runtime module discovery, service extraction, another dependency-injection mechanism, code generation, or new module APIs. A material architecture or technology requirement discovered during implementation planning must return to the applicable decision, ADR, technology, or scope gate.
+
+This phase does not authorize a new business capability or bounded context, module ownership changes, Event-Registration reclassification or splitting, new persistence or migrations, new external HTTP/product contracts, Person/Account, payment/ticketing/capacity/waitlists/notifications/frontend, dynamic extension systems, deployment/hosting/TLS/observability/secrets infrastructure, unrelated ADR-0013 migration debt, or unrelated engineering-quality hardening.
+
+Scope acceptance removes the accepted-scope blocker only. Implementation is not ready until this scope change is accepted into `development` and post-merge planning re-reads Goal #114, the accepted scope, and relevant architecture/module/build truth.
+
+## Completed accepted product scope
+
+**Minimum usable adult Event Registration lifecycle — completed**
+
+The completed product phase proved the participant lifecycle selected by decision issue #53 and accepted for scope through issue #65:
 
 > An adult participant can discover an Event that has intentionally been made available, register participation, later retrieve their private Event-registration state, and cancel that registration.
 
