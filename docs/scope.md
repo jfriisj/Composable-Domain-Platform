@@ -220,9 +220,38 @@ The corrective Security migration must additionally prove:
 
 ### Explicitly out of scope
 
-This phase does not authorize minors/guardian/consent flows, organizations or multi-tenancy, Event unpublish/withdraw, registration opening/closing periods, capacity/quotas/waitlists, same-pair re-registration/reactivation, cancellation reasons/history or required cancellation timestamps, Event-specific cancellation deadlines/policy, payments/pricing/ticketing/invoicing/refunds, notifications/messaging, check-in/attendance, frontend implementation, Person/Account capability, participant profile data, roles/permissions, OAuth/OIDC, JWT, sessions/cookies, form login, a specific identity provider, raw provider/security-subject identity as Registration durable state, HMAC actor derivation, durable identity-mapping storage, credential persistence, participant-identifier audit/security logging infrastructure, new participant retention/deletion/anonymization workflows, production TLS termination or deployment infrastructure, secrets-management products, Docker/OCI, Kubernetes, Terraform/OpenTofu, cloud/provider provisioning, unrelated Event or Registration lifecycle expansion, or any other technology/capability not separately accepted.
+This phase does not authorize minors/guardian/consent flows, organizations or multi-tenancy, Event unpublish/withdraw, registration opening/closing periods, capacity/quotas/waitlists, same-pair re-registration/reactivation, cancellation reasons/history or required cancellation timestamps, Event-specific cancellation deadlines/policy, payments/pricing/ticketing/invoicing/refunds, notifications/messaging, check-in/attendance, frontend implementation, Person/Account capability, participant profile data, roles/permissions, OAuth/OIDC, JWT, sessions/cookies, form login, a specific identity provider, raw provider/security-subject identity as Registration durable state, HMAC actor derivation, durable identity-mapping storage, credential persistence, participant-identifier audit/security logging infrastructure, new participant retention/deletion/anonymization workflows, production TLS termination or deployment infrastructure, secrets-management products, Docker/OCI application/runtime/deployment packaging outside the separately admitted developer-environment scope below, Kubernetes, Terraform/OpenTofu, cloud/provider provisioning, unrelated Event or Registration lifecycle expansion, or any other technology/capability not separately accepted.
 
 Spring Security with stateless HTTP Basic remains admitted only for the minimum participant-private proof described in this phase. Scope #97 relocates ownership of that existing mechanism into private Security implementation/adapters; it does not admit another authentication technology, RBAC/role model, OAuth/OIDC, JWT, or provider.
+
+## Accepted developer-environment scope
+
+**Reproducible Docker developer environment — admitted for Goal #116**
+
+Goal #116 admits one repository-controlled developer environment as engineering scope. This developer-tooling boundary is separate from application runtime and deployment packaging and does not claim that the environment is already implemented.
+
+The initial supported host boundary is Linux with Git, Docker Engine, the Docker Compose plugin, and developer permission to control the Docker daemon. macOS, Windows, Docker Desktop, Podman, Colima, Rancher Desktop, remote Docker, rootless Docker, and other Docker-compatible engines are not part of the initial support contract.
+
+The repository may provide one Docker Compose developer container that:
+
+- uses an official Eclipse Temurin JDK 21 image input pinned by immutable digest;
+- contains only the minimum tooling required for repository development;
+- uses the repository Gradle Wrapper as the Gradle authority and does not install an independent Gradle distribution;
+- bind-mounts repository source and repository-local generated output;
+- runs normal development work as a non-root user and preserves usable host ownership for generated repository files through host UID/GID handling;
+- uses the host Docker Engine through the Docker socket / sibling-container pattern so Testcontainers can continue to create its own containers;
+- handles Docker-host-visible repository paths and Docker-socket permissions explicitly rather than assuming primary UID/GID mapping alone is sufficient;
+- may persist Gradle user-home/cache data as disposable, non-authoritative performance state.
+
+Docker-daemon access is an explicitly accepted trusted-host privilege boundary for this developer workflow. The developer container and repository code executed inside it are trusted with Docker-daemon authority; the container is not a security-isolation boundary from the host. Docker-in-Docker is not admitted for the minimum Goal #116 proof.
+
+Automated validation continues to use Testcontainers-owned ephemeral real PostgreSQL, including the current `postgres:18.4` evidence. `./gradlew --no-daemon check` must remain able to create and destroy its own test containers through the host Docker Engine. A shared Compose database must not replace Testcontainers for automated validation.
+
+Docker Compose may additionally provide an optional PostgreSQL 18.4 service for manual repository-local development and `bootRun`. Its image input must be pinned by immutable digest, and any development database volume is disposable, non-authoritative state. This service must not be required merely to enter the developer environment or run the authoritative repository validation gate.
+
+Developer-image logic must avoid architecture-specific installation logic where selected official images provide native variants. Linux `amd64` and `arm64` may remain design-compatible targets, but the project must not claim an architecture as validated until the complete developer-environment acceptance gate has actually succeeded on that architecture.
+
+The accepted operational artifact remains the executable Spring Boot/JVM JAR. This developer-tooling admission does not authorize application OCI images, application/runtime container packaging, registry publication, orchestration, Terraform/OpenTofu, cloud/provider provisioning, deployment automation, production PostgreSQL operations, TLS/ingress infrastructure, or secrets-management products.
 
 ## Accepted operational-runtime baseline
 
