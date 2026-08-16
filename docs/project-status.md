@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Reproducible developer environment — accepted scope; implementation pending**
+**Reproducible developer environment — implementation complete; Goal acceptance pending**
 
 ## Completed
 
@@ -94,10 +94,11 @@ This document is the authoritative concise statement of where the project curren
 - Decision #118 selected Docker Engine + Docker Compose on the admitted Linux host boundary, host-Docker/Testcontainers sibling access, a digest-pinned Temurin JDK 21 developer image, disposable Docker-managed Gradle cache state, and optional PostgreSQL 18.4 for manual development while preserving the executable-JAR runtime boundary.
 - Scope #119 was accepted through PR #120, admitting that bounded developer-tooling direction in `docs/scope.md` and `docs/tech-stack.md` without admitting application/runtime/deployment containerization.
 - Defect #122 corrected the active `development` ruleset so the intentionally skipped `validate` job is no longer required there; the `production` ruleset continues to require hosted `validate`.
+- Implementation #125 establishes the repository-controlled Docker Compose developer environment with digest-pinned Temurin JDK 21 and optional PostgreSQL 18.4, repository-Wrapper validation through host-Docker/Testcontainers, non-root host ownership, disposable persistent Gradle/PostgreSQL state, successful fresh-checkout validation, and manual `bootRun` readiness while preserving the executable-JAR runtime boundary and excluding application OCI/deployment packaging.
 
 ## In progress
 
-- Goal #116 `[Goal] Reproducible developer environment` is the current `priority: now` workstream. Research #117, decision #118, and scope #119 / PR #120 are complete; executable developer-environment implementation has not yet been created or accepted.
+- Goal #116 `[Goal] Reproducible developer environment` remains the current `priority: now` workstream. Research #117, decision #118, scope #119 / PR #120, and implementation #125 are complete; final Goal acceptance and closure remain pending accepted-`development` post-merge verification.
 
 ## Known gaps
 
@@ -109,9 +110,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Create the minimum ready implementation subgoal for Goal #116 from the accepted developer-environment decision and scope, then execute it through the normal implementation and PR workflow.
+Complete Goal #116 acceptance after implementation #125 is accepted into `development`: re-read the merged repository state, verify the objective Goal evidence and issue state, and close the Goal only if all acceptance conditions remain satisfied.
 
-No developer-environment implementation is accepted yet. The implementation must remain inside the bounded developer-tooling scope admitted by #119 / PR #120 and must not expand application runtime or deployment packaging.
+Do not select another Goal or expand developer-environment scope before that post-merge verification.
 
 Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 
