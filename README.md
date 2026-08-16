@@ -89,6 +89,117 @@ The authoritative business wire contract is [`platform/contracts/http/v1/event.y
 
 Event definition/retrieval and readiness remain public. Event-registration create/retrieve/cancel require HTTP Basic authentication. The authenticated opaque stable platform principal is adapted directly to the participant actor reference; participant ownership authorization remains in Event-Registration composition. HTTP Basic requires secure transport across untrusted networks; production TLS termination remains an external deployment concern.
 
+## Reproducible developer environment
+
+Goal #116 provides a repository-controlled developer environment for the
+initially supported host boundary: Linux with Git, Docker Engine, the Docker
+Compose plugin, and permission to control the local Docker daemon. A host
+project JDK, Gradle installation, and PostgreSQL development installation are
+not required.
+
+The developer image is built from the official
+`eclipse-temurin:21-jdk-noble@sha256:a871f3e3caddad75608fd4531ed8bbca5cc42a27dc1da3ea3a2e554772b0ee15` input. The optional
+manual-development database uses
+`postgres:18.4@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636`. Both are pinned by immutable
+registry digest. The repository Gradle Wrapper remains the only Gradle
+authority.
+
+The developer workflow deliberately bind-mounts the checkout at the same
+absolute path inside the developer container. Testcontainers therefore sees
+Docker-host-valid repository paths when it creates sibling containers through
+the host Docker Engine. Normal work runs with the invoking host UID/GID, while
+the Docker socket group is added separately so socket access does not rely on
+the primary group mapping.
+
+**Trust boundary:** `/var/run/docker.sock` gives the developer container, and
+repository code executed inside it, authority over the host Docker daemon.
+This workflow is for a trusted development host and is not a security-isolation
+boundary from that host. Docker-in-Docker is not used.
+
+From a fresh checkout, enter the environment with:
+
+~~~bash
+./dev/dev.sh shell
+~~~
+
+The first invocation builds the developer image. Inside the shell, normal
+repository commands use the bind-mounted checkout and the persistent,
+Docker-managed Gradle cache. Generated repository files retain the invoking
+host developer's UID/GID.
+
+The authoritative repository validation can be run directly from the host
+without a host JDK:
+
+~~~bash
+./dev/dev.sh check
+~~~
+
+The environment can also prove its supplied Java baseline and repository
+Wrapper:
+
+~~~bash
+./dev/dev.sh java-version
+./dev/dev.sh gradle-version
+~~~
+
+Automated validation continues to use Testcontainers-owned ephemeral
+PostgreSQL through the host Docker Engine. The optional Compose PostgreSQL
+service is not a dependency of the developer service and is not started by
+`check`.
+
+For manual `bootRun` development, start PostgreSQL explicitly:
+
+~~~bash
+./dev/dev.sh postgres-up
+~~~
+
+Then run the existing application development workflow against the Compose
+service:
+
+~~~bash
+./dev/dev.sh boot-run
+~~~
+
+`boot-run` uses the existing database configuration contract with
+`jdbc:postgresql://postgres:5432/platform` and one deterministic encoded
+development-only participant verifier. It does not change application runtime
+configuration semantics and must not be treated as production credential
+configuration.
+
+While `boot-run` is running, verify the existing readiness contract from
+another host terminal:
+
+~~~bash
+test "$(curl -sS -o /dev/null -w '%{http_code}'   http://127.0.0.1:8080/internal/readiness)" = "204"   && echo "PASS: platform readiness"
+~~~
+
+Stop the environment while retaining the disposable Gradle cache and
+development database data:
+
+~~~bash
+./dev/dev.sh down
+~~~
+
+Delete both Docker-managed convenience volumes when a clean reconstruction is
+required:
+
+~~~bash
+./dev/dev.sh reset
+~~~
+
+The Gradle cache and manual-development PostgreSQL volume are non-authoritative
+and disposable. Deleting them must not change project truth.
+
+The initial support contract does not claim macOS, Windows, Docker Desktop,
+Podman, Colima, Rancher Desktop, remote Docker, rootless Docker, or another
+Docker-compatible engine. Linux `amd64` and `arm64` remain design-compatible
+where the pinned official images provide native variants, but an architecture
+is only claimed as validated after the complete Goal #116 gate has actually
+succeeded on that architecture.
+
+This developer tooling does not containerize the application runtime. The
+accepted operational artifact remains the executable Spring Boot/JVM JAR.
+
 ## Development run
 
 For repository-local development, the same externally configured PostgreSQL boundary can be used with Gradle `bootRun`:

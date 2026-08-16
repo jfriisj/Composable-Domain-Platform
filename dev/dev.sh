@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+PROJECT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
+COMPOSE_FILE="${SCRIPT_DIR}/compose.yaml"
+DOCKER_SOCKET="/var/run/docker.sock"
+
+fail() {
+    printf 'FAIL: %s\n' "$*" >&2
+    exit 1
+}
+
+require_host() {
+    test "$(uname -s)" = "Linux" ||
+        fail "initial developer-environment support is Linux only"
+
+    command -v docker >/dev/null 2>&1 ||
+        fail "Docker Engine CLI is required on the host"
+
+    docker compose version >/dev/null 2>&1 ||
+        fail "Docker Compose plugin is required on the host"
+
+    test -S "${DOCKER_SOCKET}" ||
+        fail "local Docker socket ${DOCKER_SOCKET} is required; remote/rootless engines are outside the accepted host boundary"
+
+    LOCAL_UID="$(id -u)"
+    LOCAL_GID="$(id -g)"
+
+    test "${LOCAL_UID}" -ne 0 ||
+        fail "normal developer work must run as a non-root host user"
+
+    test "${LOCAL_GID}" -ne 0 ||
+        fail "normal developer work must use a non-root primary host group"
+
+    DOCKER_GID="$(stat -c '%g' "${DOCKER_SOCKET}")"
+    case "${DOCKER_GID}" in
+        ''|*[!0-9]*) fail "could not determine Docker socket group id" ;;
+    esac
+
+    export DOCKER_HOST="unix://${DOCKER_SOCKET}"
+    docker info >/dev/null 2>&1 ||
+        fail "current host user cannot control the accepted local Docker Engine"
+
+    project_base="$(basename -- "${PROJECT_DIR}" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
+    project_base="${project_base#-}"
+    project_base="${project_base%-}"
+    test -n "${project_base}" || project_base="cdp"
+
+    export PROJECT_DIR LOCAL_UID LOCAL_GID DOCKER_GID
+    export COMPOSE_PROJECT_NAME="${project_base}-dev-${LOCAL_UID}"
+}
+
+compose() {
+    docker compose --file "${COMPOSE_FILE}" "$@"
+}
+
+postgres_up() {
+    compose --profile manual-db up -d postgres
+
+    for _ in $(seq 1 60); do
+        if compose --profile manual-db exec -T postgres \
+            pg_isready -U platform -d platform >/dev/null 2>&1; then
+            printf 'PASS: optional development PostgreSQL is ready\n'
+            return
+        fi
+        sleep 1
+    done
+
+    compose --profile manual-db logs postgres >&2 || true
+    fail "optional development PostgreSQL did not become ready"
+}
+
+usage() {
+    cat <<'EOF'
+Usage: ./dev/dev.sh <command>
+
+Commands:
+  shell            Enter the project-specific developer shell.
+  java-version     Show the Java version inside the developer environment.
+  gradle-version   Run the repository Gradle Wrapper version command.
+  check            Run the authoritative repository validation inside the environment.
+  postgres-up      Start the optional manual-development PostgreSQL service.
+  postgres-down    Stop optional PostgreSQL while retaining its disposable data volume.
+  boot-run         Start optional PostgreSQL and run the existing platform bootRun workflow.
+  down             Stop/remove developer-environment containers and network; retain named volumes.
+  reset            Stop/remove the environment and delete disposable Gradle/PostgreSQL volumes.
+EOF
+}
+
+require_host
+
+case "${1:-}" in
+    shell)
+        exec docker compose --file "${COMPOSE_FILE}" run --rm --build dev bash
+        ;;
+    java-version)
+        exec docker compose --file "${COMPOSE_FILE}" run --rm --build -T --interactive=false dev java -version
+        ;;
+    gradle-version)
+        exec docker compose --file "${COMPOSE_FILE}" run --rm --build -T --interactive=false dev ./gradlew --version
+        ;;
+    check)
+        exec docker compose --file "${COMPOSE_FILE}" run --rm --build -T --interactive=false dev ./gradlew --no-daemon check
+        ;;
+    postgres-up)
+        postgres_up
+        ;;
+    postgres-down)
+        compose --profile manual-db stop postgres
+        printf 'PASS: optional development PostgreSQL stopped; data volume retained\n'
+        ;;
+    boot-run)
+        postgres_up
+        exec docker compose --file "${COMPOSE_FILE}" run --rm --build --service-ports -T --interactive=false \
+            -e PLATFORM_DATABASE_URL='jdbc:postgresql://postgres:5432/platform' \
+            -e PLATFORM_DATABASE_USERNAME='platform' \
+            -e PLATFORM_DATABASE_PASSWORD='platform' \
+            -e PLATFORM_SECURITY_PARTICIPANTS_0_PRINCIPAL='opaque-dev-participant' \
+            -e 'PLATFORM_SECURITY_PARTICIPANTS_0_PASSWORDVERIFIER={bcrypt}$2y$10$UHuEV9G1TkCe7DwbtUfopuufpWETOlRJ3QGAds9rQVeZqojZcu13W' \
+            -e SERVER_PORT='8080' \
+            dev ./gradlew --no-daemon :platform-app:bootRun
+        ;;
+    down)
+        compose --profile manual-db down --remove-orphans
+        printf 'PASS: developer environment stopped; named volumes retained\n'
+        ;;
+    reset)
+        compose --profile manual-db down --volumes --remove-orphans
+        printf 'PASS: disposable developer-environment volumes removed\n'
+        ;;
+    *)
+        usage
+        exit 2
+        ;;
+esac

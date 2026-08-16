@@ -1,0 +1,52 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_UID: "${LOCAL_UID:?LOCAL_UID must be supplied by dev/dev.sh}"
+        USER_GID: "${LOCAL_GID:?LOCAL_GID must be supplied by dev/dev.sh}"
+    user: "${LOCAL_UID:?LOCAL_UID must be supplied by dev/dev.sh}:${LOCAL_GID:?LOCAL_GID must be supplied by dev/dev.sh}"
+    group_add:
+      - "${DOCKER_GID:?DOCKER_GID must be supplied by dev/dev.sh}"
+    environment:
+      HOME: /home/developer
+      GRADLE_USER_HOME: /home/developer/.gradle
+      TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+    working_dir: "${PROJECT_DIR:?PROJECT_DIR must be supplied by dev/dev.sh}"
+    volumes:
+      - type: bind
+        source: "${PROJECT_DIR:?PROJECT_DIR must be supplied by dev/dev.sh}"
+        target: "${PROJECT_DIR:?PROJECT_DIR must be supplied by dev/dev.sh}"
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: volume
+        source: gradle-cache
+        target: /home/developer/.gradle
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  postgres:
+    image: postgres:18.4@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636
+    profiles:
+      - manual-db
+    environment:
+      POSTGRES_DB: platform
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: platform
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U platform -d platform
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - type: volume
+        source: postgres-data
+        target: /var/lib/postgresql
+
+volumes:
+  gradle-cache:
+  postgres-data:
