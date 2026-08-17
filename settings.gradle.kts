@@ -31,5 +31,12 @@ project(":event-registration-composition").projectDir = file("platform/compositi
 include(":http-interface")
 project(":http-interface").projectDir = file("platform/interfaces/http")
 
+include(":event-registration-http-interface")
+project(":event-registration-http-interface").projectDir =
+    file("platform/interfaces/event-registration-http")
+
 include(":platform-app")
 project(":platform-app").projectDir = file("platform/apps/platform")
+
+include(":event-app")
+project(":event-app").projectDir = file("platform/apps/event")

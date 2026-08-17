@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Selectable application composition — static architecture accepted; implementation #131 next**
+**Selectable application composition — executable proof represented; Goal #114 acceptance pending**
 
 ## Completed
 
@@ -98,12 +98,13 @@ This document is the authoritative concise statement of where the project curren
 - Goal #116 objective acceptance is satisfied in accepted `development`: a fresh checkout on the documented Linux host can enter the repository-controlled developer environment, use its supplied Java 21 and repository Gradle Wrapper, pass authoritative root validation with Testcontainers-owned real PostgreSQL, run the existing application against optional persistent development PostgreSQL to readiness, preserve usable host ownership and disposable development state, and retain the executable-JAR runtime boundary without application OCI/deployment scope.
 
 - Decision #130 selects the minimum static selectable-composition mechanism for Goal #114: an Event-only executable composition, explicit Gradle project boundaries, and minimum physical separation of participant-private Event-registration HTTP adaptation. ADR-0015 records that decision as Accepted architecture rationale while the selected new allocation remains Planned until implementation #131.
+- Implementation #131 realizes ADR-0015 with an Event-only executable Spring Boot composition, a physically separate participant-private Event-registration HTTP adapter project, deterministic Event-only compile/runtime dependency exclusion, and focused real-PostgreSQL runtime evidence while preserving the full Platform Application.
 
 ## In progress
 
-- Goal #114 `[Goal] Prove selectable application composition` is the current `priority: now` workstream.
-- Scope #115 admits the minimum developer-facing selectable-composition proof.
-- ADR-0015 records decision #130 as the accepted static architecture direction. Implementation #131 is the next executable subgoal after the required post-merge re-read updates its baseline/readiness.
+- Goal #114 `[Goal] Prove selectable application composition` remains the current `priority: now` workstream.
+- Scope #115 and ADR-0015 govern the accepted proof.
+- Implementation #131 is represented by this change; Goal #114 still requires the mandated post-merge re-read and objective acceptance review before closure.
 
 ## Known gaps
 
@@ -115,9 +116,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-After this documentation transition is accepted, re-read remote `development`, Goal #114, #132, and implementation #131; update #131 to the resulting accepted baseline and proceed only if no new blocker is exposed.
+After this implementation transition is accepted, re-read remote `development`, Goal #114, #131, and the changed architecture/build truth. Evaluate the Goal #114 objective acceptance evidence before creating or starting any further executable work.
 
-Then implement #131 as the bounded static Event-only composition proof governed by scope #115 and ADR-0015. Do not expand it into a new capability, ownership change, external contract, persistence change, dynamic composition mechanism, or new technology.
+Do not expand the completed proof into a new capability, ownership change, external contract, persistence change, dynamic composition mechanism, or new technology without a separate accepted transition.
 
 Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 

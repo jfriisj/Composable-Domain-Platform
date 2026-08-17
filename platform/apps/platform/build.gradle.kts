@@ -20,6 +20,7 @@ dependencies {
     implementation(project(":security-impl"))
     implementation(project(":event-registration-composition"))
     implementation(project(":http-interface"))
+    implementation(project(":event-registration-http-interface"))
     implementation(platform(libs.spring.boot.dependencies))
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)

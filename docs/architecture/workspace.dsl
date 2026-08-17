@@ -19,8 +19,8 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
 
         securityApi = element "Security API" "Gradle project" "Framework-neutral authenticated-actor Authentication boundary plus opaque resource-ownership Authorization decision selected by decision #99 and recorded by ADR-0014." "Current,Security Module,API"
         securityImpl = element "Security Implementation" "Gradle project" "Private Security implementation and adapters: Spring Security/stateless HTTP Basic, encoded verifier validation, principal-to-actor adaptation, and ownership authorization." "Current,Security Module,Implementation"
-        eventRegistrationHttpInterface = element "Event-Registration HTTP Interface" "Gradle project" "Planned participant-private Event-registration inbound adapter allocation separated from the Event HTTP slice while reusing the unified Event-facing contract boundary." "Planned,Interface"
-        eventApp = element "Event Application" "Spring Boot application" "Planned Event-only executable composition root selecting Event without Registration, Security, or Event-Registration." "Planned,Runtime"
+        eventRegistrationHttpInterface = element "Event-Registration HTTP Interface" "Gradle project" "Participant-private Event-registration inbound adapter separated from the Event HTTP slice while reusing the unified Event-facing contract boundary." "Current,Interface"
+        eventApp = element "Event Application" "Spring Boot application" "Event-only executable composition root selecting Event without Registration, Security, or Event-Registration." "Current,Runtime"
 
         stakeholder -> platform "Uses and shapes"
         eventHttpContract -> httpInterface "Generates server transport interface and models"
@@ -33,7 +33,6 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         platformApp -> eventImpl "Constructs private Event implementation"
         platformApp -> eventPersistence "Configures DataSource and applies Event-owned Flyway migrations"
 
-        httpInterface -> eventRegistrationComposition "Calls Event-registration create and retrieval workflows"
         registrationApi -> core "Carries execution context"
         registrationImpl -> registrationApi "Implements and depends on"
         registrationImpl -> registrationPersistence "Persists and retrieves Registration state"
@@ -45,7 +44,6 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         platformApp -> registrationPersistence "Configures DataSource and applies Registration-owned Flyway migrations"
 
         securityImpl -> securityApi "Implements the Security public boundary"
-        httpInterface -> securityApi "Consumes authenticated-actor Authentication boundary"
         eventRegistrationComposition -> securityApi "Requests opaque resource-ownership Authorization decisions"
         platformApp -> securityImpl "Selects and configures private Security implementation"
         platformApp -> securityApi "Wires Security public contracts to consumers"
@@ -53,35 +51,35 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         eventRegistrationHttpInterface -> httpInterface "Reuses generated transport types and shared HTTP correlation boundary"
         eventRegistrationHttpInterface -> eventRegistrationComposition "Calls participant-private Event-registration workflows"
         eventRegistrationHttpInterface -> securityApi "Consumes authenticated-actor Authentication boundary"
-        platformApp -> eventRegistrationHttpInterface "Planned host and wiring for participant-private HTTP adaptation"
-        eventApp -> httpInterface "Planned host and wiring for Event HTTP adaptation"
-        eventApp -> eventImpl "Planned construction of private Event implementation"
-        eventApp -> eventPersistence "Planned DataSource configuration and Event-owned Flyway migration"
+        platformApp -> eventRegistrationHttpInterface "Hosts and wires participant-private HTTP adaptation"
+        eventApp -> httpInterface "Hosts and wires Event HTTP adaptation"
+        eventApp -> eventImpl "Constructs private Event implementation"
+        eventApp -> eventPersistence "Configures DataSource and applies Event-owned Flyway migrations"
     }
 
     views {
         systemContext platform "CurrentSystemContext" {
-            include stakeholder core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
+            include stakeholder core eventHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
             autolayout lr
         }
 
-        custom "CurrentModuleMap" "Current module map" "Implemented runtime, contract, capability, composition, and persistence boundaries for Event and Registration." {
-            include core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
+        custom "CurrentModuleMap" "Current module map" "Implemented runtime, contract, capability, composition, persistence, and selectable-application boundaries." {
+            include core eventHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
             autolayout lr
         }
 
         custom "RegistrationComposition" "Registration composition" "Implemented Registration capability and Event-Registration cross-capability composition." {
-            include core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
+            include core eventHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
             autolayout lr
         }
 
         custom "SecurityBoundary" "Security module boundary" "Current Security API/Implementation and high-level consumers established by #97/#99/ADR-0014 and implementation #102." {
-            include httpInterface platformApp eventRegistrationComposition registrationApi securityApi securityImpl
+            include eventRegistrationHttpInterface platformApp eventRegistrationComposition registrationApi securityApi securityImpl
             autolayout lr
         }
 
-        custom "PlannedSelectableComposition" "Planned selectable application composition" "Accepted ADR-0015 allocation for the Event-only proof; Planned elements are not yet executable Current state." {
-            include core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl eventRegistrationHttpInterface eventApp
+        custom "SelectableComposition" "Selectable application composition" "Implemented ADR-0015 static Event-only composition alongside the complete Platform Application." {
+            include core eventHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
             autolayout lr
         }
 
