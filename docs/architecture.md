@@ -238,19 +238,21 @@ Security is **Current** in the authoritative Structurizr model. Current views in
 
 No Security persistence, Person/Account capability, external identity provider, OAuth/OIDC, JWT, RBAC/ABAC/role model, generic policy engine, new application container, or dynamic plugin mechanism is admitted.
 
-## Planned static selectable application composition
+## Current static selectable application composition
 
-ADR-0015 records the architecture selected by decision #130 for Goal #114. The mechanism is static build-time selection through explicit Gradle project/application boundaries; it does not use runtime module discovery, dynamic plugins, feature flags, Spring profiles, Gradle feature variants, or another dependency-injection mechanism.
+ADR-0015 records the static build-time mechanism selected by decision #130 for Goal #114. Implementation #131 realizes that mechanism through explicit Gradle project/application boundaries; it does not use runtime module discovery, dynamic plugins, feature flags, Spring profiles, Gradle feature variants, or another dependency-injection mechanism.
 
-The minimum proof composition is Event-only. It selects Event API/implementation/persistence plus the existing Event HTTP adapter boundary and a technical Spring Boot composition root. Registration, Security, Event-Registration composition, and participant-private Event-registration HTTP adaptation are deliberately omitted from that application's functional compile/runtime dependency graph.
+The valid minimum proof composition is Event-only. `platform/apps/event` selects Event API/implementation/persistence plus `platform/interfaces/http` and the existing Spring Boot/Web/PostgreSQL/Flyway infrastructure required to serve the accepted Event HTTP behavior. Registration, Security, Event-Registration composition, and participant-private Event-registration HTTP adaptation are absent from the Event application's functional compile/runtime dependency graph.
 
-The existing Platform Application remains the complete Event/Registration/Security composition. A second Event-only application root is **Planned** and remains technical selection/construction/configuration/wiring only.
+The existing `platform/apps/platform` remains the complete Event/Registration/Security composition. Both application roots remain technical selection/construction/configuration/wiring only and own no business behavior.
 
-The unified external contract remains `platform/contracts/http/v1/event.yaml`. Physical adapter allocation is planned to separate participant-private Event-registration HTTP adaptation from the Event HTTP slice so Event-only composition does not inherit Event-Registration or Security dependencies merely through the HTTP project. The separated adapter may reuse generated transport types and shared HTTP correlation behavior from the existing HTTP boundary; no reverse Event HTTP dependency on Event-Registration or Security is accepted.
+The unified external contract remains `platform/contracts/http/v1/event.yaml`. `platform/interfaces/http` owns the generated unified transport boundary plus Event HTTP adaptation and no longer depends on Event-Registration or Security. `platform/interfaces/event-registration-http` implements the participant-private Event-registration transport behavior and depends on the generated transport boundary, Event-Registration composition, and Security public API. The dependency is one-way: Event-registration HTTP may reuse `http-interface`; `http-interface` does not depend back on Event-Registration or Security.
 
-Event-Registration remains a non-module composition and still requires Event, Registration, and Security through their public APIs. Selectability therefore permits omission only where the declared application behavior does not require a capability; it does not make a participant-private Event-registration composition valid without Registration or Security.
+Event-Registration remains a non-module composition and still requires Event, Registration, and Security through their public APIs. Selectability permits omission only where the declared application behavior does not require a capability; it does not make a participant-private Event-registration composition valid without Registration or Security.
 
-`docs/architecture/workspace.dsl` represents the Event-only application and separated Event-registration HTTP adapter as **Planned** elements in a dedicated planned view. Existing Current views continue to represent only executable accepted state until implementation #131 is accepted.
+`:event-app:check` resolves both `compileClasspath` and `runtimeClasspath` and fails if Registration API/implementation, Security API/implementation, Event-Registration composition, or Event-registration HTTP adapter projects are present. The Event-only runtime test starts against real PostgreSQL, serves an existing Event define/retrieve flow without participant security configuration, and verifies that Event migrations run without creating the Registration schema.
+
+`docs/architecture/workspace.dsl` represents both application compositions and both HTTP adapter boundaries as Current executable architecture.
 
 ## Current reference module
 
@@ -272,7 +274,7 @@ The HTTP adapter and executable application runtime are outside the Event bounde
 
 ## Current runtime boundary
 
-The executable Event-facing vertical slice is:
+The executable Event-facing transport and composition allocation is:
 
 ~~~text
 external HTTP caller
@@ -282,41 +284,50 @@ platform/contracts/http/v1/event.yaml
         |
         v
 platform/interfaces/http
+  generated transport + Event HTTP adapter
         |
         +-----------------------> platform/modules/event/api
-        |                              ^
-        |                              |
-        |                        platform/modules/event/impl
-        |                              |
-        |                              v
-        |                         event.events
+                                       ^
+                                       |
+                                 platform/modules/event/impl
+                                       |
+                                       v
+                                  event.events
+        ^
         |
-        v
-platform/compositions/event-registration
+platform/interfaces/event-registration-http
+  participant-private Event-registration HTTP adapter
+        |                              |
+        v                              v
+platform/compositions/event-registration   platform/modules/security/api
         |                    |
         v                    v
-platform/modules/event/api      platform/modules/registration/api
-                              ^
-                              |
-                      platform/modules/registration/impl
-                              |
-                              v
-                 registration.registrations
+platform/modules/event/api   platform/modules/registration/api
+                                      ^
+                                      |
+                              platform/modules/registration/impl
+                                      |
+                                      v
+                         registration.registrations
 
 platform/apps/platform
-  Spring Boot composition root
-  shared DataSource
-  Event Flyway startup migration
-  Registration Flyway startup migration
+  full Spring Boot composition root
+  Event + Registration + Security + Event-Registration
+  Event and Registration Flyway startup migrations
+
+platform/apps/event
+  Event-only Spring Boot composition root
+  Event HTTP + Event implementation/persistence only
+  Event Flyway startup migrations only
 ~~~
 
-`platform/apps/platform` starts the Spring Boot process and wires the HTTP interface, Event services, Registration services, persistence adapters, Event-Registration composition, and Security public contracts. It explicitly selects the private Security implementation. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests.
+`platform/apps/platform` wires both HTTP adapter projects, Event services, Registration services, persistence adapters, Event-Registration composition, and Security public contracts. It explicitly selects the private Security implementation. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests.
 
-Spring Security, encoded participant credential verification, stateless HTTP Basic, authenticated-principal-to-actor adaptation, and final opaque resource-ownership Authorization are privately owned by `security-impl`. The runtime provides selection/configuration/wiring only.
+`platform/apps/event` wires only the Event HTTP slice, Event services, Event persistence adapter, DataSource, and Event-owned Flyway migration. Its compile/runtime graph excludes Registration, Security, Event-Registration, and participant-private Event-registration HTTP adaptation.
 
-Scope #97 and decision #99, recorded by ADR-0014, define this Security ownership boundary. Event-registration workflow/domain facts remain in the composition; the final opaque actor-versus-owner decision belongs to Security.
+Spring Security, encoded participant credential verification, stateless HTTP Basic, authenticated-principal-to-actor adaptation, and final opaque resource-ownership Authorization remain privately owned by `security-impl` and are selected only by compositions that require that capability. Application runtimes provide selection/configuration/wiring only.
 
-Event-Registration remains a non-module composition under the current ADR-0013 classification, so #97 does not require a composition `api`/`impl` split.
+Event-Registration remains a non-module composition under ADR-0013 and continues to collaborate only through Event, Registration, and Security public contracts.
 
 ## Accepted operational-runtime boundary
 
@@ -368,6 +379,7 @@ The currently implemented architectural structure includes:
 .
 ├── platform/
 │   ├── apps/
+│   │   ├── event/
 │   │   └── platform/
 │   ├── core/
 │   ├── modules/
@@ -384,6 +396,7 @@ The currently implemented architectural structure includes:
 │   ├── compositions/
 │   │   └── event-registration/
 │   ├── interfaces/
+│   │   ├── event-registration-http/
 │   │   └── http/
 │   └── contracts/
 │       └── http/
@@ -416,7 +429,8 @@ Current build-time enforcement includes:
 5. Platform ArchUnit tests for core, capability APIs/implementations, composition, HTTP interface, and application-runtime dependency boundaries.
 6. Event- and Registration-owned Flyway migrations and PostgreSQL persistence integration tests through Testcontainers.
 7. Running Spring Boot HTTP end-to-end tests against real PostgreSQL through Testcontainers, including Event-registration success/error behavior, durability, uniqueness, and correlation handling.
-8. Root `./gradlew --no-daemon check` aggregation across all current projects.
+8. Root `./gradlew --no-daemon check` aggregation across all current projects, including both executable application compositions and both HTTP adapter projects.
+9. Event-only compile/runtime dependency verification rejects Registration, Security, Event-Registration composition, and participant-private Event-registration HTTP adapter projects from `:event-app`.
 
 Additional enforcement remains deferred until explicitly scoped:
 

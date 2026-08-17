@@ -14,6 +14,8 @@ tasks.named("check") {
         ":security-impl:check",
         ":event-registration-composition:check",
         ":http-interface:check",
+        ":event-registration-http-interface:check",
         ":platform-app:check",
+        ":event-app:check",
     )
 }
