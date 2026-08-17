@@ -150,7 +150,7 @@ Technical authentication identity and Registration registrant identity remain se
 
 ADR-0013 establishes Security as an independently owned module. Scope #97 admits its `api`/`impl` boundary, decision #99 and ADR-0014 define its public Authentication + Authorization contracts, and implementation #102 establishes that source/build ownership in the executable architecture.
 
-The existing HTTP interface and Spring Boot application remain the external adapter and technical composition root respectively.
+The Event HTTP interface and participant-private Event-registration HTTP interface remain external adapter boundaries. The Spring Boot application roots remain technical composition roots.
 
 ADR-0008 supersedes ADR-0007 and records the domain-neutral Registration boundary, Event-specific composition, persistence isolation, and security/identity separation. ADR-0009 supersedes only ADR-0008's separate-contract-file decision by making `event.yaml` the unified Event-facing HTTP contract.
 
@@ -174,7 +174,7 @@ Participant proof credentials are supplied through external runtime configuratio
 
 `authenticatedPrincipalName -> AuthenticatedActorReference(authenticatedPrincipalName)`
 
-Current executable state has `security-impl` configuring the Spring Security filter chain, stateless HTTP Basic, encoded credential verification, authenticated technical-principal establishment, actor adaptation, and opaque resource-ownership Authorization. `platform/interfaces/http` receives the actor through `security-api` and remains responsible for HTTP adaptation and external error/privacy mapping.
+Current executable state has `security-impl` configuring the Spring Security filter chain, stateless HTTP Basic, encoded credential verification, authenticated technical-principal establishment, actor adaptation, and opaque resource-ownership Authorization. `platform/interfaces/event-registration-http` receives the actor through `security-api` and remains responsible for participant-private Event-registration HTTP adaptation and external error/privacy mapping.
 
 The application runtime selects `security-impl` and wires `security-api` contracts to consumers. It does not own Authentication/Authorization behavior.
 
@@ -213,7 +213,7 @@ The current dependency direction is:
 ~~~text
 security-impl -> security-api
 
-platform/interfaces/http -> security-api
+platform/interfaces/event-registration-http -> security-api
 
 platform/compositions/event-registration -> security-api
 
@@ -224,7 +224,7 @@ platform/apps/platform -> security-api
 
 `security-impl` privately owns the admitted Spring Security/stateless HTTP Basic implementation, encoded verifier validation, externally configured in-memory proof participants, technical-principal extraction, principal-to-actor adaptation, Authentication/Authorization implementations, and Security-specific Servlet/HTTP Basic adapters.
 
-The HTTP interface consumes `AuthenticatedActorProvider` but does not own credential verification or Security policy.
+The participant-private Event-registration HTTP interface consumes `AuthenticatedActorProvider` but does not own credential verification or Security policy.
 
 Event-Registration retains Event/Registration workflow and fact interpretation. For participant-private retrieval/cancellation it verifies the Event target and participant registrant namespaces, translates only the registrant reference value into `ResourceOwnerReference`, and asks Security for the final actor-versus-owner decision. It maps `DENIED` into its workflow authorization-denied semantic; HTTP retains the existing external `404` concealment mapping.
 
@@ -234,7 +234,7 @@ The application runtime selects, constructs, configures, and wires Security but 
 
 The following dependencies remain prohibited: `security-api -> core/Event/Registration/Event-Registration/HTTP`; `security-impl -> Event/Registration/Event-Registration/HTTP`; functional consumers -> `security-impl`; and Event/Registration private implementation or persistence -> Security.
 
-Security is **Current** in the authoritative Structurizr model. Current views include the Security API/Implementation and their executable collaboration with HTTP, Event-Registration, and the application composition root.
+Security is **Current** in the authoritative Structurizr model. Current views include the Security API/Implementation and their executable collaboration with the Event-registration HTTP adapter, Event-Registration, and the application composition root.
 
 No Security persistence, Person/Account capability, external identity provider, OAuth/OIDC, JWT, RBAC/ABAC/role model, generic policy engine, new application container, or dynamic plugin mechanism is admitted.
 
