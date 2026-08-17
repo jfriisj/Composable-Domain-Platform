@@ -238,6 +238,20 @@ Security is **Current** in the authoritative Structurizr model. Current views in
 
 No Security persistence, Person/Account capability, external identity provider, OAuth/OIDC, JWT, RBAC/ABAC/role model, generic policy engine, new application container, or dynamic plugin mechanism is admitted.
 
+## Planned static selectable application composition
+
+ADR-0015 records the architecture selected by decision #130 for Goal #114. The mechanism is static build-time selection through explicit Gradle project/application boundaries; it does not use runtime module discovery, dynamic plugins, feature flags, Spring profiles, Gradle feature variants, or another dependency-injection mechanism.
+
+The minimum proof composition is Event-only. It selects Event API/implementation/persistence plus the existing Event HTTP adapter boundary and a technical Spring Boot composition root. Registration, Security, Event-Registration composition, and participant-private Event-registration HTTP adaptation are deliberately omitted from that application's functional compile/runtime dependency graph.
+
+The existing Platform Application remains the complete Event/Registration/Security composition. A second Event-only application root is **Planned** and remains technical selection/construction/configuration/wiring only.
+
+The unified external contract remains `platform/contracts/http/v1/event.yaml`. Physical adapter allocation is planned to separate participant-private Event-registration HTTP adaptation from the Event HTTP slice so Event-only composition does not inherit Event-Registration or Security dependencies merely through the HTTP project. The separated adapter may reuse generated transport types and shared HTTP correlation behavior from the existing HTTP boundary; no reverse Event HTTP dependency on Event-Registration or Security is accepted.
+
+Event-Registration remains a non-module composition and still requires Event, Registration, and Security through their public APIs. Selectability therefore permits omission only where the declared application behavior does not require a capability; it does not make a participant-private Event-registration composition valid without Registration or Security.
+
+`docs/architecture/workspace.dsl` represents the Event-only application and separated Event-registration HTTP adapter as **Planned** elements in a dedicated planned view. Existing Current views continue to represent only executable accepted state until implementation #131 is accepted.
+
 ## Current reference module
 
 Event is the first implemented bounded context used to validate the module architecture.
