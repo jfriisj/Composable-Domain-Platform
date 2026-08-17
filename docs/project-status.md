@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Selectable application composition — executable proof represented; Goal #114 acceptance pending**
+**Selectable application composition — Goal #114 objective acceptance satisfied**
 
 ## Completed
 
@@ -97,14 +97,15 @@ This document is the authoritative concise statement of where the project curren
 - Implementation #125 establishes the repository-controlled Docker Compose developer environment with digest-pinned Temurin JDK 21 and optional PostgreSQL 18.4, repository-Wrapper validation through host-Docker/Testcontainers, non-root host ownership, disposable persistent Gradle/PostgreSQL state, successful fresh-checkout validation, and manual `bootRun` readiness while preserving the executable-JAR runtime boundary and excluding application OCI/deployment packaging.
 - Goal #116 objective acceptance is satisfied in accepted `development`: a fresh checkout on the documented Linux host can enter the repository-controlled developer environment, use its supplied Java 21 and repository Gradle Wrapper, pass authoritative root validation with Testcontainers-owned real PostgreSQL, run the existing application against optional persistent development PostgreSQL to readiness, preserve usable host ownership and disposable development state, and retain the executable-JAR runtime boundary without application OCI/deployment scope.
 
-- Decision #130 selects the minimum static selectable-composition mechanism for Goal #114: an Event-only executable composition, explicit Gradle project boundaries, and minimum physical separation of participant-private Event-registration HTTP adaptation. ADR-0015 records that decision as Accepted architecture rationale while the selected new allocation remains Planned until implementation #131.
+- Decision #130 selects the minimum static selectable-composition mechanism for Goal #114: an Event-only executable composition, explicit Gradle project boundaries, and minimum physical separation of participant-private Event-registration HTTP adaptation. ADR-0015 records that decision as Accepted architecture rationale; implementation #131 subsequently realizes the selected allocation as Current executable architecture.
 - Implementation #131 realizes ADR-0015 with an Event-only executable Spring Boot composition, a physically separate participant-private Event-registration HTTP adapter project, deterministic Event-only compile/runtime dependency exclusion, and focused real-PostgreSQL runtime evidence while preserving the full Platform Application.
+- Documentation #135 synchronizes the remaining Security/HTTP architecture narrative with the executable adapter split established by #131.
+- Goal #114 objective acceptance is satisfied in accepted `development`: the Event-only application deliberately omits Registration, Security, and Event-Registration from its functional compile/runtime graph, starts and serves accepted Event HTTP behavior with only Event-owned persistence, preserves independently validated omitted capabilities and required public-capability dependencies, and keeps authoritative architecture/status truth synchronized with the executable result.
 
 ## In progress
 
-- Goal #114 `[Goal] Prove selectable application composition` remains the current `priority: now` workstream.
-- Scope #115 and ADR-0015 govern the accepted proof.
-- Implementation #131 is represented by this change; Goal #114 still requires the mandated post-merge re-read and objective acceptance review before closure.
+- No executable work remains under Goal #114.
+- The next project outcome has not yet been selected; Goal #114 does not authorize additional implementation.
 
 ## Known gaps
 
@@ -116,7 +117,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-After this implementation transition is accepted, re-read remote `development`, Goal #114, #131, and the changed architecture/build truth. Evaluate the Goal #114 objective acceptance evidence before creating or starting any further executable work.
+Goal #114 is complete. Select the next observable outcome through the accepted research/decision/Goal planning flow before admitting new executable work.
 
 Do not expand the completed proof into a new capability, ownership change, external contract, persistence change, dynamic composition mechanism, or new technology without a separate accepted transition.
 
