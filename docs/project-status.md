@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Selectable application composition — scope accepted; implementation planning pending**
+**Selectable application composition — static architecture accepted; implementation #131 next**
 
 ## Completed
 
@@ -97,10 +97,13 @@ This document is the authoritative concise statement of where the project curren
 - Implementation #125 establishes the repository-controlled Docker Compose developer environment with digest-pinned Temurin JDK 21 and optional PostgreSQL 18.4, repository-Wrapper validation through host-Docker/Testcontainers, non-root host ownership, disposable persistent Gradle/PostgreSQL state, successful fresh-checkout validation, and manual `bootRun` readiness while preserving the executable-JAR runtime boundary and excluding application OCI/deployment packaging.
 - Goal #116 objective acceptance is satisfied in accepted `development`: a fresh checkout on the documented Linux host can enter the repository-controlled developer environment, use its supplied Java 21 and repository Gradle Wrapper, pass authoritative root validation with Testcontainers-owned real PostgreSQL, run the existing application against optional persistent development PostgreSQL to readiness, preserve usable host ownership and disposable development state, and retain the executable-JAR runtime boundary without application OCI/deployment scope.
 
+- Decision #130 selects the minimum static selectable-composition mechanism for Goal #114: an Event-only executable composition, explicit Gradle project boundaries, and minimum physical separation of participant-private Event-registration HTTP adaptation. ADR-0015 records that decision as Accepted architecture rationale while the selected new allocation remains Planned until implementation #131.
+
 ## In progress
 
 - Goal #114 `[Goal] Prove selectable application composition` is the current `priority: now` workstream.
-- Scope #115 admits the minimum developer-facing selectable-composition proof. Implementation remains not-ready until the required post-merge re-read establishes the smallest coherent implementation child and its exact readiness.
+- Scope #115 admits the minimum developer-facing selectable-composition proof.
+- ADR-0015 records decision #130 as the accepted static architecture direction. Implementation #131 is the next executable subgoal after the required post-merge re-read updates its baseline/readiness.
 
 ## Known gaps
 
@@ -112,9 +115,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Re-read accepted `development`, Goal #114, accepted scope #115, and relevant architecture/module/build truth before decomposing any implementation child.
+After this documentation transition is accepted, re-read remote `development`, Goal #114, #132, and implementation #131; update #131 to the resulting accepted baseline and proceed only if no new blocker is exposed.
 
-Do not implement selectable composition, choose a physical mechanism, add a capability, change module ownership, or introduce architecture/technology/infrastructure through this scope transition.
+Then implement #131 as the bounded static Event-only composition proof governed by scope #115 and ADR-0015. Do not expand it into a new capability, ownership change, external contract, persistence change, dynamic composition mechanism, or new technology.
 
 Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 

@@ -19,6 +19,8 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
 
         securityApi = element "Security API" "Gradle project" "Framework-neutral authenticated-actor Authentication boundary plus opaque resource-ownership Authorization decision selected by decision #99 and recorded by ADR-0014." "Current,Security Module,API"
         securityImpl = element "Security Implementation" "Gradle project" "Private Security implementation and adapters: Spring Security/stateless HTTP Basic, encoded verifier validation, principal-to-actor adaptation, and ownership authorization." "Current,Security Module,Implementation"
+        eventRegistrationHttpInterface = element "Event-Registration HTTP Interface" "Gradle project" "Planned participant-private Event-registration inbound adapter allocation separated from the Event HTTP slice while reusing the unified Event-facing contract boundary." "Planned,Interface"
+        eventApp = element "Event Application" "Spring Boot application" "Planned Event-only executable composition root selecting Event without Registration, Security, or Event-Registration." "Planned,Runtime"
 
         stakeholder -> platform "Uses and shapes"
         eventHttpContract -> httpInterface "Generates server transport interface and models"
@@ -47,6 +49,14 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         eventRegistrationComposition -> securityApi "Requests opaque resource-ownership Authorization decisions"
         platformApp -> securityImpl "Selects and configures private Security implementation"
         platformApp -> securityApi "Wires Security public contracts to consumers"
+
+        eventRegistrationHttpInterface -> httpInterface "Reuses generated transport types and shared HTTP correlation boundary"
+        eventRegistrationHttpInterface -> eventRegistrationComposition "Calls participant-private Event-registration workflows"
+        eventRegistrationHttpInterface -> securityApi "Consumes authenticated-actor Authentication boundary"
+        platformApp -> eventRegistrationHttpInterface "Planned host and wiring for participant-private HTTP adaptation"
+        eventApp -> httpInterface "Planned host and wiring for Event HTTP adaptation"
+        eventApp -> eventImpl "Planned construction of private Event implementation"
+        eventApp -> eventPersistence "Planned DataSource configuration and Event-owned Flyway migration"
     }
 
     views {
@@ -67,6 +77,11 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
 
         custom "SecurityBoundary" "Security module boundary" "Current Security API/Implementation and high-level consumers established by #97/#99/ADR-0014 and implementation #102." {
             include httpInterface platformApp eventRegistrationComposition registrationApi securityApi securityImpl
+            autolayout lr
+        }
+
+        custom "PlannedSelectableComposition" "Planned selectable application composition" "Accepted ADR-0015 allocation for the Event-only proof; Planned elements are not yet executable Current state." {
+            include core eventHttpContract httpInterface platformApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl eventRegistrationHttpInterface eventApp
             autolayout lr
         }
 
