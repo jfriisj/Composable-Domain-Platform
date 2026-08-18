@@ -22,6 +22,13 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         eventRegistrationHttpInterface = element "Event-Registration HTTP Interface" "Gradle project" "Participant-private Event-registration inbound adapter separated from the Event HTTP slice while reusing the unified Event-facing contract boundary." "Current,Interface"
         eventApp = element "Event Application" "Spring Boot application" "Event-only executable composition root selecting Event without Registration, Security, or Event-Registration." "Current,Runtime"
 
+        plannedEventHttpContract = element "Planned Event HTTP Contract Unit" "OpenAPI source contract" "Independently authoritative source for Event-owned externally addressable HTTP behavior." "Planned,Contract"
+        plannedEventRegistrationHttpContract = element "Planned Event-Registration HTTP Contract Unit" "OpenAPI source contract" "Independently authoritative source for the participant Event-registration workflow owned by the non-module composition." "Planned,Contract"
+        plannedEventApplicationHttpContract = element "Planned Event Application HTTP Contract" "Aggregated OpenAPI contract" "Derived coherent Event-only application contract assembled statically from the selected Event contract unit." "Planned,Contract"
+        plannedPlatformApplicationHttpContract = element "Planned Platform Application HTTP Contract" "Aggregated OpenAPI contract" "Derived coherent full application contract assembled statically from selected Event and Event-Registration contract units." "Planned,Contract"
+        plannedEventHttpTransport = element "Planned Event HTTP Transport Boundary" "Generated transport/adaptation boundary" "Independently selectable generated Event transport surface mapped to Event public API." "Planned,Interface"
+        plannedEventRegistrationHttpTransport = element "Planned Event-Registration HTTP Transport Boundary" "Generated transport/adaptation boundary" "Independently selectable generated participant workflow transport surface mapped to Event-Registration and Security public APIs." "Planned,Interface"
+
         stakeholder -> platform "Uses and shapes"
         eventHttpContract -> httpInterface "Generates server transport interface and models"
         httpInterface -> core "Establishes and propagates correlation context"
@@ -55,6 +62,20 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         eventApp -> httpInterface "Hosts and wires Event HTTP adaptation"
         eventApp -> eventImpl "Constructs private Event implementation"
         eventApp -> eventPersistence "Configures DataSource and applies Event-owned Flyway migrations"
+
+        plannedEventHttpContract -> plannedEventHttpTransport "Generates independently selectable Event transport"
+        plannedEventRegistrationHttpContract -> plannedEventRegistrationHttpTransport "Generates independently selectable workflow transport"
+        plannedEventHttpContract -> plannedEventApplicationHttpContract "Selected into static application aggregation"
+        plannedEventHttpContract -> plannedPlatformApplicationHttpContract "Selected into static application aggregation"
+        plannedEventRegistrationHttpContract -> plannedPlatformApplicationHttpContract "Selected into static application aggregation"
+        plannedEventHttpTransport -> eventApi "Calls Event public API"
+        plannedEventRegistrationHttpTransport -> eventRegistrationComposition "Calls participant workflow"
+        plannedEventRegistrationHttpTransport -> securityApi "Consumes authenticated-actor boundary"
+        eventApp -> plannedEventApplicationHttpContract "Declares selected external surface"
+        eventApp -> plannedEventHttpTransport "Hosts selected Event HTTP adaptation"
+        platformApp -> plannedPlatformApplicationHttpContract "Declares selected external surface"
+        platformApp -> plannedEventHttpTransport "Hosts selected Event HTTP adaptation"
+        platformApp -> plannedEventRegistrationHttpTransport "Hosts selected participant workflow adaptation"
     }
 
     views {
@@ -80,6 +101,11 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
 
         custom "SelectableComposition" "Selectable application composition" "Implemented ADR-0015 static Event-only composition alongside the complete Platform Application." {
             include core eventHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
+            autolayout lr
+        }
+
+        custom "PlannedExternalContractComposition" "Planned external contract composition" "ADR-0016 target: independently authoritative Event and Event-Registration contract units, static application aggregation, and independently selectable generated transport boundaries." {
+            include plannedEventHttpContract plannedEventRegistrationHttpContract plannedEventApplicationHttpContract plannedPlatformApplicationHttpContract plannedEventHttpTransport plannedEventRegistrationHttpTransport eventApp platformApp eventApi eventRegistrationComposition securityApi
             autolayout lr
         }
 

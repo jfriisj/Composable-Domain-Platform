@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Selectable application composition — Goal #114 objective acceptance satisfied**
+**Selectable external contract composition — Goal #141 scope/architecture admission in progress**
 
 ## Completed
 
@@ -101,15 +101,19 @@ This document is the authoritative concise statement of where the project curren
 - Implementation #131 realizes ADR-0015 with an Event-only executable Spring Boot composition, a physically separate participant-private Event-registration HTTP adapter project, deterministic Event-only compile/runtime dependency exclusion, and focused real-PostgreSQL runtime evidence while preserving the full Platform Application.
 - Documentation #135 synchronizes the remaining Security/HTTP architecture narrative with the executable adapter split established by #131.
 - Goal #114 objective acceptance is satisfied in accepted `development`: the Event-only application deliberately omits Registration, Security, and Event-Registration from its functional compile/runtime graph, starts and serves accepted Event HTTP behavior with only Event-owned persistence, preserves independently validated omitted capabilities and required public-capability dependencies, and keeps authoritative architecture/status truth synchronized with the executable result.
+- Research #137 establishes that module/runtime selectability is proven while the unified `event.yaml` still couples Event and Event-Registration generated transport ownership.
+- Decision #140 selects independent authoritative external contract units with static application-level aggregation, preserves ADR-0013, and requires supersession only of ADR-0009's unified-source decision and the relevant contract-reuse portions of ADR-0015.
 
 ## In progress
 
-- No executable work remains under Goal #114.
-- The next project outcome has not yet been selected; Goal #114 does not authorize additional implementation.
+- Goal #141 is the active observable outcome: prove selectable external contract composition while preserving one coherent contract per concrete application.
+- Scope #142 is the current docs-only architecture/scope authority transition and records decision #140 as ADR-0016 plus Planned target architecture.
+- No OpenAPI, generated-source, Gradle, adapter, runtime, module, or persistence implementation is ready until #142 is accepted into `development` and post-merge planning re-reads the resulting authoritative state.
 
 ## Known gaps
 
-- `platform/compositions/event-registration` is currently one Gradle project and remains a non-module composition under the accepted ADR-0013 classification; no split is required by #97/#99/ADR-0014.
+- The current unified `platform/contracts/http/v1/event.yaml` still generates Event and Event-Registration transport types into the same `:http-interface` artifact, and `:event-registration-http-interface` still depends on that project for its generated transport types. Goal #141 plans to remove that transport/contract coupling without changing current executable truth prematurely.
+- `platform/compositions/event-registration` is currently one Gradle project and remains a non-module composition under the accepted ADR-0013 classification; no split is required by Goal #141.
 - Security has no persistence, provider-specific identity mapping, Person/Account capability, or role/policy expansion; those remain outside the accepted correction.
 - No durable provider-to-platform identity-mapping store, Person/Account capability, or external identity provider is accepted. HMAC derivation remains deferred unless a future raw provider subject creates that need.
 - Production TLS termination, secrets-management products, deployment/infrastructure, credential enrollment/reset/recovery/admin APIs, and production database operations remain outside the current accepted proof.
@@ -117,9 +121,11 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Goal #114 is complete. Select the next observable outcome through the accepted research/decision/Goal planning flow before admitting new executable work.
+Accept scope #142 into `development` as the bounded docs-only authority transition for Goal #141.
 
-Do not expand the completed proof into a new capability, ownership change, external contract, persistence change, dynamic composition mechanism, or new technology without a separate accepted transition.
+After merge, re-read remote `development`, #142, Goal #141, ADR-0016, accepted scope, architecture, contract-generation, and adapter/build truth before creating any implementation-readiness child.
+
+Do not change OpenAPI sources, generated transport, Gradle allocation, adapters, runtime, module APIs, persistence, or business behavior before that post-merge readiness transition.
 
 Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 

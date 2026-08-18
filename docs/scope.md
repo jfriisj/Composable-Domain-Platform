@@ -12,31 +12,34 @@ Event management is the first reference capability, but it is not the platform c
 
 ## Current accepted phase
 
-**Selectable application composition proof**
+**Selectable external contract composition — Goal #141**
 
-Goal #114 makes the developer-facing selectable-application-composition proof selected by decision #112 and accepted for scope through issue #115 the current accepted phase.
+Goal #141 makes the external-contract composition direction selected by decision #140 and admitted through scope #142 the current accepted phase. ADR-0016 records the architecture rationale.
 
-The accepted outcome is that a platform developer can construct a valid executable application composition using only the already accepted modules and architectural constructs required for that composition's declared outcome.
+The accepted outcome is that a platform developer can define a concrete application composition whose external HTTP contract and generated transport surface are assembled only from explicitly selected, independently authoritative contract units while the concrete application still exposes one coherent OpenAPI surface.
 
-The proof must demonstrate that:
+The migration must preserve these rules:
 
-1. at least one valid executable application composition deliberately omits at least one otherwise accepted module that is unrelated to that composition's declared outcome;
-2. the omitted module's private implementation is absent from that valid composition's functional compile-time dependency graph;
-3. the omitted module is not required at runtime for that valid composition to start and serve its declared behavior;
-4. selected modules collaborate only through accepted public APIs/contracts and adapters;
-5. unrelated modules remain independently buildable and testable when omitted from that application composition;
-6. a composition whose declared workflow requires a missing public capability is invalid and fails explicitly rather than acquiring a hidden dependency;
-7. the application runtime remains technical selection, construction, configuration, and wiring only;
-8. executable architecture/dependency verification covers the accepted selectable-composition property where mechanically practical;
-9. later build-affecting implementation must pass focused validation and the canonical root `./gradlew --no-daemon check` gate.
+1. externally addressable behavior ownership determines authoritative external contract-unit ownership;
+2. Event owns an independently authoritative Event HTTP contract unit;
+3. Event-Registration owns an independently authoritative participant Event-registration workflow contract unit while remaining a non-module composition;
+4. Registration remains without a generic external HTTP dispatcher;
+5. Security remains owner of Authentication + Authorization behavior without acquiring invented HTTP endpoints;
+6. concrete applications statically aggregate only explicitly selected authoritative contract units into one coherent application-facing OpenAPI contract;
+7. generated transport interfaces/models are physically selectable with the external contract unit that owns their behavior;
+8. an adapter does not depend on an unrelated adapter project solely to obtain generated transport types for its own contract;
+9. genuinely shared protocol-level OpenAPI components remain narrowly scoped and do not become a generic shared-contract dumping ground;
+10. duplicate or incompatible application-contract aggregation fails closed;
+11. generated transport types remain outside module domain/application APIs;
+12. application runtimes remain technical selection, construction, configuration, aggregation configuration, and wiring only.
 
-Existing ownership remains unchanged: Event, Registration, and Security retain their module ownership; Event-Registration remains a non-module cross-module workflow composition; HTTP remains an inbound adapter; `platform/apps/platform` remains a technical composition root; `core` remains small and business-neutral; and no module may depend on another module's private implementation or persistence.
+Current executable truth remains the unified `platform/contracts/http/v1/event.yaml`, the current generated transport allocation, and the current HTTP adapter relationships until later implementation is accepted into `development`. The target split contract/transport architecture is Planned, not Current.
 
-This scope is solution-neutral. It does not select another application project, Gradle feature variants, Spring profiles, conditional wiring, feature flags, dynamic plugins, runtime module discovery, service extraction, another dependency-injection mechanism, code generation, or new module APIs. A material architecture or technology requirement discovered during implementation planning must return to the applicable decision, ADR, technology, or scope gate.
+This phase admits only the bounded contract/generation/adapter migration required by Goal #141. It does not preselect a one-YAML-per-module rule, dynamic aggregation, another dependency-injection mechanism, service extraction, or unrelated framework/build technology.
 
-This phase does not authorize a new business capability or bounded context, module ownership changes, Event-Registration reclassification or splitting, new persistence or migrations, new external HTTP/product contracts, Person/Account, payment/ticketing/capacity/waitlists/notifications/frontend, dynamic extension systems, deployment/hosting/TLS/observability/secrets infrastructure, unrelated ADR-0013 migration debt, or unrelated engineering-quality hardening.
+This phase does not authorize new Event or Registration business behavior, Account/User/Person capability, participant profile, credential enrollment/persistence/reset/recovery, identity-provider integration, new Security endpoints, generic Registration HTTP, persistence/schema changes, dynamic/runtime contract discovery, plugins, feature flags, Spring-profile capability selection, deployment/infrastructure expansion, or speculative shared abstractions.
 
-Scope acceptance removes the accepted-scope blocker only. Implementation is not ready until this scope change is accepted into `development` and post-merge planning re-reads Goal #114, the accepted scope, and relevant architecture/module/build truth.
+Implementation readiness remains separate from scope acceptance. No OpenAPI, generated-source, Gradle, adapter, runtime, module, or persistence implementation child is ready until scope #142 is accepted into `development` and post-merge planning re-reads Goal #141, ADR-0016, this scope, and the relevant current architecture/build truth. Build-affecting implementation must ultimately pass focused validation and the accepted containerized root `./dev/dev.sh check` gate.
 
 ## Completed accepted product scope
 
