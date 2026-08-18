@@ -254,6 +254,27 @@ Event-Registration remains a non-module composition and still requires Event, Re
 
 `docs/architecture/workspace.dsl` represents both application compositions and both HTTP adapter boundaries as Current executable architecture.
 
+## Planned selectable external contract composition
+
+Decision #140, recorded by ADR-0016, selects the next contract-boundary architecture for Goal #141. The target extends static selectability from module/runtime dependencies to authoritative OpenAPI sources and generated transport ownership without changing module classification.
+
+The Planned contract ownership is:
+
+- Event owns an independently authoritative source contract unit for Event-owned externally addressable behavior;
+- Event-Registration remains a non-module composition and owns an independently authoritative source contract unit for its externally addressable participant workflow;
+- Registration remains without a generic HTTP dispatcher;
+- Security remains owner of Authentication + Authorization behavior without acquiring invented HTTP endpoints.
+
+A concrete application will statically aggregate only its selected authoritative contract units into one coherent application-facing OpenAPI document. The aggregated application document is derived build output, not a replacement source of truth. Event-only therefore selects only Event contract behavior, while the complete Platform Application selects both Event and Event-Registration behavior.
+
+Generated server transport interfaces/models are Planned to be physically selectable with the contract unit that owns their externally addressable behavior. Event-Registration HTTP must not permanently depend on the Event HTTP adapter project solely to obtain its own generated transport types. Generated OpenAPI types remain adapter-layer artifacts and stay outside module domain/application APIs.
+
+Genuinely shared HTTP/OpenAPI components may be factored only into a narrowly scoped technical contract boundary when required. Correlation headers, a genuinely identical error envelope, or an HTTP authentication security-scheme declaration may qualify; a generic shared-contract dumping ground does not. Static aggregation must fail closed on duplicate or incompatible paths, operation identifiers, schemas, parameters, headers, security schemes, or component definitions.
+
+This target does not impose one YAML file per module and does not select runtime discovery, dynamic plugins, feature flags, Spring-profile capability selection, service extraction, Account/User/Person capability, new Security endpoints, generic Registration HTTP, persistence changes, or new business behavior.
+
+The existing unified `platform/contracts/http/v1/event.yaml`, current generated transport allocation, current HTTP adapter dependencies, and current application surfaces remain Current until later implementation is accepted. `docs/architecture/workspace.dsl` exposes the selected target only in a dedicated Planned view; Current views remain executable truth.
+
 ## Current reference module
 
 Event is the first implemented bounded context used to validate the module architecture.
