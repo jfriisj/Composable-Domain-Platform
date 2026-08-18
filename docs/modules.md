@@ -34,9 +34,16 @@ For current Gradle-based modules the standard physical shape is:
 
 ~~~text
 platform/modules/<name>/
+├── module.md
 ├── api/
 └── impl/
 ~~~
+
+Each implemented module has a concise local `module.md` that records its purpose, ownership and non-ownership, public/private boundary, module dependency direction, and links to smaller authoritative sources.
+
+`module.md` does not redefine concrete Java API types, implementation behavior, Gradle dependency truth, persistence schema or migrations, external contracts, or architecture relationships. Those concerns remain authoritative in their source, build, migration, contract, and architecture artifacts.
+
+Every implemented module must contain `module.md` using this standard responsibility-document structure. A future module's `module.md` is created together with the accepted module implementation; module documentation must not be created speculatively for capabilities that have not been admitted as modules.
 
 Equivalent future layouts may be accepted, but the public/private boundary must remain explicit and mechanically enforceable where practical.
 
@@ -82,6 +89,7 @@ Its current physical shape is:
 
 ~~~text
 platform/modules/security/
+├── module.md
 ├── api/
 └── impl/
 ~~~
