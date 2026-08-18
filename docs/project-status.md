@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Selectable external contract composition — Goal #141 acceptance synchronization pending**
+**Selectable external contract composition — Goal #141 objectively satisfied**
 
 ## Completed
 
@@ -107,16 +107,14 @@ This document is the authoritative concise statement of where the project curren
 - Documentation #144 was accepted through PR #145, synchronizing post-#142 implementation readiness status.
 - Decision #146 selected Gradle/JVM-owned OpenAPI aggregation and validation in existing `build-logic`, Swagger Parser `2.1.45`, independent generation in the two existing HTTP adapter projects, no shared technical OpenAPI source for this migration, strict collision rejection, and one atomic implementation.
 - Implementation #147 establishes separate authoritative Event and Event-Registration OpenAPI sources, independently selectable generated transport packages, no Event-Registration HTTP dependency on Event HTTP, static Event-only/full-Platform application aggregation, fail-closed aggregation tests, and synchronized Current architecture/status/technology truth.
+- Goal #141 objective acceptance is satisfied in accepted `development`: Event and Event-Registration have independently authoritative external contract units and independently selectable generated transport; Event-only and full Platform applications derive coherent contracts only from explicit static selections; aggregation fails closed on the admitted conflict classes; existing ownership/invariants remain unchanged; authoritative Current truth is synchronized; and the build-affecting implementation passed the canonical root validation before PR #148.
 
 ## In progress
 
-- Goal #141 remains the active observable outcome: prove selectable external contract composition while preserving one coherent contract per concrete application.
-- The bounded executable migration required by Goal #141 is implemented by #147.
-- The remaining transition is the separate post-merge Goal #141 acceptance synchronization against accepted remote `development`.
+- No executable implementation Goal is currently in progress.
 
 ## Known gaps
 
-- Goal #141 still requires explicit post-implementation acceptance synchronization before the observable outcome may be closed.
 - `platform/compositions/event-registration` is currently one Gradle project and remains a non-module composition under the accepted ADR-0013 classification; no split is required by Goal #141.
 - Security has no persistence, provider-specific identity mapping, Person/Account capability, or role/policy expansion; those remain outside the accepted correction.
 - No durable provider-to-platform identity-mapping store, Person/Account capability, or external identity provider is accepted. HMAC derivation remains deferred unless a future raw provider subject creates that need.
@@ -125,11 +123,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-After #147 is accepted into `development`, re-read remote `development`, #147, and Goal #141 and perform the separate Goal acceptance synchronization.
+Select the next Goal through the accepted Goal/Subgoal planning workflow. No successor Goal is currently selected.
 
-Verify Goal #141 acceptance evidence against the accepted executable contract sources, generated transport boundaries, derived application contracts, fail-closed aggregation behavior, authoritative documentation/model, and canonical root validation before closing the Goal.
-
-Do not introduce another contract mechanism, capability, module, shared contract project, runtime discovery path, or unrelated cleanup during Goal acceptance.
+Do not infer a new contract mechanism, capability, module, shared contract project, runtime discovery path, deployment/infrastructure expansion, or unrelated cleanup from completion of Goal #141.
 
 Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 
