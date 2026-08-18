@@ -77,21 +77,75 @@ If a change is outside the current scope, it must either be deferred or proposed
 
 No future capability is implemented solely because the architecture could support it.
 
-## Goal and subgoal planning
+## Goal hierarchy and proportional delivery
 
-Goal Issues provide planning and tracking above the existing executable issue types. They use the `type: goal` label and must describe one observable use-case outcome rather than prescribe a module, technology, or implementation. `type: goal` is a planning type and does not itself authorize executable work.
+Goal Issues are planning and tracking containers above the existing executable issue types. They use the `type: goal` label and are not executable work. A Goal does not authorize implementation, change accepted scope, accept a bounded context, admit a technology, or replace an authoritative repository artifact.
 
-Each subgoal identifies its planning parent with `Goal: #...`. The parent/child hierarchy is separate from execution dependencies recorded through `Blocked by #...` and `Blocks #...`.
+For product delivery, the maximum planning hierarchy is:
 
-Goal and subgoal issues are not authoritative scope. Creating them may record exploratory capability hypotheses or alternatives, but those hypotheses remain unaccepted until the applicable decision, architecture, and scope flow is completed.
+`Product Goal -> Use-case Goal -> executable issues`
 
-There should normally be one active Goal with `priority: now`. Multiple child issues may be active in parallel when they belong to the same coherent Goal/workstream, have resolved prerequisites, independent ownership and validation, and do not make uncontrolled competing changes to the same authoritative truth.
+### Product Goals
 
-Goal decomposition is progressive. Later Goals remain outcome-level planning items; `priority: next` Goals may be decomposed enough to resolve research, decisions, dependencies, and scope; `priority: now` executes only ready subgoals.
+A Product Goal represents a bounded product experience or release-level outcome with an explicit completion boundary. It groups the required Use-case Goals and remains outcome-oriented rather than prescribing modules, technologies, or implementation structure.
 
-After a prerequisite or subgoal merges, the parent Goal and directly dependent issues must be re-read against the new accepted `development` state before the next ready action is selected.
+### Use-case Goals
 
-A Goal is complete only after its required subgoals are complete, objective end-to-end acceptance is proven in accepted `development`, applicable project status is synchronized, and no dependency required for the Goal outcome remains unresolved. Closing a Goal does not retroactively authorize work that bypassed accepted scope or governance.
+A Use-case Goal is a direct `type: goal` child of a Product Goal. It represents one observable actor journey or independently meaningful use-case outcome and defines its actor/outcome, accepted baseline, objective end-to-end acceptance, explicit non-goals, and required executable work.
+
+Goal nesting stops at the Use-case Goal level. A Use-case Goal cannot contain another Goal.
+
+Non-product stakeholder, operator, or developer outcomes may remain single-level Goals when a Product Goal/Use-case Goal hierarchy adds no planning value.
+
+### Executable issues and dependencies
+
+Only the existing executable issue types perform work: decision, scope, research, implementation, defect, and documentation.
+
+Each child records its direct planning parent with `Goal: #...`. Planning hierarchy remains separate from execution dependencies recorded through `Blocked by #...` and `Blocks #...`.
+
+Goal and executable issues are not authoritative scope. Creating them may record exploratory capability hypotheses or alternatives, but those hypotheses remain unaccepted until the applicable scope, architecture, technology, and decision controls are satisfied.
+
+### Priority and decomposition
+
+There should normally be only one active top-level Product Goal or single-level Goal with `priority: now`. Multiple Use-case Goals or executable issues may be active when they belong to that coherent workstream, have resolved prerequisites, independent ownership and validation, and do not make uncontrolled competing changes to the same authoritative truth.
+
+Goal decomposition is progressive:
+
+- `priority: later` — keep the Product Goal or single-level Goal outcome-level; do not pre-design bounded contexts or implementation.
+- `priority: next` — identify the required Use-case Goals and only the unresolved research, decisions, scope, and dependencies needed for readiness.
+- `priority: now` — execute only ready Use-case Goals and executable issues.
+
+A Use-case Goal is decomposed only enough to expose genuinely required executable work and dependencies. Technical implementation stages are not automatically separate issues.
+
+### Proportional process
+
+For an accepted, ready Use-case Goal, the normal executable path is the smallest coherent path that preserves repository truth:
+
+`scope/readiness -> vertical implementation -> acceptance`
+
+Research, decision, scope, ADR, or documentation work is created separately only when that concern is genuinely unresolved, independently reviewable as its own change, or required by another governance rule. Lifecycle stages do not require separate persistent artifacts by default.
+
+A single coherent implementation issue or pull request may deliver the complete accepted vertical slice, including directly affected authoritative documentation, when ownership, scope, dependencies, and validation are already resolved.
+
+### Change-local re-evaluation
+
+After accepted progress merges:
+
+1. re-read remote `development` and verify the merged result;
+2. re-read only the directly changed authoritative artifacts;
+3. re-read directly dependent issues and the direct parent Goal chain;
+4. update readiness, dependencies, or Goal acceptance only where the accepted change affects them;
+5. then select the next ready action.
+
+Do not turn routine post-merge verification into a broad project audit without evidence that wider authority is affected.
+
+### Goal completion
+
+A Use-case Goal is complete only when its required executable work is complete, its objective end-to-end acceptance is proven in accepted `development`, and no dependency required for that use case remains unresolved.
+
+A Product Goal is complete only when its required Use-case Goals are complete, its aggregate completion boundary is satisfied in accepted `development`, applicable project status is synchronized, and no dependency required for the Product Goal remains unresolved.
+
+A single-level non-product Goal follows the same applicable completion rules. Closing any Goal does not retroactively authorize work that bypassed accepted scope or governance.
 
 ## Architecture control
 
