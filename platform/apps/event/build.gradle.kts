@@ -1,5 +1,6 @@
 plugins {
     id("composable-domain-platform.java-application-conventions")
+    id("composable-domain-platform.openapi-application-contract")
     alias(libs.plugins.spring.boot)
 }
 
@@ -9,6 +10,43 @@ repositories {
 
 application {
     mainClass.set("composable.domain.platform.app.event.EventApplication")
+}
+
+openApiApplicationContract {
+    sourceContracts.set(
+        listOf(
+            "platform/contracts/http/v1/event.yaml",
+        )
+    )
+    title.set("Composable Domain Platform Event Application API")
+    version.set("1.0.0")
+    outputFile.set(layout.buildDirectory.file("generated/openapi/application.yaml"))
+    requiredOperationIds.set(
+        setOf(
+            "discoverEvents",
+            "defineEvent",
+            "findEventById",
+            "publishEvent",
+        )
+    )
+    forbiddenOperationIds.set(
+        setOf(
+            "createEventRegistration",
+            "findEventRegistrationById",
+            "cancelEventRegistration",
+        )
+    )
+    forbiddenSecuritySchemes.set(setOf("ParticipantBasicAuth"))
+    forbiddenComponentNames.set(
+        setOf(
+            "CreateEventRegistrationRequest",
+            "EventRegistrationResponse",
+            "EventRegistrationLifecycle",
+            "EventRegistrationErrorResponse",
+            "EventRegistrationCorrelationId",
+            "RegistrationId",
+        )
+    )
 }
 
 dependencies {

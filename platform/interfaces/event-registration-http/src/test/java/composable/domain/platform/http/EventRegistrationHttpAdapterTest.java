@@ -17,9 +17,9 @@ import composable.domain.platform.composition.eventregistration.InvalidEventRegi
 import composable.domain.platform.composition.eventregistration.ParticipantEventRegistrationView;
 import composable.domain.platform.composition.eventregistration.UnknownEventForRegistrationException;
 import composable.domain.platform.core.execution.ExecutionContext;
-import composable.domain.platform.http.generated.model.CreateEventRegistrationRequest;
-import composable.domain.platform.http.generated.model.ErrorResponse;
-import composable.domain.platform.http.generated.model.EventRegistrationResponse;
+import composable.domain.platform.http.eventregistration.generated.model.CreateEventRegistrationRequest;
+import composable.domain.platform.http.eventregistration.generated.model.EventRegistrationErrorResponse;
+import composable.domain.platform.http.eventregistration.generated.model.EventRegistrationResponse;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -58,7 +58,7 @@ class EventRegistrationHttpAdapterTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(
                 "corr-registration",
-                response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
+                response.getHeaders().getFirst(EventRegistrationHttpCorrelation.HEADER_NAME));
         assertEquals(
                 "corr-registration",
                 capturedContext.get().correlationId().value());
@@ -94,7 +94,7 @@ class EventRegistrationHttpAdapterTest {
 
         assertEquals(HttpStatus.NOT_FOUND, exception.status());
         assertEquals(
-                ErrorResponse.CodeEnum.EVENT_REGISTRATION_NOT_FOUND,
+                EventRegistrationErrorResponse.CodeEnum.EVENT_REGISTRATION_NOT_FOUND,
                 exception.code());
     }
 
@@ -117,7 +117,7 @@ class EventRegistrationHttpAdapterTest {
         assertEquals("cancelled", response.getBody().getLifecycle().toString());
         assertEquals(
                 "corr-find",
-                response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
+                response.getHeaders().getFirst(EventRegistrationHttpCorrelation.HEADER_NAME));
     }
 
     @Test
@@ -139,7 +139,7 @@ class EventRegistrationHttpAdapterTest {
         assertEquals("cancelled", response.getBody().getLifecycle().toString());
         assertEquals(
                 "corr-cancel",
-                response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
+                response.getHeaders().getFirst(EventRegistrationHttpCorrelation.HEADER_NAME));
     }
 
     @Test
@@ -156,7 +156,7 @@ class EventRegistrationHttpAdapterTest {
 
         assertEquals(HttpStatus.NOT_FOUND, exception.status());
         assertEquals(
-                ErrorResponse.CodeEnum.EVENT_REGISTRATION_NOT_FOUND,
+                EventRegistrationErrorResponse.CodeEnum.EVENT_REGISTRATION_NOT_FOUND,
                 exception.code());
     }
 
@@ -167,21 +167,21 @@ class EventRegistrationHttpAdapterTest {
                     throw new InvalidEventRegistrationDefinitionException();
                 },
                 HttpStatus.BAD_REQUEST,
-                ErrorResponse.CodeEnum.INVALID_REQUEST);
+                EventRegistrationErrorResponse.CodeEnum.INVALID_REQUEST);
 
         assertCreateFailure(
                 (context, actorReference, command) -> {
                     throw new UnknownEventForRegistrationException();
                 },
                 HttpStatus.NOT_FOUND,
-                ErrorResponse.CodeEnum.EVENT_NOT_FOUND);
+                EventRegistrationErrorResponse.CodeEnum.EVENT_NOT_FOUND);
 
         assertCreateFailure(
                 (context, actorReference, command) -> {
                     throw new EventRegistrationUniquenessConflictException();
                 },
                 HttpStatus.CONFLICT,
-                ErrorResponse.CodeEnum.REGISTRATION_CONFLICT);
+                EventRegistrationErrorResponse.CodeEnum.REGISTRATION_CONFLICT);
     }
 
     @Test
@@ -206,7 +206,7 @@ class EventRegistrationHttpAdapterTest {
                                 null);
 
         String correlation =
-                response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME);
+                response.getHeaders().getFirst(EventRegistrationHttpCorrelation.HEADER_NAME);
         assertNotNull(correlation);
         assertTrue(!correlation.isBlank());
         assertEquals(
@@ -217,7 +217,7 @@ class EventRegistrationHttpAdapterTest {
     private static void assertCreateFailure(
             CreateParticipantEventRegistration create,
             HttpStatus expectedStatus,
-            ErrorResponse.CodeEnum expectedCode) {
+            EventRegistrationErrorResponse.CodeEnum expectedCode) {
         EventRegistrationHttpException exception = assertThrows(
                 EventRegistrationHttpException.class,
                 () -> adapter(create, unusedFind(), unusedCancel(), "opaque-actor-a")

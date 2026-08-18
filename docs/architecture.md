@@ -136,13 +136,12 @@ Neither Event nor Registration depends on the other capability. Event does not s
 
 The Registration persistence boundary is a Registration-owned PostgreSQL `registration` schema and `registration.registrations` table containing `registration_id`, registrant namespace/reference, target namespace/reference, and Registration lifecycle. No Event-specific column, foreign key, or cross-schema Event lookup is permitted.
 
-The authoritative external Event-facing contract remains `platform/contracts/http/v1/event.yaml`. It contains the existing Event operations and is the accepted location for:
+The external HTTP source contracts are split by externally addressable behavior ownership:
 
-- `POST /api/v1/event-registrations` through the cross-capability composition;
-- `GET /api/v1/event-registrations/{registrationId}` through the cross-capability composition;
-- `DELETE /api/v1/event-registrations/{registrationId}` through the cross-capability composition.
+- `platform/contracts/http/v1/event.yaml` contains only Event-owned definition, retrieval, publication, and discovery behavior;
+- `platform/contracts/http/v1/event-registration.yaml` contains the participant-private Event-registration create/retrieve/cancel workflow owned by the non-module composition.
 
-The unified OpenAPI document may use separate `Event` and `EventRegistration` tags. Contract-file grouping represents the coherent external Event-facing surface; it does not merge internal ownership. Event and Registration remain independent, and the Event-Registration composition continues to own orchestration.
+The full Platform Application derives one coherent application-facing OpenAPI document by statically aggregating both selected source units. Event-only derives its application contract from Event alone. Contract-file allocation therefore follows external behavior ownership without changing Event, Registration, Security, or Event-Registration ownership.
 
 The participant-private transport contract uses only `registrationId` and `eventId` as caller-supplied creation inputs, exposes Registration lifecycle state, and does not accept caller-authoritative participant ownership or expose generic Registration namespace/reference mechanics.
 
@@ -152,7 +151,7 @@ ADR-0013 establishes Security as an independently owned module. Scope #97 admits
 
 The Event HTTP interface and participant-private Event-registration HTTP interface remain external adapter boundaries. The Spring Boot application roots remain technical composition roots.
 
-ADR-0008 supersedes ADR-0007 and records the domain-neutral Registration boundary, Event-specific composition, persistence isolation, and security/identity separation. ADR-0009 supersedes only ADR-0008's separate-contract-file decision by making `event.yaml` the unified Event-facing HTTP contract.
+ADR-0008 supersedes ADR-0007 and records the domain-neutral Registration boundary, Event-specific composition, persistence isolation, and security/identity separation. ADR-0009 historically unified the Event-facing HTTP source; ADR-0016 supersedes that source-allocation decision while preserving the internal ownership principles.
 
 ## Accepted minimum participant lifecycle scope
 
@@ -246,7 +245,7 @@ The valid minimum proof composition is Event-only. `platform/apps/event` selects
 
 The existing `platform/apps/platform` remains the complete Event/Registration/Security composition. Both application roots remain technical selection/construction/configuration/wiring only and own no business behavior.
 
-The unified external contract remains `platform/contracts/http/v1/event.yaml`. `platform/interfaces/http` owns the generated unified transport boundary plus Event HTTP adaptation and no longer depends on Event-Registration or Security. `platform/interfaces/event-registration-http` implements the participant-private Event-registration transport behavior and depends on the generated transport boundary, Event-Registration composition, and Security public API. The dependency is one-way: Event-registration HTTP may reuse `http-interface`; `http-interface` does not depend back on Event-Registration or Security.
+The external source contracts are independently authoritative: Event remains at `platform/contracts/http/v1/event.yaml`, and participant Event-registration is at `platform/contracts/http/v1/event-registration.yaml`. `platform/interfaces/http` generates only Event transport types in `composable.domain.platform.http.event.generated`; `platform/interfaces/event-registration-http` generates only Event-Registration transport types in `composable.domain.platform.http.eventregistration.generated` and depends on Event-Registration composition, Security public API, core correlation context, and transport libraries without depending on `:http-interface`.
 
 Event-Registration remains a non-module composition and still requires Event, Registration, and Security through their public APIs. Selectability permits omission only where the declared application behavior does not require a capability; it does not make a participant-private Event-registration composition valid without Registration or Security.
 
@@ -254,26 +253,24 @@ Event-Registration remains a non-module composition and still requires Event, Re
 
 `docs/architecture/workspace.dsl` represents both application compositions and both HTTP adapter boundaries as Current executable architecture.
 
-## Planned selectable external contract composition
+## Current selectable external contract composition
 
-Decision #140, recorded by ADR-0016, selects the next contract-boundary architecture for Goal #141. The target extends static selectability from module/runtime dependencies to authoritative OpenAPI sources and generated transport ownership without changing module classification.
+Decision #140 and ADR-0016 extend static selectability from module/runtime dependencies to authoritative OpenAPI sources and generated transport ownership without changing module classification. Decision #146 selects the concrete Gradle/JVM build-time mechanism, and implementation #147 realizes that bounded mechanism.
 
-The Planned contract ownership is:
+Current contract ownership is:
 
-- Event owns an independently authoritative source contract unit for Event-owned externally addressable behavior;
-- Event-Registration remains a non-module composition and owns an independently authoritative source contract unit for its externally addressable participant workflow;
+- Event owns `platform/contracts/http/v1/event.yaml` for Event-owned externally addressable behavior;
+- Event-Registration remains a non-module composition and owns `platform/contracts/http/v1/event-registration.yaml` for its participant workflow;
 - Registration remains without a generic HTTP dispatcher;
 - Security remains owner of Authentication + Authorization behavior without acquiring invented HTTP endpoints.
 
-A concrete application will statically aggregate only its selected authoritative contract units into one coherent application-facing OpenAPI document. The aggregated application document is derived build output, not a replacement source of truth. Event-only therefore selects only Event contract behavior, while the complete Platform Application selects both Event and Event-Registration behavior.
+Concrete applications statically aggregate only explicitly selected authoritative units. `:event-app` selects Event only and writes a derived `build/generated/openapi/application.yaml`; `:platform-app` selects Event plus Event-Registration and writes its own derived coherent application document. These aggregate files are build output, never authoritative source.
 
-Generated server transport interfaces/models are Planned to be physically selectable with the contract unit that owns their externally addressable behavior. Event-Registration HTTP must not permanently depend on the Event HTTP adapter project solely to obtain its own generated transport types. Generated OpenAPI types remain adapter-layer artifacts and stay outside module domain/application APIs.
+Generated server transport is physically separated in the existing adapter projects. `:http-interface` generates only Event API/model types under `composable.domain.platform.http.event.generated`; `:event-registration-http-interface` generates only workflow API/model types under `composable.domain.platform.http.eventregistration.generated`. Neither generated boundary enters module domain/application APIs, and Event-Registration HTTP no longer depends on the Event HTTP project.
 
-Genuinely shared HTTP/OpenAPI components may be factored only into a narrowly scoped technical contract boundary when required. Correlation headers, a genuinely identical error envelope, or an HTTP authentication security-scheme declaration may qualify; a generic shared-contract dumping ground does not. Static aggregation must fail closed on duplicate or incompatible paths, operation identifiers, schemas, parameters, headers, security schemes, or component definitions.
+No shared technical OpenAPI source is introduced for this migration. The source units use non-colliding component names where equivalent wire-level structures are repeated. Gradle/JVM build logic uses Swagger Parser `2.1.45` to parse and validate sources, resolve references, reject duplicate paths/operation IDs/same-namespace component names and incompatible inputs, serialize the selected aggregate, and revalidate the result.
 
-This target does not impose one YAML file per module and does not select runtime discovery, dynamic plugins, feature flags, Spring-profile capability selection, service extraction, Account/User/Person capability, new Security endpoints, generic Registration HTTP, persistence changes, or new business behavior.
-
-The existing unified `platform/contracts/http/v1/event.yaml`, current generated transport allocation, current HTTP adapter dependencies, and current application surfaces remain Current until later implementation is accepted. `docs/architecture/workspace.dsl` exposes the selected target only in a dedicated Planned view; Current views remain executable truth.
+This Current architecture does not impose one YAML file per module and does not select runtime discovery, dynamic plugins, feature flags, Spring-profile capability selection, service extraction, Account/User/Person capability, new Security endpoints, generic Registration HTTP, persistence changes, or new business behavior.
 
 ## Current reference module
 
@@ -380,11 +377,13 @@ Database permission enforcement remains deferred until operational scope require
 
 ## External contracts
 
-`platform/contracts/http/v1/event.yaml` is the authoritative external HTTP contract for the current Event define/retrieve and participant-private Event-registration create/retrieve/cancel surfaces.
+`platform/contracts/http/v1/event.yaml` is the authoritative Event HTTP source contract. `platform/contracts/http/v1/event-registration.yaml` is the authoritative participant Event-registration workflow source contract.
 
-OpenAPI Generator derives the server interface and transport models during the build. Generated sources are adapter-layer build output and must not become Event domain or application models.
+OpenAPI Generator independently derives Event transport in `:http-interface` and Event-Registration transport in `:event-registration-http-interface`. Generated sources remain adapter-layer build output and must not enter module domain/application APIs.
 
-The HTTP interface owns transport mapping, structural HTTP validation, contract-defined error responses, and correlation establishment. Event continues to own business validation and result semantics.
+Gradle/JVM build logic statically aggregates explicitly selected source contracts into each application's derived `build/generated/openapi/application.yaml`, validates source and aggregate documents, and fails closed on the conflict classes selected by #146.
+
+The HTTP adapters own transport mapping, structural HTTP validation, contract-defined error responses, and correlation establishment for their respective boundaries. Event and Event-Registration continue to own their existing business/workflow semantics.
 
 ## Dynamic interfaces
 

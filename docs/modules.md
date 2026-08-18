@@ -144,14 +144,14 @@ If an integration is deliberately classified as a module, the universal module i
 
 An interface is an inbound adapter boundary and is not automatically a module.
 
-The current `platform/interfaces/http` Gradle project:
+The current HTTP inbound boundary is physically split across two Gradle projects:
 
-- implements the server surface generated from `platform/contracts/http/v1/event.yaml`;
-- maps transport contracts to public module/composition contracts;
-- owns HTTP status/error mapping and structural transport validation;
-- establishes or preserves correlation context at the external boundary.
+- `platform/interfaces/http` owns Event HTTP adaptation and generates its transport surface only from `platform/contracts/http/v1/event.yaml`;
+- `platform/interfaces/event-registration-http` owns participant-private Event-registration HTTP adaptation and generates its transport surface only from `platform/contracts/http/v1/event-registration.yaml`.
 
-It must not own business-module behavior merely because it adapts that behavior to HTTP.
+Both interfaces map transport contracts only to the public module/composition contracts they consume, own their boundary-specific HTTP mapping and structural validation, and establish or preserve correlation context without depending on another interface project for functional collaboration.
+
+An interface must not own business-module behavior merely because it adapts that behavior to HTTP.
 
 If an interface is deliberately classified as a module, the universal module invariant applies.
 
@@ -191,7 +191,7 @@ The application runtime selects the Security implementation and wires its public
 
 OpenAPI documents, JSON Schemas, event schemas, and similar artifacts are contracts, not modules or bounded contexts.
 
-The current authoritative HTTP contract is stored at `platform/contracts/http/v1/event.yaml`. Generated sources derived from that contract belong to build output.
+The current authoritative HTTP source contracts are `platform/contracts/http/v1/event.yaml` for Event-owned behavior and `platform/contracts/http/v1/event-registration.yaml` for the participant Event-registration workflow. Each owning HTTP interface generates only its own transport surface. Concrete application OpenAPI documents are derived build output assembled statically from explicitly selected source contracts.
 
 ## Module admission
 
