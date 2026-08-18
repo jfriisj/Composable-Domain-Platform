@@ -48,50 +48,96 @@ docs scope PR    |
            sync local state
                   |
                   v
-           next scope gate
+           next ready action
 ~~~
 
 No implementation begins merely because a future direction appears reasonable.
 
-## Goal and subgoal planning
+## Goal hierarchy and executable work
 
-A Goal Issue is a planning and tracking container for one observable stakeholder, operator, or developer outcome that may require multiple existing issue types to complete.
+Goal Issues use the `type: goal` label and are planning containers, not executable work. They do not authorize implementation, change accepted scope, accept a bounded context, admit a technology, or replace an authoritative repository artifact. `docs/scope.md` remains the authority for accepted scope.
 
-Goal Issues use the `type: goal` label. `type: goal` identifies a planning container; it is not executable work and does not authorize implementation, change accepted scope, accept a bounded context, admit a technology, or replace an authoritative repository artifact. `docs/scope.md` remains the authority for accepted scope.
+For product delivery, use at most three planning/execution levels:
 
-A Goal Issue must define:
+`Product Goal -> Use-case Goal -> executable issues`
 
-- one concrete use case or measurable outcome;
-- the accepted repository baseline from which the goal starts;
+### Product Goal
+
+A Product Goal represents a bounded product experience or release-level outcome with an explicit completion boundary. It must identify the accepted baseline, aggregate outcome, explicit non-goals, required Use-case Goals, and objective completion evidence.
+
+### Use-case Goal
+
+A Use-case Goal is a direct `type: goal` child of a Product Goal and represents one observable actor journey or independently meaningful use-case outcome.
+
+A Use-case Goal must define:
+
+- the actor and observable outcome;
+- the accepted repository baseline;
 - explicit non-goals;
 - objective end-to-end acceptance evidence;
-- a `Subgoals` checklist containing the child issues currently known to be required;
-- explicit `Blocked by #...` and `Blocks #...` dependencies where ordering matters;
-- which subgoals are independent enough to proceed in parallel.
+- the executable issues currently required;
+- explicit `Blocked by #...` and `Blocks #...` dependencies where ordering matters.
 
-Each subgoal records its planning parent as `Goal: #...`. Goal membership is separate from execution dependency:
+Goal nesting stops here. A Use-case Goal cannot contain another Goal.
 
-- `Goal: #...` identifies the planning hierarchy;
+Non-product stakeholder, operator, or developer outcomes may remain single-level Goals when the Product Goal/Use-case Goal hierarchy adds no useful planning structure.
+
+### Executable issues and dependencies
+
+Executable work uses the existing issue types: decision, scope, research, implementation, defect, and documentation. No new executable issue type is introduced.
+
+Each child records its direct planning parent with `Goal: #...`. Planning hierarchy is separate from execution dependency:
+
+- `Goal: #...` identifies the direct planning parent;
 - `Blocked by #...` identifies an unresolved execution dependency;
 - `Blocks #...` records the reverse execution dependency.
 
-Subgoals use the existing executable issue types: decision, scope, research, implementation, defect, and documentation. Each subgoal keeps its own admission, readiness, validation, and change-control requirements.
-
-Creating a Goal or subgoal issue records planned work only. Capability names, architecture alternatives, technologies, and implementation approaches mentioned in planning remain exploratory hypotheses until the applicable decision and scope flow accepts them.
+Creating a Goal or executable issue records planned work only. Capability names, architecture alternatives, technologies, and implementation approaches mentioned in planning remain exploratory until the applicable scope, decision, architecture, and technology controls accept them.
 
 ### Goal priority and decomposition
 
-There should normally be only one active `type: goal` with `priority: now`. Multiple child issues may carry `priority: now` when they belong to the same active Goal or coherent workstream and are independently ready.
+There should normally be only one active top-level Product Goal or single-level Goal with `priority: now`. Multiple Use-case Goals or executable issues may carry `priority: now` when they belong to that coherent workstream and are independently ready.
 
-Goal detail increases only as the Goal approaches execution:
+Goal detail increases only as execution approaches:
 
-- `priority: later` — keep the Goal outcome-level; do not pre-design bounded contexts or implementation.
-- `priority: next` — re-read the Goal against current `development`, identify the research/decisions needed to make ownership and scope explicit, and decompose only enough to expose meaningful dependencies and parallel work.
-- `priority: now` — execute only subgoals that satisfy their normal readiness rules.
+- `priority: later` — keep the Product Goal or single-level Goal outcome-level; do not pre-design bounded contexts or implementation.
+- `priority: next` — identify required Use-case Goals and only the unresolved research, decisions, dependencies, and scope needed for readiness.
+- `priority: now` — execute only ready Use-case Goals and executable issues.
+
+Technical implementation stages are not automatically separate issues.
+
+### Proportional delivery
+
+For an accepted and ready Use-case Goal, the normal path is:
+
+~~~text
+scope/readiness
+      |
+      v
+vertical implementation
+      |
+      v
+acceptance
+~~~
+
+Research, decision, scope, ADR, and documentation work are not mandatory lifecycle stages. Create them separately only when the concern is genuinely unresolved, independently reviewable as its own change, or required by another governance rule.
+
+When readiness is already resolved, one coherent implementation issue and pull request may deliver the complete accepted vertical slice, including as applicable:
+
+- authoritative OpenAPI contract changes;
+- generated inbound transport shape;
+- required module public APIs and private implementations;
+- persistence and migrations;
+- required cross-module composition;
+- HTTP adapter and runtime wiring;
+- focused, integration, architecture, and end-to-end evidence;
+- directly affected authoritative documentation.
+
+The coherent purpose is the accepted use-case slice, not an individual technical layer.
 
 ### Parallel readiness
 
-A subgoal is parallel-ready only when:
+An executable issue is parallel-ready only when:
 
 - its explicit prerequisites are resolved;
 - applicable accepted scope authorizes the work;
@@ -102,28 +148,27 @@ A subgoal is parallel-ready only when:
 
 Parallel work is an execution property, not a reason to merge scope or ownership decisions prematurely.
 
-### Re-read after subgoal progress
+### Change-local re-read after progress
 
-After a prerequisite or subgoal merges:
+After accepted progress merges:
 
-1. re-read remote `development`;
-2. verify the merged result;
-3. re-read directly dependent issues;
-4. re-read the parent Goal;
-5. update readiness, dependencies, or the Goal subgoal checklist when repository evidence changed the plan;
-6. only then select the next ready action.
+1. re-read remote `development` and verify the merged result;
+2. re-read only directly changed authoritative artifacts;
+3. re-read directly dependent issues and the direct parent Goal chain;
+4. update readiness, dependencies, or acceptance where repository evidence changed them;
+5. only then select the next ready action.
 
-An implementation subgoal is ready only when its concrete outcome, accepted scope, ownership and non-ownership, exclusions, validation, and dependencies are resolved.
+Do not perform a broad project audit unless the accepted change provides evidence that wider authority is affected.
+
+An implementation issue is ready only when its concrete outcome, accepted scope, ownership and non-ownership, exclusions, validation, and dependencies are resolved.
 
 ### Goal completion
 
-A Goal is complete only when:
+A Use-case Goal is complete only when its required executable work is complete, objective end-to-end acceptance is satisfied in accepted `development`, and no dependency required for that use case remains unresolved.
 
-- all required subgoals are complete;
-- objective end-to-end acceptance evidence is satisfied;
-- the complete accepted result exists in `development`;
-- `docs/project-status.md` records the resulting project state when the Goal changes current status;
-- no unresolved dependency required for the Goal outcome remains.
+A Product Goal is complete only when all required Use-case Goals are complete, its aggregate completion boundary is satisfied in accepted `development`, `docs/project-status.md` records the resulting state when applicable, and no dependency required for the Product Goal remains unresolved.
+
+A single-level non-product Goal follows the same applicable completion rules.
 
 ## 1. Start from authoritative state
 
@@ -367,11 +412,11 @@ Add the applicable:
 
 The root `./gradlew --no-daemon check` remains the final build gate for build-affecting work.
 
-### 6.7 Track the current implementation stage explicitly
+### 6.7 Keep vertical implementation coherent
 
-Implementation planning should make the active stage visible rather than treating a complete feature as one undifferentiated coding task.
+Sections 6.1 through 6.6 define execution order inside a ready use-case workstream. They are not automatic issue or pull-request boundaries.
 
-For a sufficiently large use case, decompose executable work around coherent stages such as:
+By default, keep the complete accepted vertical slice in one coherent implementation issue and pull request when it can remain reviewable, truthful, and independently valid. Track progress inside that work item using stages such as:
 
 1. accepted external contract;
 2. required module capability or capabilities;
@@ -379,7 +424,11 @@ For a sufficiently large use case, decompose executable work around coherent sta
 4. inbound-adapter/runtime completion;
 5. integrated end-to-end acceptance.
 
-These stages are execution/decomposition guidance, not permission to merge incomplete or misleading accepted state. A stage may be its own subgoal or PR only when the resulting `development` state remains coherent, truthful, independently valid, and inside accepted scope.
+Split a stage into separate executable work only when a real dependency, unresolved scope/decision/technology concern, independently accepted intermediate outcome, or another governance rule requires the boundary. Do not split work merely because execution moves from contract to module, composition, adapter, runtime, testing, or documentation.
+
+Directly affected authoritative documentation should normally be updated with the change that makes the previous documentation stale. A separate documentation issue is required only when documentation itself has an independently reviewable outcome or cannot truthfully move with the implementation.
+
+Research and decision issues are likewise conditional tools for unresolved questions, not mandatory steps before every implementation.
 
 During all stages:
 
