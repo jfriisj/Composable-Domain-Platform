@@ -1,0 +1,284 @@
+openapi: 3.0.3
+info:
+  title: Composable Domain Platform Event Registration API
+  version: 1.0.0
+  description: >
+    Version 1 authoritative HTTP source contract for the participant-private
+    Event-registration lifecycle owned by the Event-Registration composition.
+servers:
+  - url: /
+tags:
+  - name: EventRegistration
+paths:
+  /api/v1/event-registrations:
+    post:
+      tags:
+        - EventRegistration
+      operationId: createEventRegistration
+      summary: Register the authenticated participant in an existing Event
+      security:
+        - ParticipantBasicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventRegistrationCorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRegistrationRequest'
+      responses:
+        '201':
+          description: Event registration created
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationResponse'
+        '400':
+          description: Structurally or domain-invalid Event registration request
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '401':
+          description: Participant authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '404':
+          description: Referenced Event does not exist
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '409':
+          description: Registration uniqueness conflict
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+  /api/v1/event-registrations/{registrationId}:
+    get:
+      tags:
+        - EventRegistration
+      operationId: findEventRegistrationById
+      summary: Retrieve the authenticated participant's Event-registration state
+      security:
+        - ParticipantBasicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RegistrationId'
+        - $ref: '#/components/parameters/EventRegistrationCorrelationId'
+      responses:
+        '200':
+          description: Event registration found
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationResponse'
+        '400':
+          description: Structurally invalid Registration identity
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '401':
+          description: Participant authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '404':
+          description: Private Event registration is unknown or not visible to this participant
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+    delete:
+      tags:
+        - EventRegistration
+      operationId: cancelEventRegistration
+      summary: Cancel the authenticated participant's Event registration
+      security:
+        - ParticipantBasicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RegistrationId'
+        - $ref: '#/components/parameters/EventRegistrationCorrelationId'
+      responses:
+        '200':
+          description: Event registration cancelled
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationResponse'
+        '400':
+          description: Structurally invalid Registration identity
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '401':
+          description: Participant authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '404':
+          description: Private Event registration is unknown or not visible to this participant
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+components:
+  securitySchemes:
+    ParticipantBasicAuth:
+      type: http
+      scheme: basic
+  parameters:
+    EventRegistrationCorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: >
+        Opaque correlation identifier. A supplied non-blank value is preserved.
+        When absent, the HTTP boundary creates one.
+      schema:
+        type: string
+        minLength: 1
+        pattern: '.*\S.*'
+    RegistrationId:
+      name: registrationId
+      in: path
+      required: true
+      description: Registration identity
+      schema:
+        type: string
+        minLength: 1
+        pattern: '.*\S.*'
+  headers:
+    EventRegistrationCorrelationId:
+      description: >
+        Opaque correlation identifier established for the request. Every
+        response returns this header.
+      schema:
+        type: string
+        minLength: 1
+  schemas:
+    CreateEventRegistrationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - registrationId
+        - eventId
+      properties:
+        registrationId:
+          type: string
+          minLength: 1
+        eventId:
+          type: string
+          minLength: 1
+    EventRegistrationResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - registrationId
+        - eventId
+        - lifecycle
+      properties:
+        registrationId:
+          type: string
+          minLength: 1
+        eventId:
+          type: string
+          minLength: 1
+        lifecycle:
+          $ref: '#/components/schemas/EventRegistrationLifecycle'
+    EventRegistrationLifecycle:
+      type: string
+      enum:
+        - active
+        - cancelled
+    EventRegistrationErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - invalid_request
+            - authentication_required
+            - event_not_found
+            - event_registration_not_found
+            - registration_conflict
+            - internal_error
+        message:
+          type: string
+          minLength: 1

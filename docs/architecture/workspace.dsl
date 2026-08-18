@@ -5,7 +5,10 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         platform = softwareSystem "Composable Domain Platform" "A modular application platform for independently bounded business capabilities."
 
         core = element "Platform Core" "Gradle project" "Business-neutral Correlation ID and execution-context primitives." "Current,Core"
-        eventHttpContract = element "Event-facing HTTP Contract" "OpenAPI contract" "Authoritative versioned Event-facing contract for current Event and Event-registration workflow operations." "Current,Contract"
+        eventHttpContract = element "Event HTTP Contract Unit" "OpenAPI source contract" "Independently authoritative source for Event-owned externally addressable HTTP behavior." "Current,Contract"
+        eventRegistrationHttpContract = element "Event-Registration HTTP Contract Unit" "OpenAPI source contract" "Independently authoritative source for the participant Event-registration workflow owned by the non-module composition." "Current,Contract"
+        eventApplicationHttpContract = element "Event Application HTTP Contract" "Aggregated OpenAPI contract" "Derived coherent Event-only application contract assembled statically from the selected Event contract unit." "Current,Contract"
+        platformApplicationHttpContract = element "Platform Application HTTP Contract" "Aggregated OpenAPI contract" "Derived coherent full application contract assembled statically from selected Event and Event-Registration contract units." "Current,Contract"
         httpInterface = element "HTTP Interface" "Gradle project" "Inbound Spring Web adapter generated from versioned HTTP contracts and mapped to public application contracts." "Current,Interface"
         platformApp = element "Platform Application" "Spring Boot application" "Executable composition root that wires HTTP, capability implementations, PostgreSQL configuration, and owned startup migrations." "Current,Runtime"
         eventApi = element "Event API" "Gradle project" "Public application-level contract for defining and retrieving Event state with explicit execution context." "Current,Event Module,API"
@@ -19,18 +22,15 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
 
         securityApi = element "Security API" "Gradle project" "Framework-neutral authenticated-actor Authentication boundary plus opaque resource-ownership Authorization decision selected by decision #99 and recorded by ADR-0014." "Current,Security Module,API"
         securityImpl = element "Security Implementation" "Gradle project" "Private Security implementation and adapters: Spring Security/stateless HTTP Basic, encoded verifier validation, principal-to-actor adaptation, and ownership authorization." "Current,Security Module,Implementation"
-        eventRegistrationHttpInterface = element "Event-Registration HTTP Interface" "Gradle project" "Participant-private Event-registration inbound adapter separated from the Event HTTP slice while reusing the unified Event-facing contract boundary." "Current,Interface"
+        eventRegistrationHttpInterface = element "Event-Registration HTTP Interface" "Gradle project" "Participant-private Event-registration inbound adapter with independently generated workflow transport mapped to Event-Registration and Security public APIs." "Current,Interface"
         eventApp = element "Event Application" "Spring Boot application" "Event-only executable composition root selecting Event without Registration, Security, or Event-Registration." "Current,Runtime"
 
-        plannedEventHttpContract = element "Planned Event HTTP Contract Unit" "OpenAPI source contract" "Independently authoritative source for Event-owned externally addressable HTTP behavior." "Planned,Contract"
-        plannedEventRegistrationHttpContract = element "Planned Event-Registration HTTP Contract Unit" "OpenAPI source contract" "Independently authoritative source for the participant Event-registration workflow owned by the non-module composition." "Planned,Contract"
-        plannedEventApplicationHttpContract = element "Planned Event Application HTTP Contract" "Aggregated OpenAPI contract" "Derived coherent Event-only application contract assembled statically from the selected Event contract unit." "Planned,Contract"
-        plannedPlatformApplicationHttpContract = element "Planned Platform Application HTTP Contract" "Aggregated OpenAPI contract" "Derived coherent full application contract assembled statically from selected Event and Event-Registration contract units." "Planned,Contract"
-        plannedEventHttpTransport = element "Planned Event HTTP Transport Boundary" "Generated transport/adaptation boundary" "Independently selectable generated Event transport surface mapped to Event public API." "Planned,Interface"
-        plannedEventRegistrationHttpTransport = element "Planned Event-Registration HTTP Transport Boundary" "Generated transport/adaptation boundary" "Independently selectable generated participant workflow transport surface mapped to Event-Registration and Security public APIs." "Planned,Interface"
-
         stakeholder -> platform "Uses and shapes"
-        eventHttpContract -> httpInterface "Generates server transport interface and models"
+        eventHttpContract -> httpInterface "Generates independently selectable Event transport"
+        eventRegistrationHttpContract -> eventRegistrationHttpInterface "Generates independently selectable workflow transport"
+        eventHttpContract -> eventApplicationHttpContract "Selected into static application aggregation"
+        eventHttpContract -> platformApplicationHttpContract "Selected into static application aggregation"
+        eventRegistrationHttpContract -> platformApplicationHttpContract "Selected into static application aggregation"
         httpInterface -> core "Establishes and propagates correlation context"
         httpInterface -> eventApi "Calls define and retrieve contracts"
         eventApi -> core "Carries execution context"
@@ -55,37 +55,26 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         platformApp -> securityImpl "Selects and configures private Security implementation"
         platformApp -> securityApi "Wires Security public contracts to consumers"
 
-        eventRegistrationHttpInterface -> httpInterface "Reuses generated transport types and shared HTTP correlation boundary"
+        eventRegistrationHttpInterface -> core "Establishes and propagates correlation context"
         eventRegistrationHttpInterface -> eventRegistrationComposition "Calls participant-private Event-registration workflows"
         eventRegistrationHttpInterface -> securityApi "Consumes authenticated-actor Authentication boundary"
         platformApp -> eventRegistrationHttpInterface "Hosts and wires participant-private HTTP adaptation"
+        platformApp -> platformApplicationHttpContract "Declares selected external surface"
+        eventApp -> eventApplicationHttpContract "Declares selected external surface"
         eventApp -> httpInterface "Hosts and wires Event HTTP adaptation"
         eventApp -> eventImpl "Constructs private Event implementation"
         eventApp -> eventPersistence "Configures DataSource and applies Event-owned Flyway migrations"
 
-        plannedEventHttpContract -> plannedEventHttpTransport "Generates independently selectable Event transport"
-        plannedEventRegistrationHttpContract -> plannedEventRegistrationHttpTransport "Generates independently selectable workflow transport"
-        plannedEventHttpContract -> plannedEventApplicationHttpContract "Selected into static application aggregation"
-        plannedEventHttpContract -> plannedPlatformApplicationHttpContract "Selected into static application aggregation"
-        plannedEventRegistrationHttpContract -> plannedPlatformApplicationHttpContract "Selected into static application aggregation"
-        plannedEventHttpTransport -> eventApi "Calls Event public API"
-        plannedEventRegistrationHttpTransport -> eventRegistrationComposition "Calls participant workflow"
-        plannedEventRegistrationHttpTransport -> securityApi "Consumes authenticated-actor boundary"
-        eventApp -> plannedEventApplicationHttpContract "Declares selected external surface"
-        eventApp -> plannedEventHttpTransport "Hosts selected Event HTTP adaptation"
-        platformApp -> plannedPlatformApplicationHttpContract "Declares selected external surface"
-        platformApp -> plannedEventHttpTransport "Hosts selected Event HTTP adaptation"
-        platformApp -> plannedEventRegistrationHttpTransport "Hosts selected participant workflow adaptation"
     }
 
     views {
         systemContext platform "CurrentSystemContext" {
-            include stakeholder core eventHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
+            include stakeholder core eventHttpContract eventRegistrationHttpContract eventApplicationHttpContract platformApplicationHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
             autolayout lr
         }
 
         custom "CurrentModuleMap" "Current module map" "Implemented runtime, contract, capability, composition, persistence, and selectable-application boundaries." {
-            include core eventHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
+            include core eventHttpContract eventRegistrationHttpContract eventApplicationHttpContract platformApplicationHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
             autolayout lr
         }
 
@@ -100,12 +89,12 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         }
 
         custom "SelectableComposition" "Selectable application composition" "Implemented ADR-0015 static Event-only composition alongside the complete Platform Application." {
-            include core eventHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
+            include core eventHttpContract eventRegistrationHttpContract eventApplicationHttpContract platformApplicationHttpContract httpInterface eventRegistrationHttpInterface platformApp eventApp eventApi eventImpl eventPersistence registrationApi registrationImpl registrationPersistence eventRegistrationComposition securityApi securityImpl
             autolayout lr
         }
 
-        custom "PlannedExternalContractComposition" "Planned external contract composition" "ADR-0016 target: independently authoritative Event and Event-Registration contract units, static application aggregation, and independently selectable generated transport boundaries." {
-            include plannedEventHttpContract plannedEventRegistrationHttpContract plannedEventApplicationHttpContract plannedPlatformApplicationHttpContract plannedEventHttpTransport plannedEventRegistrationHttpTransport eventApp platformApp eventApi eventRegistrationComposition securityApi
+        custom "ExternalContractComposition" "External contract composition" "ADR-0016 implementation: independently authoritative Event and Event-Registration contract units, static application aggregation, and independently selectable generated transport boundaries." {
+            include eventHttpContract eventRegistrationHttpContract eventApplicationHttpContract platformApplicationHttpContract httpInterface eventRegistrationHttpInterface eventApp platformApp eventApi eventRegistrationComposition securityApi
             autolayout lr
         }
 

@@ -25,6 +25,7 @@ Status meanings:
 | Architecture verification | ArchUnit | Accepted direction | Enforce Hexagonal Architecture and forbidden dependency rules. |
 | External HTTP contract | OpenAPI | Accepted direction | Authoritative HTTP contract for external clients and interfaces. |
 | Contract generation | OpenAPI Generator | Accepted direction | Generate transport interfaces/models and typed clients from OpenAPI. |
+| Contract composition/validation | Swagger Parser | Accepted direction | Build-time parsing, reference validation, and deterministic static application OpenAPI aggregation selected by decision #146; not a runtime mechanism. |
 | Mapping | MapStruct | Accepted direction | Compile-time mechanical mapping between transport, application, persistence, and provider types. |
 | Validation | Jakarta Validation | Accepted direction | Validate transport-level structural constraints at system boundaries. |
 | Database | PostgreSQL | Accepted direction | Relational persistence with ownership aligned to bounded contexts. |

@@ -1,7 +1,7 @@
 package composable.domain.platform.http;
 
 import composable.domain.platform.core.execution.ExecutionContext;
-import composable.domain.platform.http.generated.model.ErrorResponse;
+import composable.domain.platform.http.eventregistration.generated.model.EventRegistrationErrorResponse;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public final class EventRegistrationHttpErrorHandler {
 
     @ExceptionHandler(EventRegistrationHttpException.class)
-    public ResponseEntity<ErrorResponse> handleEventRegistrationFailure(
+    public ResponseEntity<EventRegistrationErrorResponse> handleEventRegistrationFailure(
             EventRegistrationHttpException exception) {
         return response(
                 exception.status(),
@@ -23,13 +23,13 @@ public final class EventRegistrationHttpErrorHandler {
                 exception.context());
     }
 
-    private static ResponseEntity<ErrorResponse> response(
+    private static ResponseEntity<EventRegistrationErrorResponse> response(
             HttpStatus status,
-            ErrorResponse.CodeEnum code,
+            EventRegistrationErrorResponse.CodeEnum code,
             String message,
             ExecutionContext context) {
         return ResponseEntity.status(status)
-                .header(HttpCorrelation.HEADER_NAME, HttpCorrelation.value(context))
-                .body(new ErrorResponse(code, message));
+                .header(EventRegistrationHttpCorrelation.HEADER_NAME, EventRegistrationHttpCorrelation.value(context))
+                .body(new EventRegistrationErrorResponse(code, message));
     }
 }

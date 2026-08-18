@@ -1,18 +1,18 @@
 package composable.domain.platform.http;
 
 import composable.domain.platform.core.execution.ExecutionContext;
-import composable.domain.platform.http.generated.model.ErrorResponse;
+import composable.domain.platform.http.eventregistration.generated.model.EventRegistrationErrorResponse;
 import org.springframework.http.HttpStatus;
 
 final class EventRegistrationHttpException extends RuntimeException {
 
     private final HttpStatus status;
-    private final ErrorResponse.CodeEnum code;
+    private final EventRegistrationErrorResponse.CodeEnum code;
     private final ExecutionContext context;
 
     private EventRegistrationHttpException(
             HttpStatus status,
-            ErrorResponse.CodeEnum code,
+            EventRegistrationErrorResponse.CodeEnum code,
             String message,
             ExecutionContext context,
             Throwable cause) {
@@ -25,7 +25,7 @@ final class EventRegistrationHttpException extends RuntimeException {
     static EventRegistrationHttpException invalidDefinition(ExecutionContext context) {
         return new EventRegistrationHttpException(
                 HttpStatus.BAD_REQUEST,
-                ErrorResponse.CodeEnum.INVALID_REQUEST,
+                EventRegistrationErrorResponse.CodeEnum.INVALID_REQUEST,
                 "Event registration definition is invalid",
                 context,
                 null);
@@ -34,7 +34,7 @@ final class EventRegistrationHttpException extends RuntimeException {
     static EventRegistrationHttpException eventNotFound(ExecutionContext context) {
         return new EventRegistrationHttpException(
                 HttpStatus.NOT_FOUND,
-                ErrorResponse.CodeEnum.EVENT_NOT_FOUND,
+                EventRegistrationErrorResponse.CodeEnum.EVENT_NOT_FOUND,
                 "Referenced Event was not found",
                 context,
                 null);
@@ -43,7 +43,7 @@ final class EventRegistrationHttpException extends RuntimeException {
     static EventRegistrationHttpException registrationNotFound(ExecutionContext context) {
         return new EventRegistrationHttpException(
                 HttpStatus.NOT_FOUND,
-                ErrorResponse.CodeEnum.EVENT_REGISTRATION_NOT_FOUND,
+                EventRegistrationErrorResponse.CodeEnum.EVENT_REGISTRATION_NOT_FOUND,
                 "Event registration was not found",
                 context,
                 null);
@@ -52,7 +52,7 @@ final class EventRegistrationHttpException extends RuntimeException {
     static EventRegistrationHttpException conflict(ExecutionContext context) {
         return new EventRegistrationHttpException(
                 HttpStatus.CONFLICT,
-                ErrorResponse.CodeEnum.REGISTRATION_CONFLICT,
+                EventRegistrationErrorResponse.CodeEnum.REGISTRATION_CONFLICT,
                 "Registration uniqueness conflict",
                 context,
                 null);
@@ -63,7 +63,7 @@ final class EventRegistrationHttpException extends RuntimeException {
             RuntimeException cause) {
         return new EventRegistrationHttpException(
                 HttpStatus.INTERNAL_SERVER_ERROR,
-                ErrorResponse.CodeEnum.INTERNAL_ERROR,
+                EventRegistrationErrorResponse.CodeEnum.INTERNAL_ERROR,
                 "Internal server error",
                 context,
                 cause);
@@ -73,7 +73,7 @@ final class EventRegistrationHttpException extends RuntimeException {
         return status;
     }
 
-    ErrorResponse.CodeEnum code() {
+    EventRegistrationErrorResponse.CodeEnum code() {
         return code;
     }
 

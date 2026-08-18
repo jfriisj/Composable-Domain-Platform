@@ -10,9 +10,9 @@ import composable.domain.platform.composition.eventregistration.InvalidEventRegi
 import composable.domain.platform.composition.eventregistration.ParticipantEventRegistrationView;
 import composable.domain.platform.composition.eventregistration.UnknownEventForRegistrationException;
 import composable.domain.platform.core.execution.ExecutionContext;
-import composable.domain.platform.http.generated.api.EventRegistrationApi;
-import composable.domain.platform.http.generated.model.CreateEventRegistrationRequest;
-import composable.domain.platform.http.generated.model.EventRegistrationResponse;
+import composable.domain.platform.http.eventregistration.generated.api.EventRegistrationApi;
+import composable.domain.platform.http.eventregistration.generated.model.CreateEventRegistrationRequest;
+import composable.domain.platform.http.eventregistration.generated.model.EventRegistrationResponse;
 import composable.domain.platform.security.api.AuthenticatedActorProvider;
 import composable.domain.platform.security.api.AuthenticatedActorReference;
 import java.util.Objects;
@@ -55,7 +55,7 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
     public ResponseEntity<EventRegistrationResponse> createEventRegistration(
             CreateEventRegistrationRequest request,
             String suppliedCorrelationId) {
-        ExecutionContext context = HttpCorrelation.establish(suppliedCorrelationId);
+        ExecutionContext context = EventRegistrationHttpCorrelation.establish(suppliedCorrelationId);
 
         try {
             AuthenticatedActorReference actorReference =
@@ -83,7 +83,7 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
     public ResponseEntity<EventRegistrationResponse> findEventRegistrationById(
             String registrationId,
             String suppliedCorrelationId) {
-        ExecutionContext context = HttpCorrelation.establish(suppliedCorrelationId);
+        ExecutionContext context = EventRegistrationHttpCorrelation.establish(suppliedCorrelationId);
 
         try {
             AuthenticatedActorReference actorReference =
@@ -109,7 +109,7 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
     public ResponseEntity<EventRegistrationResponse> cancelEventRegistration(
             String registrationId,
             String suppliedCorrelationId) {
-        ExecutionContext context = HttpCorrelation.establish(suppliedCorrelationId);
+        ExecutionContext context = EventRegistrationHttpCorrelation.establish(suppliedCorrelationId);
 
         try {
             AuthenticatedActorReference actorReference =
@@ -136,20 +136,20 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
             ExecutionContext context,
             ParticipantEventRegistrationView registration) {
         return ResponseEntity.status(status)
-                .header(HttpCorrelation.HEADER_NAME, HttpCorrelation.value(context))
+                .header(EventRegistrationHttpCorrelation.HEADER_NAME, EventRegistrationHttpCorrelation.value(context))
                 .body(new EventRegistrationResponse(
                         registration.registrationId(),
                         registration.eventId(),
                         lifecycle(registration)));
     }
 
-    private static composable.domain.platform.http.generated.model.EventRegistrationLifecycle lifecycle(
+    private static composable.domain.platform.http.eventregistration.generated.model.EventRegistrationLifecycle lifecycle(
             ParticipantEventRegistrationView registration) {
         return switch (registration.lifecycle()) {
             case ACTIVE ->
-                    composable.domain.platform.http.generated.model.EventRegistrationLifecycle.ACTIVE;
+                    composable.domain.platform.http.eventregistration.generated.model.EventRegistrationLifecycle.ACTIVE;
             case CANCELLED ->
-                    composable.domain.platform.http.generated.model.EventRegistrationLifecycle.CANCELLED;
+                    composable.domain.platform.http.eventregistration.generated.model.EventRegistrationLifecycle.CANCELLED;
         };
     }
 }

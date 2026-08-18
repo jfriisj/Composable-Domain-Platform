@@ -33,13 +33,13 @@ The migration must preserve these rules:
 11. generated transport types remain outside module domain/application APIs;
 12. application runtimes remain technical selection, construction, configuration, aggregation configuration, and wiring only.
 
-Current executable truth remains the unified `platform/contracts/http/v1/event.yaml`, the current generated transport allocation, and the current HTTP adapter relationships until later implementation is accepted into `development`. The target split contract/transport architecture is Planned, not Current.
+Current executable truth uses independently authoritative `platform/contracts/http/v1/event.yaml` and `platform/contracts/http/v1/event-registration.yaml` source units, independent generated transport in the two existing HTTP adapter projects, and static derived application OpenAPI aggregation for Event-only and full Platform compositions.
 
 This phase admits only the bounded contract/generation/adapter migration required by Goal #141. It does not preselect a one-YAML-per-module rule, dynamic aggregation, another dependency-injection mechanism, service extraction, or unrelated framework/build technology.
 
 This phase does not authorize new Event or Registration business behavior, Account/User/Person capability, participant profile, credential enrollment/persistence/reset/recovery, identity-provider integration, new Security endpoints, generic Registration HTTP, persistence/schema changes, dynamic/runtime contract discovery, plugins, feature flags, Spring-profile capability selection, deployment/infrastructure expansion, or speculative shared abstractions.
 
-Implementation readiness remains separate from scope acceptance. No OpenAPI, generated-source, Gradle, adapter, runtime, module, or persistence implementation child is ready until scope #142 is accepted into `development` and post-merge planning re-reads Goal #141, ADR-0016, this scope, and the relevant current architecture/build truth. Build-affecting implementation must ultimately pass focused validation and the accepted containerized root `./dev/dev.sh check` gate.
+Implementation readiness for this bounded migration was resolved by decision #146, which selected Gradle/JVM-owned aggregation in existing `build-logic`, independently generated transport in the two existing HTTP adapter projects, no shared technical OpenAPI source for this migration, and strict fail-closed collision validation. Implementation #147 realizes that mechanism. Build-affecting implementation must pass focused validation and the accepted containerized root `./dev/dev.sh check` gate.
 
 ## Completed accepted product scope
 

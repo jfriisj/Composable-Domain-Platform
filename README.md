@@ -24,7 +24,7 @@ Two executable application compositions currently prove the platform model: the 
 
 Operational and development references:
 
-- **External HTTP contract:** [`platform/contracts/http/v1/event.yaml`](platform/contracts/http/v1/event.yaml).
+- **External HTTP source contracts:** Event [`platform/contracts/http/v1/event.yaml`](platform/contracts/http/v1/event.yaml) and Event-Registration [`platform/contracts/http/v1/event-registration.yaml`](platform/contracts/http/v1/event-registration.yaml); application contracts are derived statically during the build.
 - **Operational runtime:** executable Spring Boot/JVM JAR; see [ADR-0010](docs/adr/0010-executable-jvm-operational-runtime-boundary.md). Runtime readiness is exposed at `GET /internal/readiness`.
 - **Developer environment:** repository-controlled Linux/Docker workflow through [`dev/dev.sh`](dev/dev.sh); accepted technology constraints are recorded in [`docs/tech-stack.md`](docs/tech-stack.md).
 - **Development workflow:** canonical commands, Git/PR flow, and validation rules are defined in [`docs/workflow.md`](docs/workflow.md).

@@ -1,7 +1,7 @@
 package composable.domain.platform.http;
 
 import composable.domain.platform.core.execution.ExecutionContext;
-import composable.domain.platform.http.generated.model.ErrorResponse;
+import composable.domain.platform.http.event.generated.model.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
