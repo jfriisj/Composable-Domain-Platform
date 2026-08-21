@@ -18,7 +18,7 @@ The normal flow is:
 accepted development state
         |
         v
-read scope + status
+resolve change-local authorities
         |
         v
 scope decision required?
@@ -172,13 +172,24 @@ A single-level non-product Goal follows the same applicable completion rules.
 
 ## 1. Start from authoritative state
 
-Before planning or changing code, inspect at minimum:
+Before planning or changing repository content, resolve the smallest authoritative context that can govern the concrete change:
 
-- [`scope.md`](scope.md) for accepted scope and exclusions.
-- [`project-status.md`](project-status.md) for current state and next priority.
-- [`governance.md`](governance.md) for change-control rules.
-- Applicable language-engineering standard registered by `governance.md`; for Java work, [`engineering/java.md`](engineering/java.md).
-- Relevant architecture, module, ADR, technology, contract, build, and source files for the concern being changed.
+1. Verify remote `development`; it is the accepted next-state baseline.
+2. Verify the active Goal or executable issue, its direct dependencies, and its accepted baseline when the work is issue-tracked.
+3. Classify the concern being changed and use the authority map in [`governance.md`](governance.md) to select only the directly applicable authoritative sources.
+4. Read the exact concern-specific documentation, contracts, migrations, source, tests, or build truth required to establish readiness.
+5. Expand the authority set only when the proposed change or repository evidence shows a plausible effect on a broader concern.
+6. Verify the local branch, commit, and working tree when local execution state matters.
+
+Concern-specific reads are conditional rather than a mandatory project-wide bootstrap:
+
+- read [`scope.md`](scope.md) when a proposed capability, use case, exclusion, or boundary may change accepted scope;
+- read [`project-status.md`](project-status.md) when selecting project work or synchronizing current project state;
+- read architecture, module, or ADR authorities when boundaries, relationships, ownership, dependency direction, or significant rationale may change;
+- read the applicable language-engineering standard only for work that changes or reviews that language's source or engineering rules;
+- read contracts, migrations, build files, tests, and implementation source only for concerns that can affect their truth.
+
+Required validation remains independent of how many documents were read. Change-local authority resolution reduces unnecessary context; it does not weaken scope, architecture, ownership, review, or repository-wide validation gates.
 
 Repository state on `development` is the accepted next-state baseline.
 
