@@ -12,6 +12,7 @@ Each type of information has one authoritative owner:
 | --- | --- |
 | Accepted scope | `docs/scope.md` |
 | Current project state | `docs/project-status.md` |
+| Authoritative documentation structure and size | `docs/templates/README.md` |
 | Development workflow | `docs/workflow.md` |
 | Work tracking, Goal/Subgoal decomposition, and dependencies | GitHub issues |
 | Architecture model and diagrams | `docs/architecture/workspace.dsl` |
@@ -30,6 +31,23 @@ Other documents may reference these sources but must not redefine competing vers
 Language-specific engineering standards live under `docs/engineering/` only when an accepted language requires durable project rules. Each language standard must be registered explicitly in the source-of-truth table above; the directory itself is not a blanket authority and does not authorize standards for hypothetical languages.
 
 The operational sequence for applying these governance rules is defined in [`workflow.md`](workflow.md).
+
+## Authoritative documentation control
+
+Authoritative repository documentation follows the registered document model in [`templates/README.md`](templates/README.md).
+
+The governing rules are:
+
+- one authoritative fact is defined fully by its most specific authoritative owner;
+- other documents reference that owner rather than maintaining a competing copy;
+- covered document types use their registered template and size budget;
+- information that does not fit a document's registered responsibility moves to its actual authority rather than expanding the document;
+- document history belongs in Git, issues, pull requests, or ADRs when rationale is durable; current-state documents do not become cumulative changelogs;
+- a size-budget increase is a governance change and requires an explicit justification rather than being the default response to an oversized document.
+
+During the bounded migration under Goal #157, existing authoritative documents remain authoritative even when they predate the registered structure or exceed its target budget. That transition does not authorize new out-of-responsibility content. New documents of a registered type must conform immediately; migration work must move existing documents toward conformance without changing the concern truth they own.
+
+Structure and size checks must be deterministic and fail closed. Semantic ownership remains a review responsibility because automated checks must not infer meaning with heuristic or AI analysis.
 
 ## Git branches
 

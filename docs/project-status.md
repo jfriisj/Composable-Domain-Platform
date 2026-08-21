@@ -6,7 +6,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## Current phase
 
-**Selectable external contract composition — Goal #141 objectively satisfied**
+**Documentation execution efficiency — Goal #157 active**
 
 ## Completed
 
@@ -111,7 +111,7 @@ This document is the authoritative concise statement of where the project curren
 
 ## In progress
 
-- No executable implementation Goal is currently in progress.
+- Documentation issue #158 defines the bounded authoritative-documentation model, including document responsibilities, templates, size budgets, and change-local authority resolution. It is the current executable work under Goal #157.
 
 ## Known gaps
 
@@ -123,9 +123,9 @@ This document is the authoritative concise statement of where the project curren
 
 ## Next priority
 
-Select the next Goal through the accepted Goal/Subgoal planning workflow. No successor Goal is currently selected.
+Complete documentation issue #158 without changing product, architecture, contract, persistence, or executable semantics. After it is accepted into `development`, re-evaluate Goal #157 and create only the minimum migration/enforcement work required by the accepted documentation model.
 
-Do not infer a new contract mechanism, capability, module, shared contract project, runtime discovery path, deployment/infrastructure expansion, or unrelated cleanup from completion of Goal #141.
+Do not infer product capability, architecture change, module work, runtime expansion, or unrelated cleanup from Goal #157. The active work changes documentation governance and execution overhead only.
 
 Event-Registration remains a non-module composition. Security remains the Current independent Authentication + Authorization module accepted through #102/PR #103.
 
