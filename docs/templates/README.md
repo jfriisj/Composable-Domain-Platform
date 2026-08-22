@@ -49,26 +49,20 @@ lines="$(wc -l < "$file")"
 test "$lines" -le "$max_lines"
 ```
 
-Budgets are hard limits after migration. A permanent or temporary exception must be recorded explicitly in this document with the exact path, limit, reason, and removal condition. Raising the common budget is not the default exception mechanism.
+Budgets are hard limits. A permanent or temporary exception must be recorded explicitly in this document with the exact path, limit, reason, and removal condition. Raising the common budget is not the default exception mechanism.
 
-## Transition under Goal #157
+### Registered exceptions
 
-The registered structure and budgets are the accepted target model immediately.
+No exceptions are currently registered. When one is required, record it as a row in this table so repository validation can enforce the effective limit deterministically.
 
-Existing authoritative documents that predate this model remain authoritative until their Goal #157 migration is accepted. During that transition:
-
-- existing nonconformance does not invalidate current concern truth;
-- new out-of-responsibility content is not authorized;
-- edits should preserve current truth while reducing duplication and moving toward the registered structure;
-- newly created documents of a registered type must conform immediately.
-
-The migration follow-up removes this transitional allowance by bringing the registered current files into conformance and integrating deterministic checks.
+| Path | Max lines | Reason | Removal condition |
+| --- | ---: | --- | --- |
 
 ## Deterministic enforcement contract
 
-The migration/enforcement change must add a repository-owned check that fails closed when a registered document violates deterministic rules.
+Repository validation includes a repository-owned checker through `build-logic:check`; root `./gradlew --no-daemon check` therefore exercises the same validation.
 
-At minimum the check must:
+The checker fails closed. It must:
 
 1. enumerate the registered exact paths and registered path patterns;
 2. require every matched document to have its registered template;
