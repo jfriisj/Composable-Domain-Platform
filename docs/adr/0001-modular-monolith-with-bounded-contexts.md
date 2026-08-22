@@ -1,5 +1,6 @@
 # ADR-0001: Modular monolith with bounded contexts and Hexagonal Architecture
 
+## Status
 - Status: Accepted
 - Date: 2026-08-01
 
@@ -16,6 +17,9 @@ Use a modular monolith as the initial deployment model.
 Business capabilities are modeled as explicit DDD bounded contexts. Hexagonal Architecture is used inside business modules so domain and application logic remain independent of frameworks, persistence, transport, and external providers.
 
 Module boundaries are treated as hard architectural boundaries even though modules initially execute in the same process.
+
+## Rationale
+The decision is retained for the constraints recorded in Context and the trade-offs recorded in Alternatives considered and Consequences; this migration changes document structure only.
 
 ## Alternatives considered
 

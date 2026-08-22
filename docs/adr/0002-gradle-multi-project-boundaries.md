@@ -1,5 +1,6 @@
 # ADR-0002: Gradle multi-project build for physical module boundaries
 
+## Status
 - Status: Accepted
 - Date: 2026-08-01
 
@@ -14,6 +15,9 @@ The build should prevent accidental dependencies on another module's implementat
 Use Gradle with Kotlin DSL as a multi-project build.
 
 Business domain modules are intended to expose a small public `api` project and keep domain/application/adapters in a private `impl` project. Gradle `java-library` API/implementation semantics and convention plugins will be used to standardize dependency rules when build implementation enters scope.
+
+## Rationale
+The decision is retained for the constraints recorded in Context and the trade-offs recorded in Alternatives considered and Consequences; this migration changes document structure only.
 
 ## Alternatives considered
 

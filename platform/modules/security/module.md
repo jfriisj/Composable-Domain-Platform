@@ -30,13 +30,13 @@ The Java source under `api/` is authoritative for the concrete public types and 
 
 Spring Security, Servlet, credential, and mechanism details remain private and do not cross the public boundary.
 
-## Module dependencies
+## Dependencies
 
 The Security public boundary has no production dependency on `core` or another module. The private implementation depends inward on the Security public boundary.
 
 Security has no functional dependency on Event, Registration, or Event-Registration and does not use another module's private implementation or persistence.
 
-## Related authoritative sources
+## Related authorities
 
 - `docs/modules.md` and ADR-0013 define the universal module invariant.
 - ADR-0012 records the historical minimum authentication-mechanism rationale.

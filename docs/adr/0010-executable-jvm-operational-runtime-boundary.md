@@ -1,5 +1,6 @@
 # ADR-0010: Executable JVM operational-runtime boundary
 
+## Status
 - Status: Accepted
 - Date: 2026-08-03
 
@@ -53,6 +54,9 @@ This ADR selects readiness semantics, not a specific readiness technology. It do
 Infrastructure provisioning is outside this proof. Host/VM infrastructure, PostgreSQL infrastructure, networking/firewall resources, and cloud/provider resources remain externally supplied.
 
 Docker/OCI packaging, Docker Compose, Kubernetes, Terraform, OpenTofu, infrastructure provisioning, and artifact registry/publication infrastructure are not admitted by this decision.
+
+## Rationale
+The decision is retained for the constraints recorded in Context and the trade-offs recorded in Alternatives considered and Consequences; this migration changes document structure only.
 
 ## Alternatives considered
 

@@ -1,5 +1,6 @@
 # ADR-0007: Registration capability and cross-capability composition
 
+## Status
 - Status: Superseded
 - Date: 2026-08-03
 - Superseded by: [ADR-0008](0008-domain-neutral-registration-and-event-registration-composition.md)
@@ -37,6 +38,9 @@ The composition depends only on public capability APIs and the business-neutral 
 Registration owns a separate PostgreSQL schema and migration history. Registration persistence has no foreign key to Event persistence and performs no cross-schema Event lookup. Event existence is validated through the Event public application contract.
 
 The complete workflow is exposed through a separate versioned Registration HTTP contract rather than extending the Event HTTP contract.
+
+## Rationale
+The decision is retained for the constraints recorded in Context and the trade-offs recorded in Alternatives considered and Consequences; this migration changes document structure only.
 
 ## Alternatives considered
 

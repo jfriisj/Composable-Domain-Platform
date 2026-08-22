@@ -1,5 +1,6 @@
 # ADR-0008: Domain-neutral Registration and Event-registration composition
 
+## Status
 - Status: Accepted
 - Date: 2026-08-03
 - Supersedes: [ADR-0007](0007-registration-capability-and-cross-capability-composition.md)
@@ -40,6 +41,9 @@ The external contract remains product/workflow-specific rather than exposing a g
 Authentication identity and Registration registrant identity are separate concepts. Registration does not authenticate or authorize callers. Technical authentication belongs at an external/security boundary, while domain-specific authorization belongs with the capability or composition owning the required business truth. Any future security information crossing application boundaries must use transport-neutral contracts.
 
 A future Person capability may supply a canonical identity used to construct a namespaced `RegistrantReference`, but Registration remains unaware of Person. Identity reconciliation or canonicalization across namespaces is outside Registration ownership.
+
+## Rationale
+The decision is retained for the constraints recorded in Context and the trade-offs recorded in Alternatives considered and Consequences; this migration changes document structure only.
 
 ## Alternatives considered
 
