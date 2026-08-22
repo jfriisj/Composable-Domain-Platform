@@ -1,5 +1,6 @@
 # ADR-0005: Event-owned PostgreSQL persistence through a Hexagonal adapter
 
+## Status
 - Status: Accepted
 - Date: 2026-08-02
 
@@ -26,6 +27,9 @@ Use jOOQ for SQL access inside the persistence adapter.
 Use Testcontainers to validate the adapter and Flyway migrations against real PostgreSQL as part of the repository validation gate.
 
 No Spring Boot, Spring Data, Hibernate/JPA, application runtime, or HTTP interface is introduced by this decision.
+
+## Rationale
+The decision is retained for the constraints recorded in Context and the trade-offs recorded in Alternatives considered and Consequences; this migration changes document structure only.
 
 ## Alternatives considered
 

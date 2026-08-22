@@ -1,5 +1,6 @@
 # ADR-0011: Registration-owned cancellation lifecycle
 
+## Status
 - Status: Accepted
 - Date: 2026-08-05
 
@@ -50,6 +51,9 @@ Registration remains unaware of:
 Event remains Registration-independent and does not store Registration identities or cancellation state.
 
 This ADR extends the rationale of ADR-0008. ADR-0008 remains Accepted and is not superseded.
+
+## Rationale
+The decision is retained for the constraints recorded in Context and the trade-offs recorded in Alternatives considered and Consequences; this migration changes document structure only.
 
 ## Alternatives considered
 

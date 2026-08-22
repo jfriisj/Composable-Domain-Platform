@@ -1,59 +1,46 @@
 # Architecture
 
-## Objective
+## Purpose
 
-Composable Domain Platform is a modular application platform in which independently bounded business capabilities can be developed, tested, composed, and evolved without relying on each other's internal implementation or persistence model.
+Composable Domain Platform is a modular application platform in which independently bounded capabilities can be developed, tested, composed, and evolved without using one another's private implementation or persistence.
 
-The architecture optimizes for explicit ownership and replaceable boundaries rather than for maximum abstraction.
+`docs/architecture/workspace.dsl` is the authority for Current architectural elements and relationships. This document owns durable architectural semantics and boundary rules, not a current component inventory.
 
 ## Architectural style
 
-The baseline combines:
+The accepted baseline combines:
 
-- Domain-Driven Design bounded contexts for business ownership.
-- Hexagonal Architecture inside business modules.
-- A modular monolith as the initial deployment model.
-- Explicit contracts for collaboration.
-- Explicit compositions for cross-capability workflows.
-- Adapter-based integrations for external systems.
+- Domain-Driven Design bounded contexts for business ownership;
+- Hexagonal Architecture inside business modules;
+- a modular monolith as the current deployment model;
+- explicit public contracts for collaboration;
+- explicit compositions for cross-capability workflow;
+- adapter boundaries for external protocols/providers;
+- static application composition through explicit build dependencies.
 
-The modular monolith is an implementation and deployment choice, not permission for modules to share internals.
+The modular monolith is a deployment/build choice, not permission to share ownership or internals.
 
-## Universal module invariant
+Architecture optimizes for explicit ownership and replaceable boundaries rather than maximum abstraction.
 
-ADR-0013 defines one meaning of **module** across the platform.
+## Boundaries
 
-Every module is independently owned, selectable into or out of a valid platform composition, exposes an explicit public API, hides its private implementation, and collaborates with other modules only through public contracts and adapters.
+Every module is independently owned, selectable in valid application composition, exposes an explicit public API, hides private implementation, and collaborates only through public contracts/adapters. No module depends on another module's private implementation or persistence. ADR-0013 and `docs/modules.md` own the universal module rule.
 
-A module is never owned or implemented by the application runtime, another module, or a composition. No module depends on another module's private implementation or persistence.
+A business module owns its domain model, application use cases, and internal adapters. When it owns durable state, it also owns its persistence boundary and migrations. Other constructs do not read/write its tables, use its repositories, or reuse internal DTOs as contracts.
 
-The modular monolith does not weaken this rule. Co-location in one process or repository is a deployment/build choice, not shared ownership.
+Application runtimes may reference private implementation types only for technical construction/wiring. That dependency transfers no business ownership.
 
-A composition owns only cross-module workflow. The application runtime owns only technical assembly. Interfaces and integrations are adapter boundaries and are not automatically modules. Shared `core` is current business-neutral foundation and is not automatically a module.
+Domain code must remain independent of Spring, HTTP, database frameworks, generated OpenAPI types, provider SDKs, and infrastructure technologies.
 
-If a construct is called a module, it must satisfy the invariant. Constructs that should not satisfy it must be classified explicitly as something else.
+`core` remains small and business-neutral. Current cross-boundary execution context uses opaque correlation semantics; correlation/causation metadata is technical context, not business state or identity.
 
-## Hard boundaries
+A module-owned PostgreSQL schema remains private to its owner. Sharing one PostgreSQL server does not create a shared business data model; direct cross-module persistence access and cross-module joins are prohibited unless a later explicit architecture decision changes that rule.
 
-A business module owns its domain model, application use cases, and internal adapters. When it owns durable state it also owns its persistence and migrations.
+## Dependency direction
 
-Other modules and architectural constructs must not:
+Hexagonal dependencies point inward:
 
-- import its internal domain or implementation classes for collaboration;
-- access its repositories;
-- read or write its database tables directly;
-- depend on its persistence records;
-- reuse internal DTOs as shared contracts.
-
-Collaboration happens only through explicit public module APIs, published events, contracts, and adapters/compositions that themselves respect module ownership.
-
-The executable application composition root may depend on private implementation types only to construct and wire module implementations. That technical dependency does not transfer ownership and does not permit business logic or cross-module implementation collaboration.
-
-## Hexagonal rule
-
-Dependencies point inward:
-
-~~~text
+```text
 adapter -> application -> domain
              |
              v
@@ -61,402 +48,54 @@ adapter -> application -> domain
              ^
              |
         outbound adapter
-~~~
+```
 
-Domain code must not depend on Spring, HTTP, database frameworks, generated OpenAPI types, provider SDKs, or other infrastructure technologies.
+Application code orchestrates use cases and declares outbound ports. Adapters translate external mechanisms to/from application/domain concepts.
 
-Application code orchestrates use cases and declares required outbound ports. Adapters translate between external mechanisms and application/domain concepts.
+Cross-module workflow uses:
 
-## Platform core
+```text
+module A public API <- composition -> module B public API
+```
 
-Platform core must remain small and contain platform mechanisms rather than business concepts.
+A composition depends only on required public module APIs and owns only the workflow spanning them. Missing module behavior must be implemented by the owning module, not absorbed by composition.
 
-The current `core` project contains the minimum business-neutral `CorrelationId` and `ExecutionContext` primitives required to propagate correlation context from the HTTP boundary into Event application calls.
+Inbound interfaces depend on public module/composition contracts. Provider integrations implement accepted ports. Runtime composition selects and wires implementations; it does not own their behavior.
 
-Potential additional core responsibilities require their own concrete accepted need. Business concepts such as Event, Ticket, Registration, Payment, Invoice, Speaker, or Booking must not move into core merely to make them reusable.
+Build/architecture tests should enforce these directions where mechanically practical. Root Gradle `check` remains the executable aggregate gate for build-affecting changes.
 
-## Execution context and traceability
+## Architectural constructs
 
-Cross-boundary operations must carry explicit execution metadata so a logical flow can be followed through modules, asynchronous work, integrations, and logs.
+**Module** — independently owned capability satisfying the universal invariant. Implemented modules use explicit public API/private implementation boundaries; local responsibility is documented in their `module.md`.
 
-- **Correlation ID** identifies the complete logical flow. It is preserved when work crosses synchronous or asynchronous boundaries.
-- **Causation ID** identifies the immediate operation, command, event, or message that caused a new asynchronous action or message.
-- A new entry point without an existing correlation context creates a new Correlation ID.
-- Boundary adapters propagate the correlation context when calling another module or external system where the protocol supports it.
-- Published messages and events carry correlation metadata in their envelope rather than embedding it in business-domain state.
-- Structured logs include the Correlation ID and, where applicable, the Causation ID.
-- Correlation and causation identifiers are opaque technical identifiers. They must not contain personal data or business meaning and must not be used for business decisions.
+**Composition** — cross-module workflow coordinator. It is not automatically a module. If deliberately classified as one, it must satisfy the full module invariant.
 
-The current HTTP boundary represents correlation as `X-Correlation-Id`, preserves a supplied nonblank value, creates one when absent, and passes the resulting value through `ExecutionContext` into the Event public application boundary.
+**Interface** — inbound adapter exposing accepted capabilities through an external protocol. It owns transport mapping, structural protocol validation, external error/privacy mapping, and boundary correlation behavior, not business logic.
 
-Correlation is independent of distributed tracing. W3C trace/span context or OpenTelemetry may later complement correlation, but adopting an observability technology is not required to preserve the platform-level Correlation ID.
+**Integration** — outbound/provider adapter translating an internal port/contract to an external system. Provider-specific models do not leak through module public APIs.
 
-## Composition over coupling
+**Application runtime/composition root** — technical selection, construction, configuration, migration startup, readiness, and wiring. It owns no module/business behavior.
 
-When two independent modules/capabilities need to cooperate, use a composition that depends on their public APIs rather than making either capability depend on the other's implementation.
+**Contracts** — versioned external schemas such as OpenAPI. Contracts are not modules. Authoritative source contracts follow externally addressable behavior ownership; concrete applications statically aggregate only explicitly selected source units. Derived aggregate contracts and generated transport types are build output.
 
-~~~text
-module A API <- composition -> module B API
-~~~
+**Shared foundation** — minimal business-neutral mechanisms required across accepted boundaries. It must not become a business/shared-utility dumping ground.
 
-A composition owns the cross-capability workflow only. It does not own or implement participating modules.
+Static selectable application composition uses explicit Gradle project/application boundaries (ADR-0015). Omitted unrelated capabilities must be absent from the selected application's functional compile/runtime graph; required capability dependencies remain explicit.
 
-A composition is not automatically a module. If a composition is deliberately classified as a module, it must have its own public API/private implementation boundary and satisfy ADR-0013.
+Selectable external contracts use independent authoritative source units plus static application-level aggregation (ADR-0016). Aggregation/generation remains build-time and fails closed on admitted conflict classes. Runtime discovery, dynamic plugins, feature flags, Spring-profile capability selection, or service extraction are not implied.
 
-## Current Registration composition baseline
+The operational artifact is an executable Spring Boot/JVM application artifact (ADR-0010). Runtime infrastructure such as host, Java runtime, PostgreSQL, and networking is externally supplied within the accepted operational boundary. Machine-checkable readiness is distinct from process existence and reflects database/migration/serviceability requirements.
 
-The current implemented baseline establishes Registration as the second implemented bounded capability and Event-Registration as the first implemented cross-capability composition.
+Security is a normal independently owned module. Its public Authentication/Authorization contracts remain framework-neutral; Spring Security/HTTP Basic and credential verification are private mechanism details. Domain/workflow facts remain with the owning business module/composition (ADR-0014).
 
-The accepted structure is:
+`docs/architecture/workspace.dsl` records which concrete constructs/relationships are Current. Module-local ownership lives in `platform/modules/*/module.md`; external behavior in contracts; persistence in migrations; build selection in Gradle.
 
-~~~text
-platform/modules/registration/
-├── api/
-└── impl/
+## Change rule
 
-platform/compositions/event-registration/
-~~~
+Update `workspace.dsl` when a change alters Current architectural elements, relationships, containers, bounded contexts, or significant flows. Keep Planned/Exploratory state distinguishable from Current.
 
-Registration is domain-neutral. It owns `registrationId`, a namespaced opaque `RegistrantReference`, a namespaced opaque `TargetReference`, Registration uniqueness rules, the generic `active` / `cancelled` lifecycle, idempotent generic cancellation, retrieval, and its own persistence boundary.
+Update this narrative when durable architecture semantics/boundaries change. Update affected module responsibility docs when module ownership/non-ownership changes.
 
-Registration does not interpret namespaces or validate referenced business objects. It does not depend on Event, Person, authentication/authorization technologies, or another business capability.
+Create or supersede an ADR for significant architecture decisions where rationale/alternatives must remain durable. An ADR does not replace required scope change.
 
-The Event-Registration composition owns the Event-specific workflow. It resolves Event existence through the Event public API, maps the opaque participant reference to the `participant` registrant namespace, maps Event identity to the `event` target namespace, and invokes the Registration public API. Retrieval also passes through the composition so the Event-specific HTTP surface exposes only Event-target registrations.
-
-The accepted dependency direction is:
-
-~~~text
-event-api <- event-registration composition -> registration-api
-                         |
-                         v
-                        core
-~~~
-
-Neither Event nor Registration depends on the other capability. Event does not store Registration identities. The composition depends on public APIs only.
-
-The Registration persistence boundary is a Registration-owned PostgreSQL `registration` schema and `registration.registrations` table containing `registration_id`, registrant namespace/reference, target namespace/reference, and Registration lifecycle. No Event-specific column, foreign key, or cross-schema Event lookup is permitted.
-
-The external HTTP source contracts are split by externally addressable behavior ownership:
-
-- `platform/contracts/http/v1/event.yaml` contains only Event-owned definition, retrieval, publication, and discovery behavior;
-- `platform/contracts/http/v1/event-registration.yaml` contains the participant-private Event-registration create/retrieve/cancel workflow owned by the non-module composition.
-
-The full Platform Application derives one coherent application-facing OpenAPI document by statically aggregating both selected source units. Event-only derives its application contract from Event alone. Contract-file allocation therefore follows external behavior ownership without changing Event, Registration, Security, or Event-Registration ownership.
-
-The participant-private transport contract uses only `registrationId` and `eventId` as caller-supplied creation inputs, exposes Registration lifecycle state, and does not accept caller-authoritative participant ownership or expose generic Registration namespace/reference mechanics.
-
-Technical authentication identity and Registration registrant identity remain separate concepts. The independent Security module implements the bounded Spring Security/stateless HTTP Basic mechanism accepted by ADR-0012/#87 and the final opaque ownership Authorization selected by #99/ADR-0014. Actor-to-registrant mapping and Event/Registration workflow facts remain in Event-Registration composition. No Person/Account capability is introduced.
-
-ADR-0013 establishes Security as an independently owned module. Scope #97 admits its `api`/`impl` boundary, decision #99 and ADR-0014 define its public Authentication + Authorization contracts, and implementation #102 establishes that source/build ownership in the executable architecture.
-
-The Event HTTP interface and participant-private Event-registration HTTP interface remain external adapter boundaries. The Spring Boot application roots remain technical composition roots.
-
-ADR-0008 supersedes ADR-0007 and records the domain-neutral Registration boundary, Event-specific composition, persistence isolation, and security/identity separation. ADR-0009 historically unified the Event-facing HTTP source; ADR-0016 supersedes that source-allocation decision while preserving the internal ownership principles.
-
-## Accepted minimum participant lifecycle scope
-
-The minimum usable adult Event Registration lifecycle is accepted implementation scope and is being implemented incrementally. Current architecture statements below distinguish accepted implemented state from remaining planned behavior.
-
-The original lifecycle scope preserves the current Event/Registration bounded contexts, composition, persistence owners, external HTTP adapter, executable application container, and Event/Registration dependency direction. Scope #97 additionally admits the Security module with separate public API/private implementation projects, without adding a new application container, persistence owner, Person/Account capability, or Event/Registration dependency.
-
-Within the existing Event bounded context, Event now implements durable Event-owned publication state with `unpublished` and `published` states, initial `unpublished` state, a one-way `unpublished -> published` transition, and transport-neutral public discovery of published Events. Known-id Event retrieval remains independent of publication. Publication does not own Registration eligibility, capacity, waitlists, payment, participant identity, or authorization.
-
-Within the existing Registration bounded context, the generic lifecycle accepted by ADR-0011 is now implemented: initial `active` state, idempotent `active -> cancelled` behavior, lifecycle state in Registration retrieval, a transport-neutral generic cancellation operation, and Registration-owned durable persistence. Cancellation preserves Registration identity and the existing complete registrant-target uniqueness rule; cancelled pairs remain occupied. Registration remains domain-neutral and security-neutral. Event-facing participant cancellation is exposed through the actor-bound Event-Registration composition and participant-private HTTP boundary.
-
-The Event-Registration composition implements the transport-neutral participant-private path for create, retrieve, and cancel. That path accepts Security's opaque stable authenticated actor reference, derives `RegistrantReference("participant", actorReference)` for create, validates Event/participant namespace facts for retrieve/cancel, delegates the final ownership decision to `AuthorizeResourceOwnership`, exposes Registration lifecycle state, and invokes Registration-owned cancellation only after authorization. The HTTP boundary now uses this actor-bound path, and the transitional caller-owned compatibility contracts have been removed. Technical authentication identity and establishment of the platform-facing actor reference remain external to Event, Registration, and the composition implementation.
-
-The actor reference is participant-linked private data for project handling. Registration persists only its own opaque participant reference; raw upstream/provider security-subject identifiers are not accepted as Registration durable state. Authenticated non-owner access keeps an internal authorization-denied semantic but uses the same external not-found resource-existence disclosure as an unknown private Event-registration. Normal structured logs exclude actor and participant registrant-reference values. Correlation and causation identifiers remain identity-free.
-
-ADR-0012 and scope #87 select the minimum external participant authentication mechanism. Spring Security remains the accepted technical framework, now privately owned by `platform/modules/security/impl`, with stateless HTTP Basic as the minimum non-browser proof for participant-private Event-registration create, retrieve, and cancel operations. Published Event discovery remains public.
-
-Participant proof credentials are supplied through external runtime configuration as an opaque stable platform principal identifier plus an encoded password verifier. The runtime may hold those entries in memory; no credential database, Person/Account persistence, identity database, provider integration, or durable identity-mapping store is introduced. The configured principal identifier is itself the platform-facing pseudonym and is adapted directly as:
-
-`authenticatedPrincipalName -> AuthenticatedActorReference(authenticatedPrincipalName)`
-
-Current executable state has `security-impl` configuring the Spring Security filter chain, stateless HTTP Basic, encoded credential verification, authenticated technical-principal establishment, actor adaptation, and opaque resource-ownership Authorization. `platform/interfaces/event-registration-http` receives the actor through `security-api` and remains responsible for participant-private Event-registration HTTP adaptation and external error/privacy mapping.
-
-The application runtime selects `security-impl` and wires `security-api` contracts to consumers. It does not own Authentication/Authorization behavior.
-
-Event-Registration continues to own `AuthenticatedActorReference(x) -> RegistrantReference("participant", x)` and Event-specific orchestration/domain fact preparation. Decision #99, recorded by ADR-0014, moves ownership of `AuthenticatedActorReference` itself to `security-api` and selects the final ownership Authorization contract. For retrieve/cancel, Event-Registration validates the Event target and participant registrant namespaces, translates only the opaque registrant reference value to Security's `ResourceOwnerReference`, and asks `AuthorizeResourceOwnership` for `ALLOWED` / `DENIED`. Create requires Authentication but no separate Authorization call. Registration remains security-neutral and has no dependency on Spring Security, HTTP authentication, credentials, actor semantics, or Security implementation.
-
-The proof is stateless and non-browser: no form login, session/cookie authentication, remember-me, logout/session lifecycle, OAuth/OIDC login, or JWT bearer authentication is accepted. Any CSRF exclusion is bounded to that stateless non-browser API proof and does not establish a browser security design. HTTP Basic requires secure transport across untrusted networks, while TLS termination/deployment infrastructure remains outside Goal #57.
-
-ADR-0012's selected mechanism originally introduced no new bounded context, application container, persistence owner, external authenticator, identity provider, identity-mapping store, or Event/Registration dependency. ADR-0013/#97 subsequently establish Security as an independent module without changing those product/persistence exclusions.
-
-`docs/architecture/workspace.dsl` now represents Security API/Implementation and their collaboration as **Current** executable elements/relationships.
-
-## Current Security module boundary
-
-Accepted scope #97 introduces the physical boundary:
-
-~~~text
-platform/modules/security/
-├── api/
-└── impl/
-~~~
-
-Decision #99, recorded by ADR-0014, selects the public collaboration surface.
-
-`security-api` owns:
-
-- `AuthenticatedActorReference` — opaque authenticated platform actor;
-- `AuthenticatedActorProvider` — narrow Authentication boundary returning the current actor;
-- `ResourceOwnerReference` — opaque expected-owner policy input;
-- `AuthorizationDecision` — `ALLOWED` / `DENIED`;
-- `AuthorizeResourceOwnership` — the current ownership Authorization decision.
-
-Neither public contract uses `ExecutionContext`; `security-api` has no dependency on `core`. No Spring Security, Servlet, HTTP Basic, password-verifier, provider, role/authority, Event, Registration, Event-Registration, or persistence type belongs in the API.
-
-The current dependency direction is:
-
-~~~text
-security-impl -> security-api
-
-platform/interfaces/event-registration-http -> security-api
-
-platform/compositions/event-registration -> security-api
-
-platform/apps/platform -> security-impl
-platform/apps/platform -> security-api
-  construction/configuration/wiring only
-~~~
-
-`security-impl` privately owns the admitted Spring Security/stateless HTTP Basic implementation, encoded verifier validation, externally configured in-memory proof participants, technical-principal extraction, principal-to-actor adaptation, Authentication/Authorization implementations, and Security-specific Servlet/HTTP Basic adapters.
-
-The participant-private Event-registration HTTP interface consumes `AuthenticatedActorProvider` but does not own credential verification or Security policy.
-
-Event-Registration retains Event/Registration workflow and fact interpretation. For participant-private retrieval/cancellation it verifies the Event target and participant registrant namespaces, translates only the registrant reference value into `ResourceOwnerReference`, and asks Security for the final actor-versus-owner decision. It maps `DENIED` into its workflow authorization-denied semantic; HTTP retains the existing external `404` concealment mapping.
-
-Creation requires Authentication only and continues to derive `RegistrantReference("participant", actorReference)` in Event-Registration. No action enum or generic policy engine is introduced because retrieve and cancel share the same ownership rule and create has no independent owner-authorization predicate.
-
-The application runtime selects, constructs, configures, and wires Security but does not own its behavior. A participant-private Goal #57 assembly is valid only when the required Security public capabilities are supplied.
-
-The following dependencies remain prohibited: `security-api -> core/Event/Registration/Event-Registration/HTTP`; `security-impl -> Event/Registration/Event-Registration/HTTP`; functional consumers -> `security-impl`; and Event/Registration private implementation or persistence -> Security.
-
-Security is **Current** in the authoritative Structurizr model. Current views include the Security API/Implementation and their executable collaboration with the Event-registration HTTP adapter, Event-Registration, and the application composition root.
-
-No Security persistence, Person/Account capability, external identity provider, OAuth/OIDC, JWT, RBAC/ABAC/role model, generic policy engine, new application container, or dynamic plugin mechanism is admitted.
-
-## Current static selectable application composition
-
-ADR-0015 records the static build-time mechanism selected by decision #130 for Goal #114. Implementation #131 realizes that mechanism through explicit Gradle project/application boundaries; it does not use runtime module discovery, dynamic plugins, feature flags, Spring profiles, Gradle feature variants, or another dependency-injection mechanism.
-
-The valid minimum proof composition is Event-only. `platform/apps/event` selects Event API/implementation/persistence plus `platform/interfaces/http` and the existing Spring Boot/Web/PostgreSQL/Flyway infrastructure required to serve the accepted Event HTTP behavior. Registration, Security, Event-Registration composition, and participant-private Event-registration HTTP adaptation are absent from the Event application's functional compile/runtime dependency graph.
-
-The existing `platform/apps/platform` remains the complete Event/Registration/Security composition. Both application roots remain technical selection/construction/configuration/wiring only and own no business behavior.
-
-The external source contracts are independently authoritative: Event remains at `platform/contracts/http/v1/event.yaml`, and participant Event-registration is at `platform/contracts/http/v1/event-registration.yaml`. `platform/interfaces/http` generates only Event transport types in `composable.domain.platform.http.event.generated`; `platform/interfaces/event-registration-http` generates only Event-Registration transport types in `composable.domain.platform.http.eventregistration.generated` and depends on Event-Registration composition, Security public API, core correlation context, and transport libraries without depending on `:http-interface`.
-
-Event-Registration remains a non-module composition and still requires Event, Registration, and Security through their public APIs. Selectability permits omission only where the declared application behavior does not require a capability; it does not make a participant-private Event-registration composition valid without Registration or Security.
-
-`:event-app:check` resolves both `compileClasspath` and `runtimeClasspath` and fails if Registration API/implementation, Security API/implementation, Event-Registration composition, or Event-registration HTTP adapter projects are present. The Event-only runtime test starts against real PostgreSQL, serves an existing Event define/retrieve flow without participant security configuration, and verifies that Event migrations run without creating the Registration schema.
-
-`docs/architecture/workspace.dsl` represents both application compositions and both HTTP adapter boundaries as Current executable architecture.
-
-## Current selectable external contract composition
-
-Decision #140 and ADR-0016 extend static selectability from module/runtime dependencies to authoritative OpenAPI sources and generated transport ownership without changing module classification. Decision #146 selects the concrete Gradle/JVM build-time mechanism, and implementation #147 realizes that bounded mechanism.
-
-Current contract ownership is:
-
-- Event owns `platform/contracts/http/v1/event.yaml` for Event-owned externally addressable behavior;
-- Event-Registration remains a non-module composition and owns `platform/contracts/http/v1/event-registration.yaml` for its participant workflow;
-- Registration remains without a generic HTTP dispatcher;
-- Security remains owner of Authentication + Authorization behavior without acquiring invented HTTP endpoints.
-
-Concrete applications statically aggregate only explicitly selected authoritative units. `:event-app` selects Event only and writes a derived `build/generated/openapi/application.yaml`; `:platform-app` selects Event plus Event-Registration and writes its own derived coherent application document. These aggregate files are build output, never authoritative source.
-
-Generated server transport is physically separated in the existing adapter projects. `:http-interface` generates only Event API/model types under `composable.domain.platform.http.event.generated`; `:event-registration-http-interface` generates only workflow API/model types under `composable.domain.platform.http.eventregistration.generated`. Neither generated boundary enters module domain/application APIs, and Event-Registration HTTP no longer depends on the Event HTTP project.
-
-No shared technical OpenAPI source is introduced for this migration. The source units use non-colliding component names where equivalent wire-level structures are repeated. Gradle/JVM build logic uses Swagger Parser `2.1.45` to parse and validate sources, resolve references, reject duplicate paths/operation IDs/same-namespace component names and incompatible inputs, serialize the selected aggregate, and revalidate the result.
-
-This Current architecture does not impose one YAML file per module and does not select runtime discovery, dynamic plugins, feature flags, Spring-profile capability selection, service extraction, Account/User/Person capability, new Security endpoints, generic Registration HTTP, persistence changes, or new business behavior.
-
-## Current reference module
-
-Event is the first implemented bounded context used to validate the module architecture.
-
-Its physical shape remains:
-
-~~~text
-platform/modules/event/
-├── api/
-└── impl/
-~~~
-
-The API project contains application-level contracts for defining, retrieving, publishing, and discovering Event state; explicit definition and publication failures; publication state in Event views; and the shared execution context carried by the current use-case signatures.
-
-The implementation project contains the Event domain model, application implementation and outbound persistence port, and a private jOOQ PostgreSQL persistence adapter. Event-owned Flyway migrations define its durable schema.
-
-The HTTP adapter and executable application runtime are outside the Event bounded context. They use the Event public API and composition-only implementation wiring without moving Spring, HTTP, generated OpenAPI, or database runtime concepts into Event domain/application code.
-
-## Current runtime boundary
-
-The executable Event-facing transport and composition allocation is:
-
-~~~text
-external HTTP caller
-        |
-        v
-platform/contracts/http/v1/event.yaml
-        |
-        v
-platform/interfaces/http
-  generated transport + Event HTTP adapter
-        |
-        +-----------------------> platform/modules/event/api
-                                       ^
-                                       |
-                                 platform/modules/event/impl
-                                       |
-                                       v
-                                  event.events
-        ^
-        |
-platform/interfaces/event-registration-http
-  participant-private Event-registration HTTP adapter
-        |                              |
-        v                              v
-platform/compositions/event-registration   platform/modules/security/api
-        |                    |
-        v                    v
-platform/modules/event/api   platform/modules/registration/api
-                                      ^
-                                      |
-                              platform/modules/registration/impl
-                                      |
-                                      v
-                         registration.registrations
-
-platform/apps/platform
-  full Spring Boot composition root
-  Event + Registration + Security + Event-Registration
-  Event and Registration Flyway startup migrations
-
-platform/apps/event
-  Event-only Spring Boot composition root
-  Event HTTP + Event implementation/persistence only
-  Event Flyway startup migrations only
-~~~
-
-`platform/apps/platform` wires both HTTP adapter projects, Event services, Registration services, persistence adapters, Event-Registration composition, and Security public contracts. It explicitly selects the private Security implementation. Event- and Registration-owned Flyway migrations run during application context construction before their repositories and application services become available to serve requests.
-
-`platform/apps/event` wires only the Event HTTP slice, Event services, Event persistence adapter, DataSource, and Event-owned Flyway migration. Its compile/runtime graph excludes Registration, Security, Event-Registration, and participant-private Event-registration HTTP adaptation.
-
-Spring Security, encoded participant credential verification, stateless HTTP Basic, authenticated-principal-to-actor adaptation, and final opaque resource-ownership Authorization remain privately owned by `security-impl` and are selected only by compositions that require that capability. Application runtimes provide selection/configuration/wiring only.
-
-Event-Registration remains a non-module composition under ADR-0013 and continues to collaborate only through Event, Registration, and Security public contracts.
-
-## Accepted operational-runtime boundary
-
-The accepted next operational scope keeps the existing modular-monolith container and Spring Boot composition root. It adds a build-to-runtime boundary without introducing another application container or infrastructure ownership boundary.
-
-The operational packaging boundary is one executable Spring Boot/JVM application artifact produced from an accepted repository version. The runtime host supplies a compatible Java runtime; repository checkout, IDE state, and Gradle `bootRun` are development concerns and are not required on the operational host.
-
-PostgreSQL remains an externally supplied runtime dependency. The operator also supplies the non-developer host/VM, network reachability, database URL/username/password, and an available HTTP listen port. The platform continues to own application startup and execution of Event- and Registration-owned Flyway migrations.
-
-The runtime must expose a machine-checkable readiness signal distinct from process existence. Readiness remains false until required configuration is accepted, PostgreSQL is reachable, both owned migration sets have completed successfully, and the HTTP runtime can serve the accepted external contract. After startup, PostgreSQL unavailability must make readiness not-ready when the accepted HTTP use cases cannot be serviced.
-
-Readiness is an operational adapter/runtime concern, not a business-domain API. The accepted architecture does not require a separate liveness contract for this proof and does not yet select a specific endpoint, Spring mechanism, or new readiness dependency.
-
-Infrastructure provisioning remains outside the platform boundary for this proof. Host/VM, PostgreSQL, networking/firewall, and provider resources are externally supplied. Docker/OCI packaging and Terraform/OpenTofu/IaC are deliberately not admitted. A later requirement for reproducible infrastructure provisioning requires a separate architecture and technology decision.
-
-This operational scope is accepted architecture for implementation planning but is not represented as a new Structurizr container or relationship because it changes packaging/run and readiness semantics of the existing `platform/apps/platform` container rather than adding a new architectural participant.
-
-ADR-0010 records the rationale for this operational-runtime boundary.
-
-## Persistence ownership
-
-Event implements the persistence baseline through an Event-owned PostgreSQL schema and versioned Flyway migrations.
-
-The Event application layer owns the persistence port. The private jOOQ adapter depends inward on that port and Event domain concepts; domain and application code do not depend on database technologies or persistence-adapter implementation.
-
-One PostgreSQL server does not imply one shared data model. Cross-module joins and direct cross-schema persistence access are prohibited unless a later explicit architecture decision changes this rule.
-
-Database permission enforcement remains deferred until operational scope requires it.
-
-## External contracts
-
-`platform/contracts/http/v1/event.yaml` is the authoritative Event HTTP source contract. `platform/contracts/http/v1/event-registration.yaml` is the authoritative participant Event-registration workflow source contract.
-
-OpenAPI Generator independently derives Event transport in `:http-interface` and Event-Registration transport in `:event-registration-http-interface`. Generated sources remain adapter-layer build output and must not enter module domain/application APIs.
-
-Gradle/JVM build logic statically aggregates explicitly selected source contracts into each application's derived `build/generated/openapi/application.yaml`, validates source and aggregate documents, and fails closed on the conflict classes selected by #146.
-
-The HTTP adapters own transport mapping, structural HTTP validation, contract-defined error responses, and correlation establishment for their respective boundaries. Event and Event-Registration continue to own their existing business/workflow semantics.
-
-## Dynamic interfaces
-
-Public and administrative frontends are clients of stable contracts, not owners of business logic or database structure.
-
-Dynamic page composition may be introduced when a concrete use case requires it. Its contracts must remain separate from business-domain internals.
-
-## Repository layout
-
-The currently implemented architectural structure includes:
-
-~~~text
-.
-├── platform/
-│   ├── apps/
-│   │   ├── event/
-│   │   └── platform/
-│   ├── core/
-│   ├── modules/
-│   │   ├── event/
-│   │   │   ├── api/
-│   │   │   ├── impl/
-│   │   │   └── module.md
-│   │   ├── registration/
-│   │   │   ├── api/
-│   │   │   └── impl/
-│   │   └── security/
-│   │       ├── api/
-│   │       └── impl/
-│   ├── compositions/
-│   │   └── event-registration/
-│   ├── interfaces/
-│   │   ├── event-registration-http/
-│   │   └── http/
-│   └── contracts/
-│       └── http/
-│           └── v1/
-│               └── event.yaml
-├── build-logic/
-└── docs/
-~~~
-
-`platform/modules/registration` and `platform/compositions/event-registration` are current architecture. `integrations/` remains an architectural category only and must not be created until later accepted scope requires it.
-
-### Current ADR-0013 conformance
-
-Event and Registration already use separate public API/private implementation Gradle projects.
-
-The current Event-Registration composition remains one Gradle project. It is an accepted composition, but it is not a conforming module if classified as one until a later accepted migration creates an explicit public/private boundary.
-
-Participant authentication/security remains implemented in `platform/apps/platform` as current accepted executable state from ADR-0012/#91. ADR-0013 defines Security as a module and makes that runtime ownership explicit migration debt.
-
-The current HTTP interface, application runtime, contracts, and `core` foundation remain their existing architectural constructs. This documentation slice does not relabel them as implemented modules or change their current Structurizr relationships.
-
-## Architecture enforcement
-
-Current build-time enforcement includes:
-
-1. Separate Gradle projects for core, Event API/implementation, Registration API/implementation, Event-Registration composition, HTTP interface, and executable platform runtime.
-2. `java-library` dependency semantics for library boundaries.
-3. Event and Registration ArchUnit tests for capability-internal dependency direction and forbidden cross-capability/framework dependencies.
-4. Event-Registration composition ArchUnit tests restricting the composition to core, Event API, Registration API, and Java platform types.
-5. Platform ArchUnit tests for core, capability APIs/implementations, composition, HTTP interface, and application-runtime dependency boundaries.
-6. Event- and Registration-owned Flyway migrations and PostgreSQL persistence integration tests through Testcontainers.
-7. Running Spring Boot HTTP end-to-end tests against real PostgreSQL through Testcontainers, including Event-registration success/error behavior, durability, uniqueness, and correlation handling.
-8. Root `./gradlew --no-daemon check` aggregation across all current projects, including both executable application compositions and both HTTP adapter projects.
-9. Event-only compile/runtime dependency verification rejects Registration, Security, Event-Registration composition, and participant-private Event-registration HTTP adapter projects from `:event-app`.
-
-Additional enforcement remains deferred until explicitly scoped:
-
-- Spring Modulith module verification.
-- PostgreSQL permission enforcement.
-
-## Architecture model
-
-`docs/architecture/workspace.dsl` is the authoritative diagram model. Rendered images are derived views and are not edited as independent sources of truth.
+Architecture documentation does not authorize implementation. Source/build/persistence/contract changes still require accepted scope/readiness and the applicable workflow validation.

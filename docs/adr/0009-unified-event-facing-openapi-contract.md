@@ -1,5 +1,6 @@
 # ADR-0009: Unified Event-facing OpenAPI contract
 
+## Status
 - Status: Accepted
 - Date: 2026-08-03
 - Supersedes: the separate-contract-file decision in [ADR-0008](0008-domain-neutral-registration-and-event-registration-composition.md)
@@ -44,6 +45,9 @@ Internal ownership remains unchanged:
 `contracts/http/v1/event-registration.yaml` is not part of the accepted architecture and must not be created.
 
 This ADR supersedes only ADR-0008's decision to use a separate Event-registration OpenAPI file. ADR-0008's domain-neutral Registration model, composition ownership, persistence isolation, dependency direction, and authentication/identity separation remain accepted.
+
+## Rationale
+The decision is retained for the constraints recorded in Context and the trade-offs recorded in Alternatives considered and Consequences; this migration changes document structure only.
 
 ## Alternatives considered
 

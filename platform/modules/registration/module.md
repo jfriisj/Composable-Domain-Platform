@@ -32,13 +32,13 @@ The Java source under `api/` is authoritative for the concrete public types and 
 
 These details remain private to Registration and are not a collaboration surface for other modules.
 
-## Module dependencies
+## Dependencies
 
 The public boundary may depend on the business-neutral `core` execution context required by the accepted application contract. The private implementation depends inward on the Registration public boundary.
 
 Registration has no functional dependency on Event or Security and does not use another module's private implementation or persistence.
 
-## Related authoritative sources
+## Related authorities
 
 - `docs/modules.md` and ADR-0013 define the universal module invariant.
 - ADR-0008 records the domain-neutral Registration boundary.

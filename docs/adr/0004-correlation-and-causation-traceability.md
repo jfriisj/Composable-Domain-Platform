@@ -1,5 +1,6 @@
 # ADR-0004: Correlation and causation identifiers for cross-boundary traceability
 
+## Status
 - Status: Accepted
 - Date: 2026-08-01
 
@@ -24,6 +25,9 @@ Correlation metadata belongs to transport/message envelopes and structured execu
 The exact identifier format and protocol-specific header or envelope fields are intentionally deferred until the relevant contracts are implemented.
 
 Distributed trace and span identifiers are separate concepts. OpenTelemetry or W3C Trace Context may later complement this mechanism, but correlation must work without requiring a particular observability provider.
+
+## Rationale
+The decision is retained for the constraints recorded in Context and the trade-offs recorded in Alternatives considered and Consequences; this migration changes document structure only.
 
 ## Alternatives considered
 

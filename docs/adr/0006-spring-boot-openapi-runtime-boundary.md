@@ -1,5 +1,6 @@
 # ADR-0006: Spring Boot composition root and OpenAPI HTTP boundary
 
+## Status
 - Status: Accepted
 - Date: 2026-08-02
 
@@ -41,6 +42,9 @@ Every HTTP response carries `X-Correlation-Id`. The HTTP boundary preserves a su
 Spring Boot and HTTP/OpenAPI types remain outside Event domain and application implementation.
 
 Spring Data, Hibernate/JPA, Spring Modulith, Spring Security, authentication/authorization, messaging, deployment, and observability infrastructure are not introduced by this decision.
+
+## Rationale
+The decision is retained for the constraints recorded in Context and the trade-offs recorded in Alternatives considered and Consequences; this migration changes document structure only.
 
 ## Alternatives considered
 
