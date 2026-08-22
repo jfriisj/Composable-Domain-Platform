@@ -8,30 +8,28 @@ This document owns current project state only. Accepted scope is in [`scope.md`]
 
 The accepted executable platform contains the Event, Registration, and Security modules; Event-Registration composition; independently selectable Event-only and full Platform applications; independently authoritative Event and Event-Registration HTTP source contracts with static application aggregation; PostgreSQL persistence; the executable JVM runtime boundary; and the repository-controlled Docker developer environment.
 
-Issue #158 established the bounded authoritative-documentation model, templates, line budgets, reference-not-repeat rule, and change-local authority resolution.
+Goal #157 established the bounded authoritative-documentation model through #158, migrated all registered authoritative documents through #160, and integrates deterministic structure/size validation through #162 without changing product, architecture, contract, persistence, or runtime semantics.
 
-The documentation migration represented by #160 brings the currently registered authoritative documents into that accepted structure and budget without changing product, architecture, contract, persistence, build, or executable semantics.
+Registered authoritative documentation is now bounded by `docs/templates/README.md` and enforced from the normal root `./gradlew --no-daemon check` validation path. The temporary Goal #157 migration allowance has been removed.
 
 ## Active goal
 
-Goal #157, **Reduce documentation and workflow execution overhead**, remains the active single-level non-product Goal.
+No Goal remains active after completion of Goal #157, **Reduce documentation and workflow execution overhead**.
 
-After the documentation migration, its remaining outcome is deterministic enforcement of the accepted documentation model and removal of the temporary Goal #157 transition allowance.
+The Goal's repository completion boundary is satisfied by the accepted documentation model, migrated bounded authorities, change-local workflow, deterministic enforcement, and unchanged product/executable semantics.
 
 ## In progress
 
-No build-affecting enforcement work is yet accepted or in progress.
+No executable work is in progress.
 
-Issue #160 is satisfied by the documentation migration represented by this state; after it is accepted into `development`, the next executable work is the minimum deterministic checker integration required by `docs/templates/README.md`.
+Issue #162 is the final executable change under Goal #157; once this state is accepted, both #162 and Goal #157 can close with no additional implementation slice.
 
 ## Current gaps
 
-- Deterministic template/structure/size enforcement is specified but is not yet integrated into normal repository validation.
-- The Goal #157 transition allowance remains until the enforcement follow-up is accepted.
-- Goal #157 is therefore not complete solely from the documentation migration.
+No known documentation-model or workflow-execution gap remains under Goal #157.
 
-No product/runtime gap is inferred from this documentation work.
+No product/runtime gap is inferred from completion of this non-product Goal.
 
 ## Next action
 
-After #160 is accepted into `development`, create and execute only the minimum build-affecting enforcement issue required to integrate the deterministic documentation checker into normal repository validation, remove the Goal #157 transition allowance, and prove the Goal completion boundary.
+After merge verification closes #162 and Goal #157, select the next Goal through the accepted governance workflow. Do not infer or begin product capability, architecture, infrastructure, or unrelated implementation work from completion of the documentation-overhead Goal.
