@@ -8,6 +8,7 @@ import composable.domain.platform.core.execution.CorrelationId;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.DefineEventCommand;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
+import composable.domain.platform.event.api.EventOwnerReference;
 import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.InvalidEventDefinitionException;
@@ -19,6 +20,8 @@ class DefineEventServiceTest {
 
     private static final ExecutionContext CONTEXT =
             new ExecutionContext(new CorrelationId("test-correlation"));
+    private static final EventOwnerReference OWNER =
+            new EventOwnerReference("organizer-1");
 
     @Test
     void definesUnpublishedEventPersistsItAndReturnsResultingState() {
@@ -33,7 +36,8 @@ class DefineEventServiceTest {
                 "platform-day",
                 startsAt,
                 endsAt,
-                timezone);
+                timezone,
+                OWNER);
 
         EventView result = new DefineEventService(repository).define(CONTEXT, command);
 
@@ -44,7 +48,8 @@ class DefineEventServiceTest {
                 startsAt,
                 endsAt,
                 timezone,
-                EventPublicationState.UNPUBLISHED);
+                EventPublicationState.UNPUBLISHED,
+                OWNER);
 
         assertEquals(expected, result);
         assertEquals(
@@ -66,7 +71,8 @@ class DefineEventServiceTest {
                 "original-event",
                 startsAt,
                 endsAt,
-                timezone));
+                timezone,
+                OWNER));
 
         EventAlreadyDefinedException error = assertThrows(
                 EventAlreadyDefinedException.class,
@@ -76,7 +82,8 @@ class DefineEventServiceTest {
                         "replacement-event",
                         startsAt,
                         endsAt,
-                        timezone)));
+                        timezone,
+                        OWNER)));
 
         assertEquals("event-1", error.eventId());
         EventView persisted = new FindEventService(repository)
@@ -99,7 +106,8 @@ class DefineEventServiceTest {
                         "invalid-event",
                         Instant.parse("2026-09-01T08:00:00Z"),
                         Instant.parse("2026-09-01T10:00:00Z"),
-                        ZoneId.of("Europe/Copenhagen"))));
+                        ZoneId.of("Europe/Copenhagen"),
+                        OWNER)));
 
         assertEquals("Event definition is invalid", error.getMessage());
         assertTrue(new FindEventService(repository)
@@ -119,6 +127,7 @@ class DefineEventServiceTest {
                         "platform-day",
                         Instant.parse("2026-09-01T08:00:00Z"),
                         Instant.parse("2026-09-01T10:00:00Z"),
-                        ZoneId.of("Europe/Copenhagen"))));
+                        ZoneId.of("Europe/Copenhagen"),
+                        OWNER)));
     }
 }

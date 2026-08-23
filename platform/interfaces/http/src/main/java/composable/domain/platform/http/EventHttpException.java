@@ -58,6 +58,15 @@ final class EventHttpException extends RuntimeException {
                 null);
     }
 
+    static EventHttpException forbidden(ExecutionContext context) {
+        return new EventHttpException(
+                HttpStatus.FORBIDDEN,
+                ErrorResponse.CodeEnum.FORBIDDEN,
+                "Access is denied",
+                context,
+                null);
+    }
+
     static EventHttpException notFound(ExecutionContext context) {
         return new EventHttpException(
                 HttpStatus.NOT_FOUND,

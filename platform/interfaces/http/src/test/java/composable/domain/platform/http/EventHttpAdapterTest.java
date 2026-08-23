@@ -5,21 +5,30 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import composable.domain.platform.composition.eventmanagement.DefineOrganizerEventCommand;
+import composable.domain.platform.composition.eventmanagement.EventManagementAuthorizationDeniedException;
+import composable.domain.platform.composition.eventmanagement.OrganizerEventManagementService;
+import composable.domain.platform.composition.eventmanagement.UpdateOrganizerEventCommand;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.DefineEvent;
-import composable.domain.platform.event.api.DefineEventCommand;
 import composable.domain.platform.event.api.DiscoverEvents;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
 import composable.domain.platform.event.api.EventAlreadyPublishedException;
 import composable.domain.platform.event.api.EventNotFoundException;
+import composable.domain.platform.event.api.EventOwnerReference;
 import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.InvalidEventDefinitionException;
 import composable.domain.platform.event.api.PublishEvent;
+import composable.domain.platform.event.api.UpdateEvent;
 import composable.domain.platform.http.event.generated.model.DefineEventRequest;
 import composable.domain.platform.http.event.generated.model.ErrorResponse;
 import composable.domain.platform.http.event.generated.model.EventResponse;
+import composable.domain.platform.http.event.generated.model.UpdateEventRequest;
+import composable.domain.platform.security.api.AuthenticatedActorReference;
+import composable.domain.platform.security.api.AuthorizationDecision;
+import composable.domain.platform.security.api.AuthorizeResourceOwnership;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -33,6 +42,9 @@ import org.springframework.http.ResponseEntity;
 
 class EventHttpAdapterTest {
 
+    private static final AuthenticatedActorReference ACTOR =
+            new AuthenticatedActorReference("organizer-1");
+
     private static final EventView EVENT = new EventView(
             "event-1",
             "Platform Day",
@@ -40,30 +52,47 @@ class EventHttpAdapterTest {
             Instant.parse("2026-09-01T08:00:00.123456789Z"),
             Instant.parse("2026-09-01T10:00:00.987654321Z"),
             ZoneId.of("Europe/Copenhagen"),
-            EventPublicationState.UNPUBLISHED);
+            EventPublicationState.UNPUBLISHED,
+            new EventOwnerReference("organizer-1"));
 
     @Test
     void definesEventWithSuppliedCorrelationAndMapsTransportFields() {
         AtomicReference<ExecutionContext> capturedContext = new AtomicReference<>();
-        AtomicReference<DefineEventCommand> capturedCommand = new AtomicReference<>();
+        AtomicReference<DefineOrganizerEventCommand> capturedCommand = new AtomicReference<>();
 
         DefineEvent defineEvent = (context, command) -> {
             capturedContext.set(context);
-            capturedCommand.set(command);
+            capturedCommand.set(new DefineOrganizerEventCommand(
+                    command.eventId(),
+                    command.name(),
+                    command.slug(),
+                    command.startsAt(),
+                    command.endsAt(),
+                    command.timezone()));
             return EVENT;
         };
 
-        EventHttpAdapter adapter =
-                adapter(defineEvent, missingFindEvent());
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                defineEvent,
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                missingFindEvent(),
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                missingFindEvent(),
+                emptyDiscoverEvents(),
+                () -> ACTOR);
 
         ResponseEntity<EventResponse> response =
-                adapter.defineEvent(request(), "corr-supplied");
+                adapter.defineEvent(defineRequest(), "corr-supplied");
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals("corr-supplied", response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
         assertEquals("corr-supplied", capturedContext.get().correlationId().value());
 
-        DefineEventCommand command = capturedCommand.get();
+        DefineOrganizerEventCommand command = capturedCommand.get();
         assertEquals("event-1", command.eventId());
         assertEquals("Platform Day", command.name());
         assertEquals("platform-day", command.slug());
@@ -83,8 +112,21 @@ class EventHttpAdapterTest {
             return EVENT;
         };
 
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                defineEvent,
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                missingFindEvent(),
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                missingFindEvent(),
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
         ResponseEntity<EventResponse> response =
-                adapter(defineEvent, missingFindEvent()).defineEvent(request(), null);
+                adapter.defineEvent(defineRequest(), null);
 
         String responseCorrelation =
                 response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME);
@@ -100,10 +142,22 @@ class EventHttpAdapterTest {
             throw new InvalidEventDefinitionException();
         };
 
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                defineEvent,
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                missingFindEvent(),
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                missingFindEvent(),
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> adapter(defineEvent, missingFindEvent())
-                        .defineEvent(request(), "corr-invalid"));
+                () -> adapter.defineEvent(defineRequest(), "corr-invalid"));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.status());
         assertEquals(ErrorResponse.CodeEnum.INVALID_REQUEST, exception.code());
@@ -116,10 +170,22 @@ class EventHttpAdapterTest {
             throw new EventAlreadyDefinedException(command.eventId());
         };
 
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                defineEvent,
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                missingFindEvent(),
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                missingFindEvent(),
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> adapter(defineEvent, missingFindEvent())
-                        .defineEvent(request(), "corr-duplicate"));
+                () -> adapter.defineEvent(defineRequest(), "corr-duplicate"));
 
         assertEquals(HttpStatus.CONFLICT, exception.status());
         assertEquals(ErrorResponse.CodeEnum.EVENT_ALREADY_DEFINED, exception.code());
@@ -131,32 +197,178 @@ class EventHttpAdapterTest {
             throw new AssertionError("Event use case must not be called");
         };
 
-        DefineEventRequest request = request();
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                defineEvent,
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                missingFindEvent(),
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                missingFindEvent(),
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        DefineEventRequest request = defineRequest();
         request.setTimezone("not/a-zone");
 
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> adapter(defineEvent, missingFindEvent())
-                        .defineEvent(request, "corr-timezone"));
+                () -> adapter.defineEvent(request, "corr-timezone"));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.status());
         assertEquals(ErrorResponse.CodeEnum.INVALID_REQUEST, exception.code());
     }
 
     @Test
-    void mapsUnexpectedEventFailureToInternalServerErrorWithoutExposingIt() {
+    void mapsUnexpectedDefineFailureToInternalServerErrorWithoutExposingIt() {
         DefineEvent defineEvent = (context, command) -> {
             throw new IllegalStateException("database-specific detail");
         };
 
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                defineEvent,
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                missingFindEvent(),
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                missingFindEvent(),
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> adapter(defineEvent, missingFindEvent())
-                        .defineEvent(request(), "corr-internal"));
+                () -> adapter.defineEvent(defineRequest(), "corr-internal"));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.status());
         assertEquals(ErrorResponse.CodeEnum.INTERNAL_ERROR, exception.code());
         assertEquals("Internal server error", exception.getMessage());
+    }
+
+    @Test
+    void updatesEventWhenAuthorizedAndReturnsUpdatedEvent() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+        UpdateEvent updateEvent = (context, command) -> new EventView(
+                command.eventId(),
+                command.name(),
+                command.slug(),
+                command.startsAt(),
+                command.endsAt(),
+                command.timezone(),
+                EventPublicationState.UNPUBLISHED,
+                EVENT.owner());
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                updateEvent,
+                unusedPublishEvent(),
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        ResponseEntity<EventResponse> response =
+                adapter.updateEvent("event-1", updateRequest(), "corr-update");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("corr-update", response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
+        assertEquals("Updated Platform Day", response.getBody().getName());
+    }
+
+    @Test
+    void mapsUnauthorizedUpdateToForbidden() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                findEvent,
+                deniedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.updateEvent("event-1", updateRequest(), "corr-forbidden"));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.FORBIDDEN, exception.code());
+    }
+
+    @Test
+    void mapsUnknownEventUpdateToNotFound() {
+        FindEvent findEvent = (context, eventId) -> Optional.empty();
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.updateEvent("event-missing", updateRequest(), "corr-not-found"));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.EVENT_NOT_FOUND, exception.code());
+    }
+
+    @Test
+    void mapsPublishedEventUpdateToConflict() {
+        EventView published = new EventView(
+                "event-1",
+                "Platform Day",
+                "platform-day",
+                Instant.parse("2026-09-01T08:00:00Z"),
+                Instant.parse("2026-09-01T10:00:00Z"),
+                ZoneId.of("Europe/Copenhagen"),
+                EventPublicationState.PUBLISHED,
+                new EventOwnerReference("organizer-1"));
+
+        FindEvent findEvent = (context, eventId) -> Optional.of(published);
+        UpdateEvent updateEvent = (context, command) -> {
+            throw new EventAlreadyPublishedException(command.eventId());
+        };
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                updateEvent,
+                unusedPublishEvent(),
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.updateEvent("event-1", updateRequest(), "corr-conflict"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.EVENT_ALREADY_PUBLISHED, exception.code());
     }
 
     @Test
@@ -168,12 +380,13 @@ class EventHttpAdapterTest {
             return List.of(EVENT);
         };
 
-        ResponseEntity<List<EventResponse>> response = new EventHttpAdapter(
-                        unusedDefineEvent(),
-                        missingFindEvent(),
-                        unusedPublishEvent(),
-                        discoverEvents)
-                .discoverEvents("corr-discover");
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                dummyOrganizerService(),
+                missingFindEvent(),
+                discoverEvents,
+                () -> ACTOR);
+
+        ResponseEntity<List<EventResponse>> response = adapter.discoverEvents("corr-discover");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("corr-discover", response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
@@ -185,12 +398,13 @@ class EventHttpAdapterTest {
 
     @Test
     void returnsEmptyDiscoveryAsSuccessfulEmptyArrayRepresentation() {
-        ResponseEntity<List<EventResponse>> response = new EventHttpAdapter(
-                        unusedDefineEvent(),
-                        missingFindEvent(),
-                        unusedPublishEvent(),
-                        context -> List.of())
-                .discoverEvents("corr-empty");
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                dummyOrganizerService(),
+                missingFindEvent(),
+                context -> List.of(),
+                () -> ACTOR);
+
+        ResponseEntity<List<EventResponse>> response = adapter.discoverEvents("corr-empty");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(List.of(), response.getBody());
@@ -203,14 +417,15 @@ class EventHttpAdapterTest {
             throw new IllegalStateException("database-specific detail");
         };
 
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                dummyOrganizerService(),
+                missingFindEvent(),
+                discoverEvents,
+                () -> ACTOR);
+
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> new EventHttpAdapter(
-                                unusedDefineEvent(),
-                                missingFindEvent(),
-                                unusedPublishEvent(),
-                                discoverEvents)
-                        .discoverEvents("corr-discovery-internal"));
+                () -> adapter.discoverEvents("corr-discovery-internal"));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.status());
         assertEquals(ErrorResponse.CodeEnum.INTERNAL_ERROR, exception.code());
@@ -218,43 +433,74 @@ class EventHttpAdapterTest {
     }
 
     @Test
-    void publishesEventThroughEventCapabilityAndPreservesCorrelation() {
-        AtomicReference<ExecutionContext> capturedContext = new AtomicReference<>();
-        AtomicReference<String> capturedEventId = new AtomicReference<>();
+    void publishesEventThroughOrganizerManagementWhenAuthorized() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+        PublishEvent publishEvent = (context, eventId) -> EVENT;
 
-        PublishEvent publishEvent = (context, eventId) -> {
-            capturedContext.set(context);
-            capturedEventId.set(eventId);
-            return EVENT;
-        };
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                publishEvent,
+                findEvent,
+                authorizedOwnership());
 
-        ResponseEntity<Void> response = new EventHttpAdapter(
-                        unusedDefineEvent(),
-                        missingFindEvent(),
-                        publishEvent,
-                        emptyDiscoverEvents())
-                .publishEvent("event-1", "corr-publish");
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        ResponseEntity<Void> response = adapter.publishEvent("event-1", "corr-publish");
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         assertEquals("corr-publish", response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
-        assertEquals("corr-publish", capturedContext.get().correlationId().value());
-        assertEquals("event-1", capturedEventId.get());
+    }
+
+    @Test
+    void mapsUnauthorizedPublishToForbidden() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                findEvent,
+                deniedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.publishEvent("event-1", "corr-forbidden-pub"));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.FORBIDDEN, exception.code());
     }
 
     @Test
     void mapsUnknownPublicationTargetToNotFound() {
-        PublishEvent publishEvent = (context, eventId) -> {
-            throw new EventNotFoundException(eventId);
-        };
+        FindEvent findEvent = (context, eventId) -> Optional.empty();
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
 
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> new EventHttpAdapter(
-                                unusedDefineEvent(),
-                                missingFindEvent(),
-                                publishEvent,
-                                emptyDiscoverEvents())
-                        .publishEvent("missing-event", "corr-publish-missing"));
+                () -> adapter.publishEvent("missing-event", "corr-publish-missing"));
 
         assertEquals(HttpStatus.NOT_FOUND, exception.status());
         assertEquals(ErrorResponse.CodeEnum.EVENT_NOT_FOUND, exception.code());
@@ -262,19 +508,38 @@ class EventHttpAdapterTest {
     }
 
     @Test
-    void mapsAlreadyPublishedEventToConflict() {
+    void mapsAlreadyPublishedPublicationToConflict() {
+        EventView published = new EventView(
+                "event-1",
+                "Platform Day",
+                "platform-day",
+                Instant.parse("2026-09-01T08:00:00Z"),
+                Instant.parse("2026-09-01T10:00:00Z"),
+                ZoneId.of("Europe/Copenhagen"),
+                EventPublicationState.PUBLISHED,
+                new EventOwnerReference("organizer-1"));
+
+        FindEvent findEvent = (context, eventId) -> Optional.of(published);
         PublishEvent publishEvent = (context, eventId) -> {
             throw new EventAlreadyPublishedException(eventId);
         };
 
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                publishEvent,
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> new EventHttpAdapter(
-                                unusedDefineEvent(),
-                                missingFindEvent(),
-                                publishEvent,
-                                emptyDiscoverEvents())
-                        .publishEvent("event-1", "corr-already-published"));
+                () -> adapter.publishEvent("event-1", "corr-already-published"));
 
         assertEquals(HttpStatus.CONFLICT, exception.status());
         assertEquals(ErrorResponse.CodeEnum.EVENT_ALREADY_PUBLISHED, exception.code());
@@ -283,18 +548,27 @@ class EventHttpAdapterTest {
 
     @Test
     void mapsUnexpectedPublicationFailureToInternalServerError() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
         PublishEvent publishEvent = (context, eventId) -> {
             throw new IllegalStateException("database-specific detail");
         };
 
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                publishEvent,
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> new EventHttpAdapter(
-                                unusedDefineEvent(),
-                                missingFindEvent(),
-                                publishEvent,
-                                emptyDiscoverEvents())
-                        .publishEvent("event-1", "corr-publish-internal"));
+                () -> adapter.publishEvent("event-1", "corr-publish-internal"));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.status());
         assertEquals(ErrorResponse.CodeEnum.INTERNAL_ERROR, exception.code());
@@ -312,9 +586,14 @@ class EventHttpAdapterTest {
             return Optional.of(EVENT);
         };
 
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                dummyOrganizerService(),
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
         ResponseEntity<EventResponse> response =
-                adapter(unusedDefineEvent(), findEvent)
-                        .findEventById("event-1", "corr-find");
+                adapter.findEventById("event-1", "corr-find");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("corr-find", response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
@@ -327,17 +606,43 @@ class EventHttpAdapterTest {
     void mapsUnknownEventToNotFound() {
         FindEvent findEvent = (context, eventId) -> Optional.empty();
 
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                dummyOrganizerService(),
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
         EventHttpException exception = assertThrows(
                 EventHttpException.class,
-                () -> adapter(unusedDefineEvent(), findEvent)
-                        .findEventById("missing-event", "corr-missing"));
+                () -> adapter.findEventById("missing-event", "corr-missing"));
 
         assertEquals(HttpStatus.NOT_FOUND, exception.status());
         assertEquals(ErrorResponse.CodeEnum.EVENT_NOT_FOUND, exception.code());
         assertEquals("corr-missing", exception.context().correlationId().value());
     }
 
-    private static DefineEventRequest request() {
+    @Test
+    void mapsUnexpectedFindEventByIdFailureToInternalServerError() {
+        FindEvent findEvent = (context, eventId) -> {
+            throw new IllegalStateException("database-specific detail");
+        };
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                dummyOrganizerService(),
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.findEventById("event-1", "corr-find-internal"));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.INTERNAL_ERROR, exception.code());
+        assertEquals("corr-find-internal", exception.context().correlationId().value());
+    }
+
+    private static DefineEventRequest defineRequest() {
         return new DefineEventRequest(
                 "event-1",
                 "Platform Day",
@@ -351,12 +656,34 @@ class EventHttpAdapterTest {
                 "Europe/Copenhagen");
     }
 
-    private static EventHttpAdapter adapter(DefineEvent defineEvent, FindEvent findEvent) {
-        return new EventHttpAdapter(
-                defineEvent,
-                findEvent,
+    private static UpdateEventRequest updateRequest() {
+        return new UpdateEventRequest(
+                "Updated Platform Day",
+                "updated-platform-day",
+                OffsetDateTime.ofInstant(
+                        Instant.parse("2026-10-01T09:00:00Z"),
+                        ZoneOffset.UTC),
+                OffsetDateTime.ofInstant(
+                        Instant.parse("2026-10-01T11:00:00Z"),
+                        ZoneOffset.UTC),
+                "Europe/Oslo");
+    }
+
+    private static OrganizerEventManagementService dummyOrganizerService() {
+        return new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
                 unusedPublishEvent(),
-                emptyDiscoverEvents());
+                missingFindEvent(),
+                authorizedOwnership());
+    }
+
+    private static AuthorizeResourceOwnership authorizedOwnership() {
+        return (actor, owner) -> AuthorizationDecision.ALLOWED;
+    }
+
+    private static AuthorizeResourceOwnership deniedOwnership() {
+        return (actor, owner) -> AuthorizationDecision.DENIED;
     }
 
     private static DefineEvent unusedDefineEvent() {
@@ -365,14 +692,20 @@ class EventHttpAdapterTest {
         };
     }
 
-    private static FindEvent missingFindEvent() {
-        return (context, eventId) -> Optional.empty();
+    private static UpdateEvent unusedUpdateEvent() {
+        return (context, command) -> {
+            throw new AssertionError("UpdateEvent must not be called");
+        };
     }
 
     private static PublishEvent unusedPublishEvent() {
         return (context, eventId) -> {
             throw new AssertionError("PublishEvent must not be called");
         };
+    }
+
+    private static FindEvent missingFindEvent() {
+        return (context, eventId) -> Optional.empty();
     }
 
     private static DiscoverEvents emptyDiscoverEvents() {

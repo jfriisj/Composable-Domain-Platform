@@ -31,7 +31,7 @@ public final class DefineEventService implements DefineEvent {
     }
 
     private static Event createEvent(DefineEventCommand command) {
-        if (command == null) {
+        if (command == null || command.owner() == null) {
             throw new InvalidEventDefinitionException();
         }
 
@@ -42,7 +42,8 @@ public final class DefineEventService implements DefineEvent {
                     command.slug(),
                     command.startsAt(),
                     command.endsAt(),
-                    command.timezone());
+                    command.timezone(),
+                    command.owner().reference());
         } catch (IllegalArgumentException | NullPointerException exception) {
             throw new InvalidEventDefinitionException();
         }

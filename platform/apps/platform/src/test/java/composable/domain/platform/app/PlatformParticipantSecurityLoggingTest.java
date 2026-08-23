@@ -77,6 +77,7 @@ class PlatformParticipantSecurityLoggingTest {
 
             HttpRequest define = HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", authorizationA)
                     .POST(HttpRequest.BodyPublishers.ofString(defineBody))
                     .build();
             assertEquals(

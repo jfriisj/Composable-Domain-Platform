@@ -35,6 +35,23 @@ class EventHttpErrorHandlerTest {
     }
 
     @Test
+    void rendersForbiddenFailureWithItsCorrelationAndContractError() {
+        ExecutionContext context =
+                new ExecutionContext(new CorrelationId("corr-forbidden"));
+
+        ResponseEntity<ErrorResponse> response =
+                handler.handleEventFailure(EventHttpException.forbidden(context));
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertEquals("corr-forbidden", correlation(response));
+
+        ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals(ErrorResponse.CodeEnum.FORBIDDEN, body.getCode());
+        assertEquals("Access is denied", body.getMessage());
+    }
+
+    @Test
     void rendersInvalidTransportFailureWithSuppliedCorrelation() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpCorrelation.HEADER_NAME, "corr-invalid");

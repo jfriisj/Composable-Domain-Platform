@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: >
     Version 1 authoritative HTTP source contract for Event definition,
-    retrieval, publication, and published-Event discovery.
+    retrieval, publication, modification, and published-Event discovery.
 servers:
   - url: /
 tags:
@@ -44,6 +44,8 @@ paths:
         - Event
       operationId: defineEvent
       summary: Define an Event
+      security:
+        - PlatformActorBasicAuth: []
       parameters:
         - $ref: '#/components/parameters/CorrelationId'
       requestBody:
@@ -64,6 +66,15 @@ paths:
                 $ref: '#/components/schemas/EventResponse'
         '400':
           description: Structurally or domain-invalid Event definition
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication is required or credentials are invalid
           headers:
             X-Correlation-Id:
               $ref: '#/components/headers/CorrelationId'
@@ -135,12 +146,94 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Event
+      operationId: updateEvent
+      summary: Update an unpublished Event definition
+      security:
+        - PlatformActorBasicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        '200':
+          description: Event updated
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Structurally or domain-invalid Event update
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated actor is not the Event owner
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event identity is unknown
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Event is already published
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v1/events/{eventId}/publication:
     post:
       tags:
         - Event
       operationId: publishEvent
       summary: Publish an Event for participant discovery
+      security:
+        - PlatformActorBasicAuth: []
       parameters:
         - $ref: '#/components/parameters/EventId'
         - $ref: '#/components/parameters/CorrelationId'
@@ -152,6 +245,24 @@ paths:
               $ref: '#/components/headers/CorrelationId'
         '400':
           description: Structurally invalid Event identity
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated actor is not the Event owner
           headers:
             X-Correlation-Id:
               $ref: '#/components/headers/CorrelationId'
@@ -187,6 +298,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
+  securitySchemes:
+    PlatformActorBasicAuth:
+      type: http
+      scheme: basic
   parameters:
     CorrelationId:
       name: X-Correlation-Id
@@ -246,6 +361,31 @@ components:
         timezone:
           type: string
           minLength: 1
+    UpdateEventRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - slug
+        - startsAt
+        - endsAt
+        - timezone
+      properties:
+        name:
+          type: string
+          minLength: 1
+        slug:
+          type: string
+          minLength: 1
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          minLength: 1
     EventResponse:
       type: object
       additionalProperties: false
@@ -286,6 +426,8 @@ components:
           type: string
           enum:
             - invalid_request
+            - authentication_required
+            - forbidden
             - event_not_found
             - event_already_defined
             - event_already_published

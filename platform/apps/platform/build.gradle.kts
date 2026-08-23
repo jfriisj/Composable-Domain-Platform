@@ -28,12 +28,13 @@ openApiApplicationContract {
             "defineEvent",
             "findEventById",
             "publishEvent",
+            "updateEvent",
             "createEventRegistration",
             "findEventRegistrationById",
             "cancelEventRegistration",
         )
     )
-    requiredSecuritySchemes.set(setOf("ParticipantBasicAuth"))
+    requiredSecuritySchemes.set(setOf("ParticipantBasicAuth", "PlatformActorBasicAuth"))
 }
 
 dependencies {
@@ -43,6 +44,7 @@ dependencies {
     implementation(project(":registration-impl"))
     implementation(project(":security-api"))
     implementation(project(":security-impl"))
+    implementation(project(":event-management-composition"))
     implementation(project(":event-registration-composition"))
     implementation(project(":http-interface"))
     implementation(project(":event-registration-http-interface"))

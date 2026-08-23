@@ -3,6 +3,7 @@ package composable.domain.platform.event.domain;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Objects;
+import java.util.Optional;
 
 public record Event(
         String id,
@@ -11,7 +12,8 @@ public record Event(
         Instant startsAt,
         Instant endsAt,
         ZoneId timezone,
-        PublicationState publicationState) {
+        PublicationState publicationState,
+        Optional<String> owner) {
 
     public Event {
         id = requireText(id, "id");
@@ -21,6 +23,11 @@ public record Event(
         Objects.requireNonNull(endsAt, "endsAt must not be null");
         Objects.requireNonNull(timezone, "timezone must not be null");
         Objects.requireNonNull(publicationState, "publicationState must not be null");
+        Objects.requireNonNull(owner, "owner must not be null");
+
+        if (owner.isPresent() && owner.get().isBlank()) {
+            throw new IllegalArgumentException("owner must not be blank");
+        }
 
         if (!endsAt.isAfter(startsAt)) {
             throw new IllegalArgumentException("endsAt must be after startsAt");
@@ -33,7 +40,8 @@ public record Event(
             String slug,
             Instant startsAt,
             Instant endsAt,
-            ZoneId timezone) {
+            ZoneId timezone,
+            String owner) {
         this(
                 id,
                 name,
@@ -41,7 +49,8 @@ public record Event(
                 startsAt,
                 endsAt,
                 timezone,
-                PublicationState.UNPUBLISHED);
+                PublicationState.UNPUBLISHED,
+                Optional.of(requireText(owner, "owner")));
     }
 
     public Event publish() {
@@ -56,7 +65,29 @@ public record Event(
                 startsAt,
                 endsAt,
                 timezone,
-                PublicationState.PUBLISHED);
+                PublicationState.PUBLISHED,
+                owner);
+    }
+
+    public Event updateDefinition(
+            String newName,
+            String newSlug,
+            Instant newStartsAt,
+            Instant newEndsAt,
+            ZoneId newTimezone) {
+        if (publicationState == PublicationState.PUBLISHED) {
+            throw new IllegalStateException("Event is already published");
+        }
+
+        return new Event(
+                id,
+                newName,
+                newSlug,
+                newStartsAt,
+                newEndsAt,
+                newTimezone,
+                publicationState,
+                owner);
     }
 
     private static String requireText(String value, String field) {

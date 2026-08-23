@@ -1,5 +1,6 @@
 package composable.domain.platform.event.application;
 
+import composable.domain.platform.event.api.EventOwnerReference;
 import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.domain.Event;
@@ -20,6 +21,7 @@ final class EventViews {
                 switch (event.publicationState()) {
                     case UNPUBLISHED -> EventPublicationState.UNPUBLISHED;
                     case PUBLISHED -> EventPublicationState.PUBLISHED;
-                });
+                },
+                event.owner().map(EventOwnerReference::new));
     }
 }

@@ -31,7 +31,8 @@ class FindEventServiceTest {
                 "platform-day",
                 startsAt,
                 endsAt,
-                timezone));
+                timezone,
+                "organizer-1"));
 
         Optional<EventView> result =
                 new FindEventService(repository).findById(CONTEXT, "event-1");
@@ -44,7 +45,8 @@ class FindEventServiceTest {
                         startsAt,
                         endsAt,
                         timezone,
-                        EventPublicationState.UNPUBLISHED)),
+                        EventPublicationState.UNPUBLISHED,
+                        new composable.domain.platform.event.api.EventOwnerReference("organizer-1"))),
                 result);
     }
 
@@ -57,7 +59,8 @@ class FindEventServiceTest {
                 "published-event",
                 Instant.parse("2026-09-01T08:00:00Z"),
                 Instant.parse("2026-09-01T10:00:00Z"),
-                ZoneId.of("Europe/Copenhagen"));
+                ZoneId.of("Europe/Copenhagen"),
+                "organizer-1");
         repository.addIfAbsent(event);
         repository.updatePublicationState(event.publish(), event.publicationState());
 

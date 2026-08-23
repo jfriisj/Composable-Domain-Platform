@@ -1,17 +1,19 @@
 package composable.domain.platform.event.architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
-
 class EventArchitectureTest {
 
     private static final String EVENT_ROOT = "composable.domain.platform.event";
     private static final String REGISTRATION_ROOT = "composable.domain.platform.registration";
+    private static final String SECURITY_ROOT = "composable.domain.platform.security";
+    private static final String COMPOSITION_ROOT = "composable.domain.platform.composition";
     private static final String CORE_EXECUTION_PACKAGE =
             "composable.domain.platform.core.execution..";
     private static final String APPLICATION_PACKAGE = EVENT_ROOT + ".application..";
@@ -89,6 +91,16 @@ class EventArchitectureTest {
         noClasses()
                 .that().resideInAPackage(EVENT_ROOT + "..")
                 .should().dependOnClassesThat().resideInAPackage(REGISTRATION_ROOT + "..")
+                .check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void event_production_must_not_depend_on_security_or_compositions() {
+        noClasses()
+                .that().resideInAPackage(EVENT_ROOT + "..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        SECURITY_ROOT + "..",
+                        COMPOSITION_ROOT + "..")
                 .check(PRODUCTION_CLASSES);
     }
 }

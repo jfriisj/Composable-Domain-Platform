@@ -28,6 +28,10 @@ project(":security-impl").projectDir = file("platform/modules/security/impl")
 include(":event-registration-composition")
 project(":event-registration-composition").projectDir = file("platform/compositions/event-registration")
 
+include(":event-management-composition")
+project(":event-management-composition").projectDir = file("platform/compositions/event-management")
+
+
 include(":http-interface")
 project(":http-interface").projectDir = file("platform/interfaces/http")
 

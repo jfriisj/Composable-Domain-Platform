@@ -25,6 +25,7 @@ openApiApplicationContract {
         setOf(
             "discoverEvents",
             "defineEvent",
+            "updateEvent",
             "findEventById",
             "publishEvent",
         )
@@ -36,6 +37,7 @@ openApiApplicationContract {
             "cancelEventRegistration",
         )
     )
+    requiredSecuritySchemes.set(setOf("PlatformActorBasicAuth"))
     forbiddenSecuritySchemes.set(setOf("ParticipantBasicAuth"))
     forbiddenComponentNames.set(
         setOf(
@@ -52,11 +54,15 @@ openApiApplicationContract {
 dependencies {
     implementation(project(":event-api"))
     implementation(project(":event-impl"))
+    implementation(project(":event-management-composition"))
+    implementation(project(":security-api"))
+    implementation(project(":security-impl"))
     implementation(project(":http-interface"))
     implementation(platform(libs.spring.boot.dependencies))
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)
     implementation(libs.postgresql)
+    implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.web)
 
@@ -69,8 +75,6 @@ dependencies {
 val forbiddenProjectPaths = setOf(
     ":registration-api",
     ":registration-impl",
-    ":security-api",
-    ":security-impl",
     ":event-registration-composition",
     ":event-registration-http-interface",
 )

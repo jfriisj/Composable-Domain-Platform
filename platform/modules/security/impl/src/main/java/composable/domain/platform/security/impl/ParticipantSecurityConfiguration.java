@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -35,6 +36,10 @@ public class ParticipantSecurityConfiguration {
             "/api/v1/event-registrations";
     private static final String EVENT_REGISTRATION_ITEMS =
             "/api/v1/event-registrations/**";
+    private static final String EVENT_COLLECTION =
+            "/api/v1/events";
+    private static final String EVENT_ITEMS =
+            "/api/v1/events/**";
 
     @Bean
     PasswordEncoder participantPasswordEncoder() {
@@ -123,13 +128,27 @@ public class ParticipantSecurityConfiguration {
             throws Exception {
         http.securityMatcher(
                         EVENT_REGISTRATION_COLLECTION,
-                        EVENT_REGISTRATION_ITEMS)
+                        EVENT_REGISTRATION_ITEMS,
+                        EVENT_COLLECTION,
+                        EVENT_ITEMS)
                 .authenticationManager(participantAuthenticationManager)
                 .csrf(AbstractHttpConfigurer::disable)
                 .requestCache(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.GET, EVENT_COLLECTION, "/api/v1/events/*")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.POST, EVENT_COLLECTION)
+                        .authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/events/*")
+                        .authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/*/publication")
+                        .authenticated()
+                        .requestMatchers(
+                                EVENT_REGISTRATION_COLLECTION,
+                                EVENT_REGISTRATION_ITEMS)
+                        .authenticated()
                         .anyRequest()
                         .authenticated())
                 .httpBasic(basic -> basic.authenticationEntryPoint(

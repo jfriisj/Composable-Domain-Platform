@@ -26,6 +26,8 @@ class PlatformArchitectureTest {
             ROOT + ".registration.persistence..";
     private static final String EVENT_REGISTRATION_COMPOSITION_PACKAGE =
             ROOT + ".composition.eventregistration..";
+    private static final String EVENT_MANAGEMENT_COMPOSITION_PACKAGE =
+            ROOT + ".composition.eventmanagement..";
     private static final String SECURITY_API_PACKAGE = ROOT + ".security.api..";
     private static final String SECURITY_IMPL_PACKAGE = ROOT + ".security.impl..";
     private static final String HTTP_PACKAGE = ROOT + ".http..";
@@ -102,6 +104,7 @@ class PlatformArchitectureTest {
                         REGISTRATION_DOMAIN_PACKAGE,
                         REGISTRATION_PERSISTENCE_PACKAGE,
                         EVENT_REGISTRATION_COMPOSITION_PACKAGE,
+                        EVENT_MANAGEMENT_COMPOSITION_PACKAGE,
                         HTTP_PACKAGE,
                         APP_PACKAGE)
                 .should().dependOnClassesThat().resideInAPackage(
@@ -136,6 +139,7 @@ class PlatformArchitectureTest {
                         REGISTRATION_APPLICATION_PACKAGE,
                         REGISTRATION_PERSISTENCE_PACKAGE,
                         EVENT_REGISTRATION_COMPOSITION_PACKAGE,
+                        EVENT_MANAGEMENT_COMPOSITION_PACKAGE,
                         SECURITY_API_PACKAGE,
                         SECURITY_IMPL_PACKAGE,
                         HTTP_PACKAGE,
@@ -163,6 +167,7 @@ class PlatformArchitectureTest {
                 .that().resideInAnyPackage(
                         HTTP_PACKAGE,
                         EVENT_REGISTRATION_COMPOSITION_PACKAGE,
+                        EVENT_MANAGEMENT_COMPOSITION_PACKAGE,
                         EVENT_API_PACKAGE,
                         EVENT_APPLICATION_PACKAGE,
                         EVENT_DOMAIN_PACKAGE,
