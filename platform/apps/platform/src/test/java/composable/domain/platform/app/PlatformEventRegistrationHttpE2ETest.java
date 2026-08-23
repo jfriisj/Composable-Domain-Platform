@@ -345,7 +345,7 @@ class PlatformEventRegistrationHttpE2ETest {
     }
 
     @Test
-    void eventDefineAndRetrieveRemainPublicOutsideParticipantSecurityChain()
+    void eventDefineRequiresAuthenticationWhileRetrieveRemainsAnonymous()
             throws Exception {
         String eventId = "registration-event-public-security-isolation";
         String body = "{"
@@ -357,10 +357,20 @@ class PlatformEventRegistrationHttpE2ETest {
                 + "\"timezone\":\"Europe/Copenhagen\""
                 + "}";
 
+        HttpRequest defineUnauthenticated = HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"))
+                .header("Content-Type", "application/json")
+                .header(CORRELATION_HEADER, "corr-event-define-unauthenticated")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> definedUnauthenticated =
+                HTTP.send(defineUnauthenticated, HttpResponse.BodyHandlers.ofString());
+        assertEquals(401, definedUnauthenticated.statusCode());
+
         HttpRequest define = HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"))
                 .header("Content-Type", "application/json")
-                .header(CORRELATION_HEADER, "corr-public-event-define")
-                .header("Authorization", basicAuthorization(PRINCIPAL_A, "wrong-secret"))
+                .header(CORRELATION_HEADER, "corr-event-define-authenticated")
+                .header("Authorization", basicAuthorization(PRINCIPAL_A, PASSWORD_A))
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
@@ -370,8 +380,7 @@ class PlatformEventRegistrationHttpE2ETest {
 
         HttpRequest retrieve = HttpRequest.newBuilder(
                         baseUri.resolve("/api/v1/events/" + eventId))
-                .header(CORRELATION_HEADER, "corr-public-event-retrieve")
-                .header("Authorization", basicAuthorization(PRINCIPAL_A, "wrong-secret"))
+                .header(CORRELATION_HEADER, "corr-anonymous-event-retrieve")
                 .GET()
                 .build();
 
@@ -570,6 +579,7 @@ class PlatformEventRegistrationHttpE2ETest {
         HttpRequest request = HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"))
                 .header("Content-Type", "application/json")
                 .header(CORRELATION_HEADER, "corr-define-" + eventId)
+                .header("Authorization", basicAuthorization(PRINCIPAL_A, PASSWORD_A))
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
@@ -609,7 +619,8 @@ class PlatformEventRegistrationHttpE2ETest {
     private static HttpResponse<String> publishEvent(String eventId, String correlationId)
             throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(
-                baseUri.resolve("/api/v1/events/" + eventId + "/publication"));
+                baseUri.resolve("/api/v1/events/" + eventId + "/publication"))
+                .header("Authorization", basicAuthorization(PRINCIPAL_A, PASSWORD_A));
 
         if (correlationId != null) {
             builder.header(CORRELATION_HEADER, correlationId);

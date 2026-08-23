@@ -33,6 +33,17 @@ final class InMemoryEventRepository implements EventRepository {
     }
 
     @Override
+    public boolean updateDefinition(Event event) {
+        Event current = events.get(event.id());
+        if (current == null || current.publicationState() != PublicationState.UNPUBLISHED) {
+            return false;
+        }
+
+        events.put(event.id(), event);
+        return true;
+    }
+
+    @Override
     public Collection<Event> findPublished() {
         return events.values().stream()
                 .filter(event -> event.publicationState() == PublicationState.PUBLISHED)

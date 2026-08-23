@@ -50,7 +50,9 @@ class PlatformRuntimeConfigurationTest {
                 "--platform.database.password=" + POSTGRESQL.getPassword())) {
             assertNotNull(context.getBean(EventHttpAdapter.class));
 
-            DefineEvent defineEvent = context.getBean(DefineEvent.class);
+            assertNotNull(context.getBean(composable.domain.platform.event.api.UpdateEvent.class));
+            assertNotNull(context.getBean(composable.domain.platform.composition.eventmanagement.OrganizerEventManagementService.class));
+                        DefineEvent defineEvent = context.getBean(DefineEvent.class);
             FindEvent findEvent = context.getBean(FindEvent.class);
             PublishEvent publishEvent = context.getBean(PublishEvent.class);
             DiscoverEvents discoverEvents = context.getBean(DiscoverEvents.class);
@@ -63,7 +65,8 @@ class PlatformRuntimeConfigurationTest {
                     "runtime-platform-day",
                     Instant.parse("2026-11-01T08:00:00.123456789Z"),
                     Instant.parse("2026-11-01T10:00:00.987654321Z"),
-                    ZoneId.of("Europe/Copenhagen"));
+                    ZoneId.of("Europe/Copenhagen"),
+                    new composable.domain.platform.event.api.EventOwnerReference("runtime-owner"));
 
             EventView defined = defineEvent.define(executionContext, command);
             assertEquals(EventPublicationState.UNPUBLISHED, defined.publicationState());

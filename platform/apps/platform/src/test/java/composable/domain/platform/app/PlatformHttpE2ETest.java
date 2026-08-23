@@ -161,9 +161,13 @@ application = new SpringApplication(PlatformApplication.class).run(
         assertJsonString(response.body(), "message", "Request is invalid");
     }
 
+    private static final String PRINCIPAL = "opaque-platform-http-e2e";
+    private static final String PASSWORD = "unused-test-secret";
+
     private static HttpResponse<String> post(String body, String correlationId) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"))
-                .header("Content-Type", "application/json");
+                .header("Content-Type", "application/json")
+                .header("Authorization", basicAuth(PRINCIPAL, PASSWORD));
 
         if (correlationId != null) {
             builder.header(CORRELATION_HEADER, correlationId);
@@ -172,6 +176,11 @@ application = new SpringApplication(PlatformApplication.class).run(
         return HTTP.send(
                 builder.POST(HttpRequest.BodyPublishers.ofString(body)).build(),
                 HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static String basicAuth(String principal, String password) {
+        String token = principal + ":" + password;
+        return "Basic " + java.util.Base64.getEncoder().encodeToString(token.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     private static HttpResponse<String> get(String eventId, String correlationId) throws Exception {

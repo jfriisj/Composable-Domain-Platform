@@ -1,8 +1,10 @@
 package composable.domain.platform.http;
 
+import composable.domain.platform.composition.eventmanagement.DefineOrganizerEventCommand;
+import composable.domain.platform.composition.eventmanagement.EventManagementAuthorizationDeniedException;
+import composable.domain.platform.composition.eventmanagement.OrganizerEventManagementService;
+import composable.domain.platform.composition.eventmanagement.UpdateOrganizerEventCommand;
 import composable.domain.platform.core.execution.ExecutionContext;
-import composable.domain.platform.event.api.DefineEvent;
-import composable.domain.platform.event.api.DefineEventCommand;
 import composable.domain.platform.event.api.DiscoverEvents;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
 import composable.domain.platform.event.api.EventAlreadyPublishedException;
@@ -10,10 +12,12 @@ import composable.domain.platform.event.api.EventNotFoundException;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.InvalidEventDefinitionException;
-import composable.domain.platform.event.api.PublishEvent;
 import composable.domain.platform.http.event.generated.api.EventApi;
 import composable.domain.platform.http.event.generated.model.DefineEventRequest;
 import composable.domain.platform.http.event.generated.model.EventResponse;
+import composable.domain.platform.http.event.generated.model.UpdateEventRequest;
+import composable.domain.platform.security.api.AuthenticatedActorProvider;
+import composable.domain.platform.security.api.AuthenticatedActorReference;
 import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -26,20 +30,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class EventHttpAdapter implements EventApi {
 
-    private final DefineEvent defineEvent;
+    private final OrganizerEventManagementService organizerEventManagement;
     private final FindEvent findEvent;
-    private final PublishEvent publishEvent;
     private final DiscoverEvents discoverEvents;
+    private final AuthenticatedActorProvider authenticatedActorProvider;
 
     public EventHttpAdapter(
-            DefineEvent defineEvent,
+            OrganizerEventManagementService organizerEventManagement,
             FindEvent findEvent,
-            PublishEvent publishEvent,
-            DiscoverEvents discoverEvents) {
-        this.defineEvent = Objects.requireNonNull(defineEvent, "defineEvent must not be null");
+            DiscoverEvents discoverEvents,
+            AuthenticatedActorProvider authenticatedActorProvider) {
+        this.organizerEventManagement = Objects.requireNonNull(
+                organizerEventManagement,
+                "organizerEventManagement must not be null");
         this.findEvent = Objects.requireNonNull(findEvent, "findEvent must not be null");
-        this.publishEvent = Objects.requireNonNull(publishEvent, "publishEvent must not be null");
         this.discoverEvents = Objects.requireNonNull(discoverEvents, "discoverEvents must not be null");
+        this.authenticatedActorProvider = Objects.requireNonNull(
+                authenticatedActorProvider,
+                "authenticatedActorProvider must not be null");
     }
 
     @Override
@@ -48,20 +56,42 @@ public class EventHttpAdapter implements EventApi {
             String suppliedCorrelationId) {
         ExecutionContext context = HttpCorrelation.establish(suppliedCorrelationId);
 
-        DefineEventCommand command;
         try {
-            command = toCommand(request);
-        } catch (DateTimeException exception) {
-            throw EventHttpException.invalidRequest(context);
-        }
-
-        try {
-            EventView event = defineEvent.define(context, command);
+            AuthenticatedActorReference actorReference =
+                    authenticatedActorProvider.authenticatedActor();
+            DefineOrganizerEventCommand command = toDefineCommand(request);
+            EventView event = organizerEventManagement.define(context, actorReference, command);
             return response(HttpStatus.CREATED, context, toResponse(event));
-        } catch (InvalidEventDefinitionException exception) {
+        } catch (InvalidEventDefinitionException | DateTimeException exception) {
             throw EventHttpException.invalidDefinition(context);
         } catch (EventAlreadyDefinedException exception) {
             throw EventHttpException.alreadyDefined(context);
+        } catch (RuntimeException exception) {
+            throw EventHttpException.internal(context, exception);
+        }
+    }
+
+    @Override
+    public ResponseEntity<EventResponse> updateEvent(
+            String eventId,
+            UpdateEventRequest request,
+            String suppliedCorrelationId) {
+        ExecutionContext context = HttpCorrelation.establish(suppliedCorrelationId);
+
+        try {
+            AuthenticatedActorReference actorReference =
+                    authenticatedActorProvider.authenticatedActor();
+            UpdateOrganizerEventCommand command = toUpdateCommand(eventId, request);
+            EventView event = organizerEventManagement.update(context, actorReference, command);
+            return response(HttpStatus.OK, context, toResponse(event));
+        } catch (InvalidEventDefinitionException | DateTimeException exception) {
+            throw EventHttpException.invalidDefinition(context);
+        } catch (EventNotFoundException exception) {
+            throw EventHttpException.notFound(context);
+        } catch (EventManagementAuthorizationDeniedException exception) {
+            throw EventHttpException.forbidden(context);
+        } catch (EventAlreadyPublishedException exception) {
+            throw EventHttpException.alreadyPublished(context);
         } catch (RuntimeException exception) {
             throw EventHttpException.internal(context, exception);
         }
@@ -105,12 +135,16 @@ public class EventHttpAdapter implements EventApi {
         ExecutionContext context = HttpCorrelation.establish(suppliedCorrelationId);
 
         try {
-            publishEvent.publish(context, eventId);
+            AuthenticatedActorReference actorReference =
+                    authenticatedActorProvider.authenticatedActor();
+            organizerEventManagement.publish(context, actorReference, eventId);
             return ResponseEntity.noContent()
                     .header(HttpCorrelation.HEADER_NAME, HttpCorrelation.value(context))
                     .build();
         } catch (EventNotFoundException exception) {
             throw EventHttpException.notFound(context);
+        } catch (EventManagementAuthorizationDeniedException exception) {
+            throw EventHttpException.forbidden(context);
         } catch (EventAlreadyPublishedException exception) {
             throw EventHttpException.alreadyPublished(context);
         } catch (RuntimeException exception) {
@@ -118,14 +152,32 @@ public class EventHttpAdapter implements EventApi {
         }
     }
 
-    private static DefineEventCommand toCommand(DefineEventRequest request) {
-        return new DefineEventCommand(
+    private static DefineOrganizerEventCommand toDefineCommand(DefineEventRequest request) {
+        if (request == null) {
+            throw new InvalidEventDefinitionException();
+        }
+        return new DefineOrganizerEventCommand(
                 request.getEventId(),
                 request.getName(),
                 request.getSlug(),
-                request.getStartsAt().toInstant(),
-                request.getEndsAt().toInstant(),
-                ZoneId.of(request.getTimezone()));
+                request.getStartsAt() != null ? request.getStartsAt().toInstant() : null,
+                request.getEndsAt() != null ? request.getEndsAt().toInstant() : null,
+                request.getTimezone() != null ? ZoneId.of(request.getTimezone()) : null);
+    }
+
+    private static UpdateOrganizerEventCommand toUpdateCommand(
+            String eventId,
+            UpdateEventRequest request) {
+        if (request == null) {
+            throw new InvalidEventDefinitionException();
+        }
+        return new UpdateOrganizerEventCommand(
+                eventId,
+                request.getName(),
+                request.getSlug(),
+                request.getStartsAt() != null ? request.getStartsAt().toInstant() : null,
+                request.getEndsAt() != null ? request.getEndsAt().toInstant() : null,
+                request.getTimezone() != null ? ZoneId.of(request.getTimezone()) : null);
     }
 
     private static EventResponse toResponse(EventView event) {

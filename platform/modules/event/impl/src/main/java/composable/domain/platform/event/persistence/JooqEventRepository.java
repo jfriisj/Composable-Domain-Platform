@@ -37,6 +37,8 @@ public final class JooqEventRepository implements EventRepository {
             DSL.field(DSL.name("timezone"), String.class);
     private static final Field<String> PUBLICATION_STATE =
             DSL.field(DSL.name("publication_state"), String.class);
+    private static final Field<String> OWNER_REFERENCE =
+            DSL.field(DSL.name("owner_reference"), String.class);
 
     private final DataSource dataSource;
 
@@ -59,7 +61,8 @@ public final class JooqEventRepository implements EventRepository {
                                 ENDS_AT_EPOCH_SECOND,
                                 ENDS_AT_NANO,
                                 TIMEZONE,
-                                PUBLICATION_STATE)
+                                PUBLICATION_STATE,
+                                OWNER_REFERENCE)
                         .values(
                                 event.id(),
                                 event.name(),
@@ -69,7 +72,8 @@ public final class JooqEventRepository implements EventRepository {
                                 event.endsAt().getEpochSecond(),
                                 event.endsAt().getNano(),
                                 event.timezone().getId(),
-                                toPersistenceValue(event.publicationState()))
+                                toPersistenceValue(event.publicationState()),
+                                event.owner().orElse(null))
                         .onConflict(EVENT_ID)
                         .doNothing()
                         .execute()
@@ -90,7 +94,8 @@ public final class JooqEventRepository implements EventRepository {
                         ENDS_AT_EPOCH_SECOND,
                         ENDS_AT_NANO,
                         TIMEZONE,
-                        PUBLICATION_STATE)
+                        PUBLICATION_STATE,
+                        OWNER_REFERENCE)
                 .from(EVENTS)
                 .where(EVENT_ID.eq(eventId))
                 .fetchOne();
@@ -113,6 +118,25 @@ public final class JooqEventRepository implements EventRepository {
     }
 
     @Override
+    public boolean updateDefinition(Event event) {
+        Objects.requireNonNull(event, "event must not be null");
+
+        return dsl()
+                        .update(EVENTS)
+                        .set(NAME, event.name())
+                        .set(SLUG, event.slug())
+                        .set(STARTS_AT_EPOCH_SECOND, event.startsAt().getEpochSecond())
+                        .set(STARTS_AT_NANO, event.startsAt().getNano())
+                        .set(ENDS_AT_EPOCH_SECOND, event.endsAt().getEpochSecond())
+                        .set(ENDS_AT_NANO, event.endsAt().getNano())
+                        .set(TIMEZONE, event.timezone().getId())
+                        .where(EVENT_ID.eq(event.id()))
+                        .and(PUBLICATION_STATE.eq(toPersistenceValue(PublicationState.UNPUBLISHED)))
+                        .execute()
+                == 1;
+    }
+
+    @Override
     public Collection<Event> findPublished() {
         return dsl()
                 .select(
@@ -124,10 +148,11 @@ public final class JooqEventRepository implements EventRepository {
                         ENDS_AT_EPOCH_SECOND,
                         ENDS_AT_NANO,
                         TIMEZONE,
-                        PUBLICATION_STATE)
+                        PUBLICATION_STATE,
+                        OWNER_REFERENCE)
                 .from(EVENTS)
                 .where(PUBLICATION_STATE.eq(toPersistenceValue(PublicationState.PUBLISHED)))
-                .fetch(record -> toEvent(record));
+                .fetch(JooqEventRepository::toEvent);
     }
 
     private DSLContext dsl() {
@@ -146,7 +171,8 @@ public final class JooqEventRepository implements EventRepository {
                         record.get(ENDS_AT_EPOCH_SECOND),
                         record.get(ENDS_AT_NANO)),
                 ZoneId.of(record.get(TIMEZONE)),
-                fromPersistenceValue(record.get(PUBLICATION_STATE)));
+                fromPersistenceValue(record.get(PUBLICATION_STATE)),
+                Optional.ofNullable(record.get(OWNER_REFERENCE)));
     }
 
     private static String toPersistenceValue(PublicationState publicationState) {

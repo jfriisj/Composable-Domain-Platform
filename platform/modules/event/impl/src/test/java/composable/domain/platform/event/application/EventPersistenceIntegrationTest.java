@@ -1,20 +1,28 @@
 package composable.domain.platform.event.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import composable.domain.platform.event.domain.Event;
+import composable.domain.platform.event.domain.PublicationState;
 
 import composable.domain.platform.core.execution.CorrelationId;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.DefineEventCommand;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
+import composable.domain.platform.event.api.EventAlreadyPublishedException;
+import composable.domain.platform.event.api.EventOwnerReference;
 import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
+import composable.domain.platform.event.api.UpdateEventCommand;
 import composable.domain.platform.event.persistence.JooqEventRepository;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Optional;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationVersion;
@@ -65,7 +73,7 @@ class EventPersistenceIntegrationTest {
     }
 
     @Test
-    void migratesPrePublicationEventAsUnpublished() {
+    void migratesPrePublicationEventAsUnpublishedWithoutOwner() {
         EventView migrated =
                 new FindEventService(new JooqEventRepository(dataSource))
                         .findById(CONTEXT, "pre-publication-event")
@@ -74,10 +82,11 @@ class EventPersistenceIntegrationTest {
         assertEquals(EventPublicationState.UNPUBLISHED, migrated.publicationState());
         assertEquals("Legacy Event", migrated.name());
         assertEquals("legacy-event", migrated.slug());
+        assertEquals(Optional.empty(), migrated.owner());
     }
 
     @Test
-    void persistsAndRetrievesEventAcrossFreshApplicationServices() {
+    void persistsAndRetrievesEventWithDurableOwnerAcrossFreshApplicationServices() {
         Instant startsAt = Instant.parse("2026-09-01T08:00:00.123456789Z");
         Instant endsAt = Instant.parse("2026-09-01T10:00:00.987654321Z");
         ZoneId timezone = ZoneId.of("Europe/Copenhagen");
@@ -88,7 +97,8 @@ class EventPersistenceIntegrationTest {
                 "persistent-platform-day",
                 startsAt,
                 endsAt,
-                timezone);
+                timezone,
+                new EventOwnerReference("organizer-alpha"));
 
         EventView defined =
                 new DefineEventService(new JooqEventRepository(dataSource))
@@ -107,6 +117,107 @@ class EventPersistenceIntegrationTest {
         assertEquals(command.endsAt(), retrieved.endsAt());
         assertEquals(command.timezone(), retrieved.timezone());
         assertEquals(EventPublicationState.UNPUBLISHED, retrieved.publicationState());
+        assertEquals(Optional.of(new EventOwnerReference("organizer-alpha")), retrieved.owner());
+    }
+
+    @Test
+    void updatesUnpublishedPersistedEventAndRejectsUpdateAfterPublication() {
+        Instant startsAt = Instant.parse("2026-09-01T08:00:00Z");
+        Instant endsAt = Instant.parse("2026-09-01T10:00:00Z");
+        ZoneId timezone = ZoneId.of("Europe/Copenhagen");
+
+        DefineEventCommand command = new DefineEventCommand(
+                "persistent-update-event",
+                "Initial Event",
+                "initial-event",
+                startsAt,
+                endsAt,
+                timezone,
+                new EventOwnerReference("organizer-beta"));
+
+        new DefineEventService(new JooqEventRepository(dataSource)).define(CONTEXT, command);
+
+        Instant updatedStart = Instant.parse("2026-10-01T09:00:00Z");
+        Instant updatedEnd = Instant.parse("2026-10-01T11:00:00Z");
+        ZoneId updatedTz = ZoneId.of("Europe/Stockholm");
+
+        EventView updated = new UpdateEventService(new JooqEventRepository(dataSource)).update(
+                CONTEXT,
+                new UpdateEventCommand(
+                        "persistent-update-event",
+                        "Updated Persistent Event",
+                        "updated-persistent-event",
+                        updatedStart,
+                        updatedEnd,
+                        updatedTz));
+
+        assertEquals("Updated Persistent Event", updated.name());
+        assertEquals("updated-persistent-event", updated.slug());
+        assertEquals(updatedStart, updated.startsAt());
+        assertEquals(updatedEnd, updated.endsAt());
+        assertEquals(updatedTz, updated.timezone());
+        assertEquals(EventPublicationState.UNPUBLISHED, updated.publicationState());
+        assertEquals(Optional.of(new EventOwnerReference("organizer-beta")), updated.owner());
+
+        new PublishEventService(new JooqEventRepository(dataSource))
+                .publish(CONTEXT, "persistent-update-event");
+
+        assertThrows(
+                EventAlreadyPublishedException.class,
+                () -> new UpdateEventService(new JooqEventRepository(dataSource)).update(
+                        CONTEXT,
+                        new UpdateEventCommand(
+                                "persistent-update-event",
+                                "Mutated After Published",
+                                "mutated-after-published",
+                                updatedStart,
+                                updatedEnd,
+                                updatedTz)));
+    }
+
+    @Test
+    void staleReadUpdateDefinitionFailsWhenEventIsPublishedConcurrently() {
+        JooqEventRepository repository = new JooqEventRepository(dataSource);
+        Instant startsAt = Instant.parse("2026-09-01T08:00:00Z");
+        Instant endsAt = Instant.parse("2026-09-01T10:00:00Z");
+        ZoneId timezone = ZoneId.of("Europe/Copenhagen");
+
+        DefineEventCommand command = new DefineEventCommand(
+                "persistent-stale-update",
+                "Initial Event",
+                "initial-event",
+                startsAt,
+                endsAt,
+                timezone,
+                new EventOwnerReference("organizer-stale"));
+
+        new DefineEventService(repository).define(CONTEXT, command);
+
+        Event staleUnpublished = repository.findById("persistent-stale-update").orElseThrow();
+        assertEquals(composable.domain.platform.event.domain.PublicationState.UNPUBLISHED, staleUnpublished.publicationState());
+
+        new PublishEventService(repository).publish(CONTEXT, "persistent-stale-update");
+
+        Event publishedInDb = repository.findById("persistent-stale-update").orElseThrow();
+        assertEquals(composable.domain.platform.event.domain.PublicationState.PUBLISHED, publishedInDb.publicationState());
+
+        Event staleModified = staleUnpublished.updateDefinition(
+                "Stale Overwrite Attempt",
+                "stale-overwrite",
+                startsAt.plusSeconds(3600),
+                endsAt.plusSeconds(3600),
+                ZoneId.of("Europe/Oslo"));
+
+        boolean updated = repository.updateDefinition(staleModified);
+        assertFalse(updated);
+
+        Event currentInDb = repository.findById("persistent-stale-update").orElseThrow();
+        assertEquals(composable.domain.platform.event.domain.PublicationState.PUBLISHED, currentInDb.publicationState());
+        assertEquals("Initial Event", currentInDb.name());
+        assertEquals("initial-event", currentInDb.slug());
+        assertEquals(startsAt, currentInDb.startsAt());
+        assertEquals(endsAt, currentInDb.endsAt());
+        assertEquals(timezone, currentInDb.timezone());
     }
 
     @Test
@@ -219,7 +330,8 @@ class EventPersistenceIntegrationTest {
                 "original-persistent-event",
                 startsAt,
                 endsAt,
-                timezone));
+                timezone,
+                new EventOwnerReference("organizer-alpha")));
 
         EventAlreadyDefinedException error = assertThrows(
                 EventAlreadyDefinedException.class,
@@ -230,7 +342,8 @@ class EventPersistenceIntegrationTest {
                                 "replacement-persistent-event",
                                 startsAt,
                                 endsAt,
-                                timezone)));
+                                timezone,
+                                new EventOwnerReference("organizer-alpha"))));
 
         EventView persisted =
                 new FindEventService(new JooqEventRepository(dataSource))
@@ -280,6 +393,7 @@ class EventPersistenceIntegrationTest {
                 slug,
                 Instant.parse("2026-11-01T08:00:00Z"),
                 Instant.parse("2026-11-01T10:00:00Z"),
-                ZoneId.of("Europe/Copenhagen"));
+                ZoneId.of("Europe/Copenhagen"),
+                new EventOwnerReference("organizer-default"));
     }
 }

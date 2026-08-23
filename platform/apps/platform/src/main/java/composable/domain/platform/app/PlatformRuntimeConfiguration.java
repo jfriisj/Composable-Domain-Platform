@@ -1,15 +1,18 @@
 package composable.domain.platform.app;
 
+import composable.domain.platform.composition.eventmanagement.OrganizerEventManagementService;
 import composable.domain.platform.composition.eventregistration.ParticipantEventRegistrationService;
 import composable.domain.platform.event.api.DefineEvent;
 import composable.domain.platform.event.api.DiscoverEvents;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.PublishEvent;
+import composable.domain.platform.event.api.UpdateEvent;
 import composable.domain.platform.event.application.DefineEventService;
 import composable.domain.platform.event.application.DiscoverEventsService;
 import composable.domain.platform.event.application.EventRepository;
 import composable.domain.platform.event.application.FindEventService;
 import composable.domain.platform.event.application.PublishEventService;
+import composable.domain.platform.event.application.UpdateEventService;
 import composable.domain.platform.event.persistence.JooqEventRepository;
 import composable.domain.platform.registration.api.CancelRegistration;
 import composable.domain.platform.registration.api.CreateRegistration;
@@ -86,6 +89,11 @@ class PlatformRuntimeConfiguration {
     }
 
     @Bean
+    UpdateEvent updateEvent(EventRepository repository) {
+        return new UpdateEventService(repository);
+    }
+
+    @Bean
     FindEvent findEvent(EventRepository repository) {
         return new FindEventService(repository);
     }
@@ -113,6 +121,21 @@ class PlatformRuntimeConfiguration {
     @Bean
     CancelRegistration cancelRegistration(RegistrationRepository repository) {
         return new CancelRegistrationService(repository);
+    }
+
+    @Bean
+    OrganizerEventManagementService organizerEventManagementService(
+            DefineEvent defineEvent,
+            UpdateEvent updateEvent,
+            PublishEvent publishEvent,
+            FindEvent findEvent,
+            AuthorizeResourceOwnership authorizeResourceOwnership) {
+        return new OrganizerEventManagementService(
+                defineEvent,
+                updateEvent,
+                publishEvent,
+                findEvent,
+                authorizeResourceOwnership);
     }
 
     @Bean

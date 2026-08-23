@@ -86,6 +86,7 @@ class PublishEventServiceTest {
                 "platform-day",
                 Instant.parse("2026-09-01T08:00:00Z"),
                 Instant.parse("2026-09-01T10:00:00Z"),
-                ZoneId.of("Europe/Copenhagen"));
+                ZoneId.of("Europe/Copenhagen"),
+                "organizer-1");
     }
 }

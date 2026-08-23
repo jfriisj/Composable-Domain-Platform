@@ -2,20 +2,21 @@
 
 ## Purpose
 
-Own the Event business capability for definition, durable retrieval, publication, and discovery.
+Own the Event business capability for definition, durable retrieval, modification, publication, and discovery.
 
 ## Owns
 
-- Event identity, descriptive state, schedule, and timezone.
+- Event identity, descriptive state, schedule, timezone, and opaque organizer/owner reference.
 - Invariants required for a valid Event.
+- Unpublished Event definition replacement/modification.
 - The one-way unpublished-to-published lifecycle and discovery of published Events.
 - Event-owned durable state, persistence boundary, and retrieval semantics.
 
 ## Does not own
 
+- Authentication or Authorization decision logic.
 - Registration or Event-Registration workflow.
-- Participant authentication or authorization.
-- Registration eligibility, capacity, waitlists, ticketing, payments, or notifications.
+- Participant profile, registration eligibility, capacity, waitlists, ticketing, payments, or notifications.
 - HTTP transport mapping, application runtime assembly, or persistence for another module.
 
 ## Public boundary
@@ -40,6 +41,7 @@ Event has no functional dependency on another business module and does not use a
 
 - `docs/modules.md` and ADR-0013 define the universal module invariant.
 - ADR-0005 records Event persistence rationale.
+- ADR-0017 records composition-owned delivery rationale.
 - `platform/modules/event/api/` owns concrete public Java contract truth.
 - `platform/modules/event/impl/` owns implementation, tests, and Event persistence truth.
 - Event Gradle build files own build dependency truth.
