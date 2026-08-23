@@ -39,7 +39,7 @@ No normal work is performed directly on permanent branches.
 
 Every pull request must have one coherent purpose, identify scope/architecture/module impact, name affected authorities, state deliberate exclusions, record applicable validation, avoid unrelated cleanup/speculative work, and resolve review conversations before merge.
 
-A useful idea is not accepted scope. A new capability/use case or currently excluded responsibility requires an accepted `docs/scope.md` change before implementation. Significant architecture decisions require an ADR. New technologies require a demonstrated problem and accepted requirement. Infrastructure is not introduced for hypothetical future need.
+A useful idea is not accepted scope. A new semantic capability, use case, durable responsibility, or currently excluded product responsibility requires an accepted `docs/scope.md` change before implementation. Ordinary implementation surfaces (APIs, contracts, migrations, adapters, compositions, wiring) required to realize an already accepted use case do not require separate scope transitions. Significant architecture decisions require an ADR. New technologies require a demonstrated problem and accepted requirement. Infrastructure is not introduced for hypothetical future need.
 
 The operational commands and sequencing that apply these rules are owned by `docs/workflow.md`.
 
@@ -75,11 +75,11 @@ A Use-case Goal is complete only when required executable work and objective E2E
 
 `docs/architecture/workspace.dsl` owns current architecture relationships. `docs/architecture.md` owns durable architectural semantics. Architecture changes update model/narrative when affected; significant rationale requires an ADR. Planned/exploratory architecture must not be represented as Current.
 
-Every construct classified as a module must satisfy the universal invariant in `docs/modules.md` and ADR-0013: independent ownership, explicit public API, private implementation, selectable application composition, public-contract collaboration, and no dependence on another module's private implementation/persistence.
+Every construct classified as a module must satisfy the universal invariant in `docs/modules.md`, ADR-0013, and ADR-0017: independent ownership, explicit public API, private implementation, selectable application composition, public API collaboration surfaces, no functional dependency on other modules, and no dependence on another module's private implementation/persistence.
 
-Application runtimes own technical selection, construction, configuration, and wiring only. Compositions own cross-module workflow only. Interfaces/integrations are adapters unless deliberately admitted as modules. Shared foundation remains small and business-neutral.
+Modules do not call other modules directly as part of cross-module workflows. Compositions coordinate cross-module workflows through public module APIs. Application runtimes own technical selection, construction, configuration, and wiring only. Interfaces/integrations are adapters unless deliberately admitted as modules. Shared foundation remains small and business-neutral.
 
-Before admitting a module, establish a concrete use case, ownership/non-ownership, smallest public API, private boundary, allowed public dependencies, selectable composition semantics, and objective validation. A business module additionally needs meaningful independently owned rules/invariants/lifecycle.
+Before admitting a module, establish a concrete use case, ownership/non-ownership, smallest public API, private boundary, required foundation dependencies (no functional dependencies on other modules), selectable composition semantics, and objective validation. A business module additionally needs meaningful independently owned rules/invariants/lifecycle.
 
 ## Definition of done
 

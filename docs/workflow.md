@@ -41,7 +41,7 @@ Work may proceed when accepted scope already authorizes the outcome and the issu
 - required decision/ADR/technology admission;
 - objective validation evidence.
 
-A new capability/use case or currently excluded responsibility requires accepted scope change first. Significant architecture rationale requires an ADR. New technology requires a demonstrated problem and admission through governance.
+A new capability, use case, durable responsibility, or currently excluded product responsibility requires an accepted scope change first. Significant architecture rationale requires an ADR. New technology requires a demonstrated problem and admission through governance. Ordinary contract, public API, persistence, adapter, composition, and wiring changes implied by an already accepted use case do not require separate scope or readiness transitions.
 
 If readiness is resolved, prefer one coherent vertical implementation rather than issue-per-layer decomposition. For an HTTP use case, the normal execution order is:
 
@@ -49,7 +49,7 @@ If readiness is resolved, prefer one coherent vertical implementation rather tha
 
 This is execution order, not automatic issue/PR boundaries. Split only for a real dependency, unresolved authority, independently accepted intermediate outcome, or governance requirement.
 
-If implementation reveals missing authority, stop implementation and perform only the necessary readiness transition.
+If implementation reveals missing semantic authority, a significant unresolved architecture decision, or unaccepted technology, stop implementation and perform only the necessary readiness transition.
 
 ## Branch and pull request flow
 
