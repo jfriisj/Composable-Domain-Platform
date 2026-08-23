@@ -20,18 +20,18 @@ Use-case Goal #168, **Organizer manages own Event**, is the current readiness pa
 
 ## In progress
 
-Organizer-owned Event management scope from issue #171 is accepted for Use-case Goal #168.
+Organizer-owned Event management scope (#171) and composition-owned delivery architecture (ADR-0017 / #173) are accepted for Use-case Goal #168.
 
-No organizer-management implementation is ready until the accepted post-scope baseline is re-read and contract, architecture, persistence, and validation readiness are resolved.
+No organizer-management implementation is yet accepted. Implementation proceeds once post-decision readiness is confirmed for the ready vertical slice.
 
 ## Current gaps
 
 Accepted scope now includes authenticated Event creation with durable organizer ownership, owner-authorized unpublished Event modification, and owner-authorized publication.
 
-These behaviors are not yet implemented in the executable contract, adapters, Event behavior, persistence, Security collaboration, or runtime wiring.
+These behaviors are not yet implemented in executable contracts, adapters, Event behavior, persistence, Security collaboration, compositions, or runtime wiring.
 
 ## Next action
 
-Re-read accepted `development` after #171 and evaluate implementation readiness for Use-case Goal #168.
+Re-read accepted `development` after #173 and evaluate implementation readiness for Use-case Goal #168.
 
-If no significant architecture decision remains unresolved, create one coherent vertical implementation issue. If a significant architecture choice remains unresolved, create only the minimum required decision/ADR transition first.
+If no new semantic requirement or significant architecture uncertainty remains, create one coherent vertical implementation issue covering the ready slice. If an unresolved decision remains, create only the minimum required readiness transition first.

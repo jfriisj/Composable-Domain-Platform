@@ -14,7 +14,7 @@ Every construct classified as a module:
 - can be selected into or out of a valid platform application composition;
 - exposes an explicit public API;
 - hides private implementation behind that API;
-- collaborates with other modules only through explicit public contracts/adapters;
+- exposes its public API as a collaboration surface for compositions and interfaces, without functional dependencies on other modules;
 - does not depend on another module's private implementation or persistence;
 - is not owned or implemented by an application runtime, another module, or a composition.
 
@@ -45,10 +45,12 @@ Each implemented module has a concise local `module.md` for purpose, owns/does-n
 
 ## Dependency rules
 
-Module collaboration is public-contract only.
+Module public APIs are collaboration surfaces consumed by compositions and adapters. Cross-module workflows are composition-owned; participating modules remain unaware of each other and have no functional dependencies on other modules.
 
 Forbidden:
 
+- functional dependencies on other modules;
+- direct module-to-module collaboration in cross-capability use cases;
 - another module's private implementation/persistence as a functional dependency;
 - cross-module repository/table access;
 - shared internal DTOs as collaboration contracts;
@@ -57,7 +59,7 @@ Forbidden:
 
 Inside a module, dependencies point inward from adapters to application/domain; outbound mechanisms implement module-owned ports.
 
-A composition may depend on required public module APIs and `core` only when that foundation contract is actually needed. An interface/integration adapts public contracts. Runtime assembly selects implementations.
+A composition coordinates cross-module workflows and depends only on required public module APIs and `core` when needed. Inbound interfaces adapt public module or composition contracts. Runtime assembly selects and wires implementations.
 
 Exact build dependency truth is in Gradle; architecture relationships are in `docs/architecture/workspace.dsl`.
 
@@ -87,7 +89,7 @@ Before accepting a new module, establish:
 2. independent ownership and explicit non-ownership;
 3. the smallest required public API;
 4. a private implementation boundary;
-5. required public dependencies on other modules/foundation;
+5. required foundation dependencies (no functional dependencies on other modules);
 6. selectable application-composition semantics;
 7. adapter boundaries required for external protocols/providers;
 8. objective independent build/test evidence.

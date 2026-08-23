@@ -38,7 +38,7 @@ The accepted platform baseline includes:
 - Event-Registration as a non-module composition that collaborates only through Event, Registration, and Security public APIs.
 - `core` as small business-neutral foundation for accepted execution-context primitives.
 - inbound HTTP adapters outside business modules; generated OpenAPI transport types remain adapter/build output.
-- static application composition through explicit Gradle project dependencies, including an Event-only application that omits unrelated Registration/Security/Event-Registration dependencies and the full Platform Application.
+- static application composition through explicit Gradle project dependencies, where an application selects only the modules, compositions, adapters, contracts, and technical infrastructure required by its declared accepted use cases and omits unrelated capabilities.
 - static application-level OpenAPI aggregation with deterministic fail-closed conflict validation; aggregate application contracts are derived build output.
 - Spring Boot/JVM executable runtime artifacts. Application runtimes own technical selection, construction, configuration, migration startup, readiness, and wiring only.
 - externally supplied PostgreSQL and runtime configuration. Runtime readiness is machine-checkable and becomes not-ready when PostgreSQL prevents accepted serviceability.
@@ -65,7 +65,9 @@ These exclusions are boundaries, not a prohibition on later accepted scope chang
 
 ## Scope admission rule
 
-A new capability, use case, persistent concern, external contract surface, deployment/infrastructure responsibility, or currently excluded technology requires an accepted scope change before implementation.
+A new capability, use case, durable responsibility, bounded capability/module responsibility, currently excluded product responsibility, deployment/infrastructure responsibility, or currently excluded technology requires an accepted scope change before implementation.
+
+Accepted scope is semantic and governs product outcomes and durable ownership boundaries. Once a use case is accepted into scope, implementing that use case does not require a separate scope transition for its necessary module public API operations, OpenAPI operations, module-owned persistence changes/migrations, adapters, compositions, runtime wiring, tests, or directly affected documentation.
 
 A scope proposal must define the concrete actor/operator/developer outcome, ownership and non-ownership, durable exclusions, objective acceptance, affected authorities, and required dependencies. Significant architecture decisions also require an ADR; technology admission requires a demonstrated problem and accepted requirement.
 

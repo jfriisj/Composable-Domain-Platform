@@ -46,6 +46,7 @@ Accepted ADRs are not silently rewritten to change historical rationale. A later
 - [ADR-0014: Security public authentication and authorization boundary](0014-security-public-authentication-authorization-boundary.md)
 - [ADR-0015: Static selectable application composition](0015-static-selectable-application-composition.md)
 - [ADR-0016: Selectable external contracts with static application aggregation](0016-selectable-external-contracts-static-application-aggregation.md)
+- [ADR-0017: Composition-owned cross-module delivery](0017-composition-owned-cross-module-delivery.md)
 
 ## Template
 
