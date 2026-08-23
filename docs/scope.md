@@ -8,19 +8,23 @@ Composable Domain Platform provides a modular platform for composing independent
 
 ## Current accepted product boundary
 
-The accepted product experience is the minimum adult Event-registration lifecycle:
+The accepted product experience combines organizer-owned Event management and the participant Event-registration lifecycle:
 
-- Event can be defined and retrieved by identity.
-- A new Event is `unpublished`; Event owns the one-way `unpublished -> published` transition.
-- Public discovery returns published Events only; known-id retrieval remains publication-independent.
+- An authenticated platform actor can create an Event and becomes its durable organizer/owner.
+- An authenticated owner can modify their owned Event while it is `unpublished`; mutable definition values (`name`, `slug`, `startsAt`, `endsAt`, `timezone`) may be changed, while `eventId` remains immutable identity.
+- A new Event is `unpublished`; Event owns the one-way `unpublished -> published` transition, which requires owner authorization through the organizer-management flow.
+- Event ownership, definition state, and publication state are durable across application-process restart against the same PostgreSQL database. Ownership transfer is not supported.
+- Public discovery returns published Events only; known-id retrieval remains publication-independent; the anonymous public representation does not require public disclosure of the organizer reference.
+- Authenticated non-owners cannot modify or publish another actor's Event.
+- For organizer management, Event owns the organizer reference and Event business state, while Security owns Authentication and the final opaque actor-versus-resource-owner Authorization decision; the collaboration mechanism is not selected by scope.
 - An authenticated participant can create an Event Registration, retrieve their private Event-registration state, cancel it, and later retrieve the same durable Registration as `cancelled`.
 - Registration owns a domain-neutral registrant-to-target relation, uniqueness, the `active -> cancelled` lifecycle, durable retrieval, and idempotent cancellation.
 - Cancellation preserves Registration identity and the complete registrant-target uniqueness relation; a cancelled pair remains occupied.
 - Event-Registration owns Event-specific cross-capability orchestration and maps the authenticated actor to the participant registrant reference.
 - Security owns Authentication and the final opaque actor-versus-resource-owner Authorization decision. Event-Registration supplies Event/Registration workflow facts and maps denial to its workflow result.
 - Authenticated non-owner access to private Event-registration state uses the same external not-found disclosure as unknown private state; unauthenticated access remains a distinct authentication failure.
-- Participant identity is an opaque stable platform actor reference. Registration persists only its own opaque participant reference. Correlation/causation identifiers remain identity-free.
-- Event publication state and Registration lifecycle state are durable across application-process restart against the same PostgreSQL database.
+- Participant identity is an opaque stable platform actor reference. Registration persists only its own opaque participant reference. Event organizer identity is also an opaque stable platform actor reference, with Event persisting its own organizer reference as authorization state. Correlation/causation identifiers remain identity-free.
+- Registration lifecycle state remains durable across application-process restart against the same PostgreSQL database.
 
 The authoritative HTTP behavior is defined by the versioned OpenAPI source contracts under `platform/contracts/http/v1/`. Current contract allocation follows externally addressable behavior ownership: Event-owned behavior and the Event-Registration participant workflow have independent authoritative source units, while concrete applications statically aggregate only the units they select.
 
@@ -28,7 +32,7 @@ The authoritative HTTP behavior is defined by the versioned OpenAPI source contr
 
 The accepted platform baseline includes:
 
-- Event as an independently owned module with public API/private implementation and Event-owned PostgreSQL persistence.
+- Event as an independently owned module with public API/private implementation and Event-owned PostgreSQL persistence for Event definition, organizer ownership, and publication lifecycle.
 - Registration as an independently owned, domain-neutral module with public API/private implementation and Registration-owned PostgreSQL persistence.
 - Security as an independently owned Authentication + Authorization module with framework-neutral public contracts and private Security mechanism implementation.
 - Event-Registration as a non-module composition that collaborates only through Event, Registration, and Security public APIs.
