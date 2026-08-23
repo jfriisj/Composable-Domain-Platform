@@ -16,16 +16,16 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 Product Goal #167, **Deliver Event experience v1**, is the active product outcome.
 
-Use-case Goal #168, **Organizer manages own Event**, is implemented. Later Use-case Goals #169 (*Participant registers for published Event*) and #170 (*Organizer views Event registrations*) remain scheduled for subsequent delivery.
+Use-case Goal #168, **Organizer manages own Event**, is implemented. Use-case Goal #169, **Participant registers for published Event**, is the current readiness path. Use-case Goal #170 (*Organizer views Event registrations*) remains scheduled for subsequent delivery.
 
 ## In progress
 
-Organizer-owned Event management scope (#171), composition-owned delivery architecture (ADR-0017 / #173), and vertical slice implementation (#175) are completed.
+Published-Event eligibility scope (#177) is accepted for Use-case Goal #169. No #169 implementation is yet accepted; implementation remains blocked pending post-scope readiness.
 
 ## Current gaps
 
-Participant registration for published Events and organizer viewing of Event registrations remain to be delivered under Use-case Goals #169 and #170.
+Executable Event-Registration creation still accepts an existing Event without requiring it to be `published`. Use-case Goal #169 must close that gap while preserving accepted Registration privacy, lifecycle, uniqueness, and durability semantics. Organizer viewing of Event registrations remains later under #170.
 
 ## Next action
 
-Prepare readiness and scheduling for Use-case Goal #169 (*Participant registers for published Event*).
+Re-read accepted `development` after #177 and evaluate implementation readiness for Use-case Goal #169. If ownership, failure semantics, contract impact, and validation are resolved without a significant architecture choice, create one coherent vertical implementation issue.

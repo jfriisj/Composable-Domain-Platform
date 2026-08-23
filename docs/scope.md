@@ -17,10 +17,11 @@ The accepted product experience combines organizer-owned Event management and th
 - Public discovery returns published Events only; known-id retrieval remains publication-independent; the anonymous public representation does not require public disclosure of the organizer reference.
 - Authenticated non-owners cannot modify or publish another actor's Event.
 - For organizer management, Event owns the organizer reference and Event business state, while Security owns Authentication and the final opaque actor-versus-resource-owner Authorization decision; the collaboration mechanism is not selected by scope.
-- An authenticated participant can create an Event Registration, retrieve their private Event-registration state, cancel it, and later retrieve the same durable Registration as `cancelled`.
+- An authenticated participant can create an Event Registration only when the referenced Event exists and is `published`; an existing `unpublished` Event is ineligible, and rejected ineligible attempts create no Registration state.
+- The participant can retrieve their private Event-registration state, cancel it, and later retrieve the same durable Registration as `cancelled`.
 - Registration owns a domain-neutral registrant-to-target relation, uniqueness, the `active -> cancelled` lifecycle, durable retrieval, and idempotent cancellation.
 - Cancellation preserves Registration identity and the complete registrant-target uniqueness relation; a cancelled pair remains occupied.
-- Event-Registration owns Event-specific cross-capability orchestration and maps the authenticated actor to the participant registrant reference.
+- Event-Registration owns Event-specific cross-capability orchestration, including deciding participant Registration eligibility from Event-owned publication state, and maps the authenticated actor to the participant registrant reference.
 - Security owns Authentication and the final opaque actor-versus-resource-owner Authorization decision. Event-Registration supplies Event/Registration workflow facts and maps denial to its workflow result.
 - Authenticated non-owner access to private Event-registration state uses the same external not-found disclosure as unknown private state; unauthenticated access remains a distinct authentication failure.
 - Participant identity is an opaque stable platform actor reference. Registration persists only its own opaque participant reference. Event organizer identity is also an opaque stable platform actor reference, with Event persisting its own organizer reference as authorization state. Correlation/causation identifiers remain identity-free.
