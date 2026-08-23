@@ -89,7 +89,7 @@ git status --short
 
 Topic commits describe the outcome. Topic branches are normally squash-merged into `development`. If an already-pushed topic commit is amended, use `git push --force-with-lease`; never force-push permanent branches.
 
-Every normal PR targets `development` and records purpose, scope impact, architecture/module impact, exclusions, affected authorities, and validation.
+Every normal PR targets `development`. Link the tracked issue/Goal when applicable, state the coherent purpose, and record only actual scope/architecture/module impact, affected authorities, material exclusions, and validation. Do not restate governance rules as checkbox attestations.
 
 Before merge verify remote PR base/head, commit/file set, mergeability, latest head, required validation, authoritative consistency, scope, architecture/dependency direction, and resolved review conversations.
 
@@ -106,15 +106,17 @@ git diff --check
 git status --short
 ```
 
-Implementation/build-affecting final gate:
+Implementation/build-affecting final developer gate:
 
 ```bash
-bash -lc 'set -euo pipefail; ./gradlew --no-daemon check; git diff --check; echo "PASS: full repository gate"'
+bash -lc 'set -euo pipefail; ./dev/dev.sh check; git diff --check; echo "PASS: full repository gate in developer environment"'
 ```
+
+`./dev/dev.sh check` is the canonical developer command. It runs the repository Gradle Wrapper root `./gradlew --no-daemon check` inside the repository-controlled Docker/JDK 21 developer environment. The wrapper root `check` remains the underlying build truth and the production-targeting hosted validation command.
 
 Targeted tests/dependency checks may add evidence but do not replace root `check`.
 
-For PRs to `development`, hosted `validate` is skipped; the local root gate is operative for build-affecting work. For PRs to `production`, hosted `validate` runs root `check` with JDK 21 and must pass.
+For PRs to `development`, hosted `validate` is skipped; the local developer-environment root gate is operative for build-affecting work. For PRs to `production`, hosted `validate` runs root `check` with JDK 21 and must pass.
 
 Documentation-only changes require the relevant deterministic documentation/structure checks plus `git diff --check`. Do not run Gradle solely because documentation references Java/build concerns; run it when executable build truth changes.
 
