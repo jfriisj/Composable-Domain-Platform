@@ -14,22 +14,24 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Goal #164, **Streamline routine implementation execution**, remains the active single-level non-product Goal pending post-merge completion verification.
+Product Goal #167, **Deliver Event experience v1**, is the active product outcome.
 
-Its repository completion boundary is satisfied by one canonical developer validation path and minimal change-specific ready-work/PR forms without product or executable semantic changes.
+Use-case Goal #168, **Organizer manages own Event**, is the current readiness path. Later Use-case Goals #169 (*Participant registers for published Event*) and #170 (*Organizer views Event registrations*) remain scheduled for subsequent delivery.
 
 ## In progress
 
-No executable work remains after acceptance of issue #165, the single implementation/documentation change under Goal #164.
+Organizer-owned Event management scope from issue #171 is accepted for Use-case Goal #168.
 
-Once this state is accepted, #165 can close and Goal #164 can be evaluated for completion without another implementation slice.
+No organizer-management implementation is ready until the accepted post-scope baseline is re-read and contract, architecture, persistence, and validation readiness are resolved.
 
 ## Current gaps
 
-No known routine implementation-flow gap remains under Goal #164.
+Accepted scope now includes authenticated Event creation with durable organizer ownership, owner-authorized unpublished Event modification, and owner-authorized publication.
 
-No product/runtime gap is inferred from completion of this non-product Goal.
+These behaviors are not yet implemented in the executable contract, adapters, Event behavior, persistence, Security collaboration, or runtime wiring.
 
 ## Next action
 
-After merge verification closes #165 and Goal #164, select the next Goal through the accepted governance workflow. Do not infer or begin product capability, architecture, infrastructure, or unrelated implementation work from completion of this workflow optimization.
+Re-read accepted `development` after #171 and evaluate implementation readiness for Use-case Goal #168.
+
+If no significant architecture decision remains unresolved, create one coherent vertical implementation issue. If a significant architecture choice remains unresolved, create only the minimum required decision/ADR transition first.
