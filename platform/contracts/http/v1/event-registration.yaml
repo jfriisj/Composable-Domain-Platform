@@ -3,8 +3,8 @@ info:
   title: Composable Domain Platform Event Registration API
   version: 1.0.0
   description: >
-    Version 1 authoritative HTTP source contract for the participant-private
-    Event-registration lifecycle owned by the Event-Registration composition.
+    Version 1 authoritative HTTP source contract for participant Event-registration
+    and organizer Event-registration view workflows owned by the Event-Registration composition.
 servers:
   - url: /
 tags:
@@ -194,9 +194,80 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventRegistrationErrorResponse'
+  /api/v1/events/{eventId}/registrations:
+    get:
+      tags:
+        - EventRegistration
+      operationId: findOrganizerEventRegistrations
+      summary: Retrieve an Event's Registrations for the authenticated organizer
+      security:
+        - OrganizerBasicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventRegistrationEventId'
+        - $ref: '#/components/parameters/EventRegistrationCorrelationId'
+      responses:
+        '200':
+          description: Registrations targeting the owned Event retrieved
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventRegistrationResponse'
+        '400':
+          description: Structurally invalid Event identity
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '401':
+          description: Organizer authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '403':
+          description: Authenticated actor is not the Event owner
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '404':
+          description: Referenced Event was not found
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
 components:
   securitySchemes:
     ParticipantBasicAuth:
+      type: http
+      scheme: basic
+    OrganizerBasicAuth:
       type: http
       scheme: basic
   parameters:
@@ -207,6 +278,15 @@ components:
       description: >
         Opaque correlation identifier. A supplied non-blank value is preserved.
         When absent, the HTTP boundary creates one.
+      schema:
+        type: string
+        minLength: 1
+        pattern: '.*\S.*'
+    EventRegistrationEventId:
+      name: eventId
+      in: path
+      required: true
+      description: Event identity
       schema:
         type: string
         minLength: 1
@@ -275,6 +355,7 @@ components:
           enum:
             - invalid_request
             - authentication_required
+            - forbidden
             - event_not_found
             - event_not_published
             - event_registration_not_found

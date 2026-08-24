@@ -35,10 +35,11 @@ openApiApplicationContract {
             "createEventRegistration",
             "findEventRegistrationById",
             "cancelEventRegistration",
+            "findOrganizerEventRegistrations",
         )
     )
     requiredSecuritySchemes.set(setOf("PlatformActorBasicAuth"))
-    forbiddenSecuritySchemes.set(setOf("ParticipantBasicAuth"))
+    forbiddenSecuritySchemes.set(setOf("ParticipantBasicAuth", "OrganizerBasicAuth"))
     forbiddenComponentNames.set(
         setOf(
             "CreateEventRegistrationRequest",
@@ -46,6 +47,7 @@ openApiApplicationContract {
             "EventRegistrationLifecycle",
             "EventRegistrationErrorResponse",
             "EventRegistrationCorrelationId",
+            "EventRegistrationEventId",
             "RegistrationId",
         )
     )

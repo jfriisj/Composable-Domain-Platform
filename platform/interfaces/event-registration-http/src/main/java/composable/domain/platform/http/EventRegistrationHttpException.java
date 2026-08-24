@@ -31,6 +31,17 @@ final class EventRegistrationHttpException extends RuntimeException {
                 null);
     }
 
+    static EventRegistrationHttpException invalidRequest(
+            ExecutionContext context,
+            String message) {
+        return new EventRegistrationHttpException(
+                HttpStatus.BAD_REQUEST,
+                EventRegistrationErrorResponse.CodeEnum.INVALID_REQUEST,
+                message,
+                context,
+                null);
+    }
+
     static EventRegistrationHttpException eventNotFound(ExecutionContext context) {
         return new EventRegistrationHttpException(
                 HttpStatus.NOT_FOUND,
@@ -45,6 +56,15 @@ final class EventRegistrationHttpException extends RuntimeException {
                 HttpStatus.NOT_FOUND,
                 EventRegistrationErrorResponse.CodeEnum.EVENT_REGISTRATION_NOT_FOUND,
                 "Event registration was not found",
+                context,
+                null);
+    }
+
+    static EventRegistrationHttpException forbidden(ExecutionContext context) {
+        return new EventRegistrationHttpException(
+                HttpStatus.FORBIDDEN,
+                EventRegistrationErrorResponse.CodeEnum.FORBIDDEN,
+                "Authenticated actor is not the Event owner",
                 context,
                 null);
     }

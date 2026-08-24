@@ -1,9 +1,12 @@
 package composable.domain.platform.registration.application;
 
 import composable.domain.platform.registration.domain.Registration;
+import composable.domain.platform.registration.domain.TargetReference;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -28,6 +31,15 @@ final class InMemoryRegistrationRepository implements RegistrationRepository {
     @Override
     public synchronized Optional<Registration> findById(String registrationId) {
         return Optional.ofNullable(registrations.get(registrationId));
+    }
+
+    @Override
+    public synchronized List<Registration> findByTarget(TargetReference targetReference) {
+        Objects.requireNonNull(targetReference, "targetReference must not be null");
+        return registrations.values().stream()
+                .filter(registration -> registration.targetReference().namespace().equals(targetReference.namespace())
+                        && registration.targetReference().reference().equals(targetReference.reference()))
+                .toList();
     }
 
     @Override

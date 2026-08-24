@@ -29,8 +29,10 @@ class PlatformEventRegistrationHttpE2ETest {
     private static final String CORRELATION_HEADER = "X-Correlation-Id";
     private static final String PRINCIPAL_A = "opaque-7f31a";
     private static final String PRINCIPAL_B = "opaque-9c42b";
+    private static final String PRINCIPAL_C = "opaque-3e88c";
     private static final String PASSWORD_A = "test-proof-secret-a";
     private static final String PASSWORD_B = "test-proof-secret-b";
+    private static final String PASSWORD_C = "test-proof-secret-c";
 
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final PostgreSQLContainer POSTGRESQL =
@@ -68,7 +70,10 @@ class PlatformEventRegistrationHttpE2ETest {
                         + encoder.encode(PASSWORD_A),
                 "--platform.security.participants[1].principal=" + PRINCIPAL_B,
                 "--platform.security.participants[1].password-verifier="
-                        + encoder.encode(PASSWORD_B));
+                        + encoder.encode(PASSWORD_B),
+                "--platform.security.participants[2].principal=" + PRINCIPAL_C,
+                "--platform.security.participants[2].password-verifier="
+                        + encoder.encode(PASSWORD_C));
 
         Integer port = application.getEnvironment()
                 .getRequiredProperty("local.server.port", Integer.class);
@@ -395,14 +400,34 @@ class PlatformEventRegistrationHttpE2ETest {
             throws Exception {
         String publishedEventId = "goal-57-published-event";
         String unpublishedEventId = "goal-57-unpublished-event";
+        String otherEventId = "goal-57-other-event";
         String registrationId = "goal-57-registration";
+        String otherRegistrationId = "goal-57-other-registration";
 
-        // 1. define an Event and leave it unpublished
-        defineEvent(publishedEventId);
-        defineEvent(unpublishedEventId);
+        // 1. organizer (PRINCIPAL_A) defines Event and becomes owner
+        defineEvent(publishedEventId, "Initial Event Name", PRINCIPAL_A, PASSWORD_A);
+        defineEvent(unpublishedEventId, "Unpublished Event", PRINCIPAL_A, PASSWORD_A);
+        defineEvent(otherEventId, "Other Event", PRINCIPAL_A, PASSWORD_A);
 
+        // 2. organizer modifies the Event while unpublished and the changed value is observable
+        HttpResponse<String> updatedWhileUnpublished = updateEvent(
+                publishedEventId,
+                "Modified Event Name",
+                "corr-goal-update-unpub",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, updatedWhileUnpublished.statusCode());
+        assertCorrelation(updatedWhileUnpublished, "corr-goal-update-unpub");
+        assertJsonString(updatedWhileUnpublished.body(), "name", "Modified Event Name");
+
+        HttpResponse<String> observedEvent = getEvent(
+                publishedEventId,
+                "corr-goal-observe-modified");
+        assertEquals(200, observedEvent.statusCode());
+        assertJsonString(observedEvent.body(), "name", "Modified Event Name");
+
+        // 3. unpublished Event remains absent from discovery
         HttpResponse<String> undiscovered = discoverEvents("corr-goal-discover-before");
-
         assertEquals(200, undiscovered.statusCode());
         assertCorrelation(undiscovered, "corr-goal-discover-before");
         assertFalse(undiscovered.body().contains(publishedEventId));
@@ -411,159 +436,302 @@ class PlatformEventRegistrationHttpE2ETest {
         HttpResponse<String> knownUnpublished = getEvent(
                 unpublishedEventId,
                 "corr-goal-known-unpublished");
-
         assertEquals(200, knownUnpublished.statusCode());
         assertCorrelation(knownUnpublished, "corr-goal-known-unpublished");
         assertJsonString(knownUnpublished.body(), "eventId", unpublishedEventId);
 
-        // 2. authenticated participant Registration attempt is rejected with 409 event_not_published
+        // 4. participant (PRINCIPAL_B) Registration against unpublished Event is rejected with 409 event_not_published; no state created
         HttpResponse<String> unpublishedRegistration = postRegistration(
                 registrationJson(registrationId, publishedEventId),
                 "corr-goal-registration-unpublished",
-                PRINCIPAL_A,
-                PASSWORD_A);
-
+                PRINCIPAL_B,
+                PASSWORD_B);
         assertEquals(409, unpublishedRegistration.statusCode());
         assertCorrelation(unpublishedRegistration, "corr-goal-registration-unpublished");
         assertJsonString(unpublishedRegistration.body(), "code", "event_not_published");
         assertJsonString(unpublishedRegistration.body(), "message", "Referenced Event is not published");
-
-        // 3. no Registration row/state is created by that rejection
         assertEquals(0, registrationCount(registrationId));
 
-        // 4. publish the same Event through the accepted organizer flow
+        // 5. organizer (PRINCIPAL_A) publishes Event
         HttpResponse<String> published =
                 publishEvent(publishedEventId, "corr-goal-publish");
-
         assertEquals(204, published.statusCode());
         assertCorrelation(published, "corr-goal-publish");
 
         HttpResponse<String> repeated =
                 publishEvent(publishedEventId, "corr-goal-republish");
-
         assertEquals(409, repeated.statusCode());
         assertCorrelation(repeated, "corr-goal-republish");
         assertJsonString(repeated.body(), "code", "event_already_published");
 
         HttpResponse<String> missing =
                 publishEvent("goal-57-missing-event", "corr-goal-publish-missing");
-
         assertEquals(404, missing.statusCode());
         assertCorrelation(missing, "corr-goal-publish-missing");
         assertJsonString(missing.body(), "code", "event_not_found");
 
-        HttpResponse<String> discovered = discoverEvents("corr-goal-discover-after");
+        HttpResponse<String> publishedOther = publishEvent(otherEventId, "corr-goal-publish-other");
+        assertEquals(204, publishedOther.statusCode());
 
+        // 6. discovery returns published Event
+        HttpResponse<String> discovered = discoverEvents("corr-goal-discover-after");
         assertEquals(200, discovered.statusCode());
         assertCorrelation(discovered, "corr-goal-discover-after");
         assertJsonString(discovered.body(), "eventId", publishedEventId);
         assertFalse(discovered.body().contains(unpublishedEventId));
 
-        // 5. participant Registration succeeds with 201
+        HttpResponse<String> organizerEmpty = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-organizer-empty",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, organizerEmpty.statusCode());
+        assertCorrelation(organizerEmpty, "corr-goal-organizer-empty");
+        assertEquals("[]", organizerEmpty.body().trim());
+
+        // 7. a distinct participant (PRINCIPAL_B) registers
         HttpResponse<String> created = postRegistration(
                 registrationJson(registrationId, publishedEventId),
                 "corr-goal-registration-create",
-                PRINCIPAL_A,
-                PASSWORD_A);
-
+                PRINCIPAL_B,
+                PASSWORD_B);
         assertEquals(201, created.statusCode());
         assertRegistrationBody(created.body(), registrationId, publishedEventId, "active");
 
-        // 6. participant retrieves the active Registration
+        // 8. participant (PRINCIPAL_B) retrieves active private Registration
         HttpResponse<String> retrieved = getRegistration(
                 registrationId,
                 "corr-goal-registration-retrieve",
-                PRINCIPAL_A,
-                PASSWORD_A);
-
+                PRINCIPAL_B,
+                PASSWORD_B);
         assertEquals(200, retrieved.statusCode());
         assertRegistrationBody(retrieved.body(), registrationId, publishedEventId, "active");
 
-        // 7. another authenticated participant cannot retrieve/cancel it and receives private-state 404 behavior
-        HttpResponse<String> nonOwnerRetrieve = getRegistration(
+        // 9. organizer (PRINCIPAL_A) retrieves Event Registrations and sees active state without participant identity
+        HttpResponse<String> organizerActive = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-organizer-active",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, organizerActive.statusCode());
+        assertCorrelation(organizerActive, "corr-goal-organizer-active");
+        assertRegistrationBody(organizerActive.body(), registrationId, publishedEventId, "active");
+        assertFalse(organizerActive.body().contains(PRINCIPAL_B));
+        assertFalse(organizerActive.body().contains("participant"));
+
+        // 10. known non-owner (PRINCIPAL_C) gets organizer-view 403 forbidden; unauthenticated gets 401; unknown event gets 404
+        HttpResponse<String> nonOwnerView = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-non-owner-view",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(403, nonOwnerView.statusCode());
+        assertCorrelation(nonOwnerView, "corr-goal-non-owner-view");
+        assertJsonString(nonOwnerView.body(), "code", "forbidden");
+
+        HttpResponse<String> unauthView = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-unauth-view",
+                null,
+                null);
+        assertEquals(401, unauthView.statusCode());
+        assertCorrelation(unauthView, "corr-goal-unauth-view");
+        assertJsonString(unauthView.body(), "code", "authentication_required");
+
+        HttpResponse<String> invalidCredsView = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-invalid-creds-view",
+                PRINCIPAL_A,
+                "invalid-secret-proof");
+        assertEquals(401, invalidCredsView.statusCode());
+        assertCorrelation(invalidCredsView, "corr-goal-invalid-creds-view");
+        assertJsonString(invalidCredsView.body(), "code", "authentication_required");
+
+        HttpResponse<String> unknownEventView = getEventRegistrations(
+                "goal-57-unknown-event",
+                "corr-goal-unknown-event-view",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(404, unknownEventView.statusCode());
+        assertCorrelation(unknownEventView, "corr-goal-unknown-event-view");
+        assertJsonString(unknownEventView.body(), "code", "event_not_found");
+
+        // 11. organizer (PRINCIPAL_A) does not gain participant-private retrieval/cancellation rights over distinct participant's registration (404)
+        HttpResponse<String> organizerPrivateRetrieve = getRegistration(
                 registrationId,
-                "corr-goal-non-owner-retrieve",
+                "corr-goal-organizer-private-retrieve",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(404, organizerPrivateRetrieve.statusCode());
+        assertJsonString(organizerPrivateRetrieve.body(), "code", "event_registration_not_found");
+
+        HttpResponse<String> organizerPrivateCancel = cancelRegistration(
+                registrationId,
+                "corr-goal-organizer-private-cancel",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(404, organizerPrivateCancel.statusCode());
+        assertJsonString(organizerPrivateCancel.body(), "code", "event_registration_not_found");
+
+        HttpResponse<String> thirdPartyRetrieve = getRegistration(
+                registrationId,
+                "corr-goal-third-party-retrieve",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(404, thirdPartyRetrieve.statusCode());
+        assertJsonString(thirdPartyRetrieve.body(), "code", "event_registration_not_found");
+
+        // 12. create a Registration targeting another Event and prove it is excluded from the queried organizer collection
+        HttpResponse<String> otherRegistrationCreated = postRegistration(
+                registrationJson(otherRegistrationId, otherEventId),
+                "corr-goal-other-reg-create",
                 PRINCIPAL_B,
                 PASSWORD_B);
-        assertEquals(404, nonOwnerRetrieve.statusCode());
-        assertJsonString(nonOwnerRetrieve.body(), "code", "event_registration_not_found");
+        assertEquals(201, otherRegistrationCreated.statusCode());
 
-        HttpResponse<String> nonOwnerCancel = cancelRegistration(
-                registrationId,
-                "corr-goal-non-owner-cancel",
-                PRINCIPAL_B,
-                PASSWORD_B);
-        assertEquals(404, nonOwnerCancel.statusCode());
-        assertJsonString(nonOwnerCancel.body(), "code", "event_registration_not_found");
+        HttpResponse<String> organizerMainCollection = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-organizer-main-col",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, organizerMainCollection.statusCode());
+        assertRegistrationBody(organizerMainCollection.body(), registrationId, publishedEventId, "active");
+        assertFalse(organizerMainCollection.body().contains(otherRegistrationId));
 
-        // 8. participant cancels it
+        HttpResponse<String> organizerOtherCollection = getEventRegistrations(
+                otherEventId,
+                "corr-goal-organizer-other-col",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, organizerOtherCollection.statusCode());
+        assertRegistrationBody(organizerOtherCollection.body(), otherRegistrationId, otherEventId, "active");
+        assertFalse(organizerOtherCollection.body().contains(registrationId));
+
+        // 13. participant (PRINCIPAL_B) cancels registration
         HttpResponse<String> cancelled = cancelRegistration(
                 registrationId,
                 "corr-goal-registration-cancel",
-                PRINCIPAL_A,
-                PASSWORD_A);
-
+                PRINCIPAL_B,
+                PASSWORD_B);
         assertEquals(200, cancelled.statusCode());
         assertRegistrationBody(cancelled.body(), registrationId, publishedEventId, "cancelled");
 
-        // 9. repeated cancellation remains idempotent
+        // 14. organizer sees the same Registration as cancelled
+        HttpResponse<String> organizerCancelled = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-organizer-cancelled",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, organizerCancelled.statusCode());
+        assertRegistrationBody(organizerCancelled.body(), registrationId, publishedEventId, "cancelled");
+
+        // 15. repeated cancellation remains idempotent; same-pair re-registration remains conflict
         HttpResponse<String> repeatedCancel = cancelRegistration(
                 registrationId,
                 "corr-goal-registration-cancel-repeat",
-                PRINCIPAL_A,
-                PASSWORD_A);
-
+                PRINCIPAL_B,
+                PASSWORD_B);
         assertEquals(200, repeatedCancel.statusCode());
         assertRegistrationBody(repeatedCancel.body(), registrationId, publishedEventId, "cancelled");
 
-        // 10. same-pair re-registration remains a uniqueness conflict
         HttpResponse<String> duplicateRegistration = postRegistration(
                 registrationJson("goal-57-registration-conflict", publishedEventId),
                 "corr-goal-registration-conflict",
-                PRINCIPAL_A,
-                PASSWORD_A);
-
+                PRINCIPAL_B,
+                PASSWORD_B);
         assertEquals(409, duplicateRegistration.statusCode());
         assertCorrelation(duplicateRegistration, "corr-goal-registration-conflict");
         assertJsonString(duplicateRegistration.body(), "code", "registration_conflict");
         assertEquals(0, registrationCount("goal-57-registration-conflict"));
 
-        // 11. after application restart against the same PostgreSQL database, the cancelled Registration remains durable/private
+        // 16. modification after publication is rejected according to accepted Event semantics (409 event_already_published)
+        HttpResponse<String> updateAfterPublication = updateEvent(
+                publishedEventId,
+                "Attempted Update After Publish",
+                "corr-goal-update-after-publish",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(409, updateAfterPublication.statusCode());
+        assertCorrelation(updateAfterPublication, "corr-goal-update-after-publish");
+        assertJsonString(updateAfterPublication.body(), "code", "event_already_published");
+
+        // 17. restart against same PostgreSQL
         application.close();
         application = null;
         startApplication();
 
+        // 18. Event ownership/publication and Registration cancellation remain durable
         HttpResponse<String> discoveredAfterRestart =
                 discoverEvents("corr-goal-discover-restart");
-
         assertEquals(200, discoveredAfterRestart.statusCode());
         assertCorrelation(discoveredAfterRestart, "corr-goal-discover-restart");
         assertJsonString(discoveredAfterRestart.body(), "eventId", publishedEventId);
         assertFalse(discoveredAfterRestart.body().contains(unpublishedEventId));
 
+        // 19. organizer still sees cancelled Registration after restart
+        HttpResponse<String> organizerAfterRestart = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-organizer-restart",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, organizerAfterRestart.statusCode());
+        assertRegistrationBody(organizerAfterRestart.body(), registrationId, publishedEventId, "cancelled");
+
+        // 20. participant-private (PRINCIPAL_B) cancelled retrieval and non-owner privacy remain intact after restart
         HttpResponse<String> retrievedAfterRestart = getRegistration(
                 registrationId,
                 "corr-goal-restart-retrieve-owner",
-                PRINCIPAL_A,
-                PASSWORD_A);
-
+                PRINCIPAL_B,
+                PASSWORD_B);
         assertEquals(200, retrievedAfterRestart.statusCode());
         assertRegistrationBody(retrievedAfterRestart.body(), registrationId, publishedEventId, "cancelled");
         assertPersistedRegistration(
                 registrationId,
                 "participant",
-                PRINCIPAL_A,
+                PRINCIPAL_B,
                 "event",
                 publishedEventId);
 
         HttpResponse<String> nonOwnerAfterRestart = getRegistration(
                 registrationId,
                 "corr-goal-restart-retrieve-non-owner",
-                PRINCIPAL_B,
-                PASSWORD_B);
-
+                PRINCIPAL_A,
+                PASSWORD_A);
         assertEquals(404, nonOwnerAfterRestart.statusCode());
         assertJsonString(nonOwnerAfterRestart.body(), "code", "event_registration_not_found");
+
+        HttpResponse<String> thirdPartyAfterRestart = getRegistration(
+                registrationId,
+                "corr-goal-restart-retrieve-third-party",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(404, thirdPartyAfterRestart.statusCode());
+        assertJsonString(thirdPartyAfterRestart.body(), "code", "event_registration_not_found");
+
+        HttpResponse<String> nonOwnerViewAfterRestart = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-restart-non-owner-view",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(403, nonOwnerViewAfterRestart.statusCode());
+        assertJsonString(nonOwnerViewAfterRestart.body(), "code", "forbidden");
+
+        HttpResponse<String> unauthViewAfterRestart = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-restart-unauth-view",
+                null,
+                null);
+        assertEquals(401, unauthViewAfterRestart.statusCode());
+        assertJsonString(unauthViewAfterRestart.body(), "code", "authentication_required");
+
+        HttpResponse<String> invalidViewAfterRestart = getEventRegistrations(
+                publishedEventId,
+                "corr-goal-restart-invalid-view",
+                PRINCIPAL_A,
+                "invalid-secret-proof");
+        assertEquals(401, invalidViewAfterRestart.statusCode());
+        assertCorrelation(invalidViewAfterRestart, "corr-goal-restart-invalid-view");
+        assertJsonString(invalidViewAfterRestart.body(), "code", "authentication_required");
     }
 
     @Test
@@ -669,10 +837,105 @@ class PlatformEventRegistrationHttpE2ETest {
         assertJsonString(response.body(), "code", "event_registration_not_found");
     }
 
+    @Test
+    void organizerViewsMultipleRegistrationsWithActiveAndCancelledLifecycles() throws Exception {
+        String eventId = "organizer-view-event-multi";
+        defineAndPublishEvent(eventId);
+
+        postRegistration(
+                registrationJson("reg-multi-1", eventId),
+                "corr-multi-1",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        postRegistration(
+                registrationJson("reg-multi-2", eventId),
+                "corr-multi-2",
+                PRINCIPAL_B,
+                PASSWORD_B);
+
+        cancelRegistration("reg-multi-2", "corr-multi-cancel", PRINCIPAL_B, PASSWORD_B);
+
+        HttpResponse<String> response = getEventRegistrations(
+                eventId,
+                "corr-organizer-multi-view",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        assertEquals(200, response.statusCode());
+        assertCorrelation(response, "corr-organizer-multi-view");
+        assertRegistrationBody(response.body(), "reg-multi-1", eventId, "active");
+        assertRegistrationBody(response.body(), "reg-multi-2", eventId, "cancelled");
+        assertFalse(response.body().contains(PRINCIPAL_A));
+        assertFalse(response.body().contains(PRINCIPAL_B));
+        assertFalse(response.body().contains("participant"));
+    }
+
+    @Test
+    void organizerEventRegistrationsRejectsNonOwner() throws Exception {
+        String eventId = "organizer-view-event-authz";
+        defineAndPublishEvent(eventId);
+
+        HttpResponse<String> response = getEventRegistrations(
+                eventId,
+                "corr-organizer-authz-denied",
+                PRINCIPAL_B,
+                PASSWORD_B);
+
+        assertEquals(403, response.statusCode());
+        assertCorrelation(response, "corr-organizer-authz-denied");
+        assertJsonString(response.body(), "code", "forbidden");
+        assertJsonString(response.body(), "message", "Authenticated actor is not the Event owner");
+    }
+
+    @Test
+    void organizerEventRegistrationsRejectsUnauthenticated() throws Exception {
+        HttpResponse<String> missing = getEventRegistrations(
+                "any-event",
+                "corr-organizer-unauth-missing",
+                null,
+                null);
+
+        assertEquals(401, missing.statusCode());
+        assertCorrelation(missing, "corr-organizer-unauth-missing");
+        assertJsonString(missing.body(), "code", "authentication_required");
+
+        HttpResponse<String> invalid = getEventRegistrations(
+                "any-event",
+                "corr-organizer-unauth-invalid",
+                PRINCIPAL_A,
+                "wrong-secret");
+
+        assertEquals(401, invalid.statusCode());
+        assertCorrelation(invalid, "corr-organizer-unauth-invalid");
+        assertJsonString(invalid.body(), "code", "authentication_required");
+    }
+
+    @Test
+    void organizerEventRegistrationsReturnsNotFoundForUnknownEvent() throws Exception {
+        HttpResponse<String> response = getEventRegistrations(
+                "unknown-event-id-999",
+                "corr-organizer-unknown-event",
+                PRINCIPAL_A,
+                PASSWORD_A);
+
+        assertEquals(404, response.statusCode());
+        assertCorrelation(response, "corr-organizer-unknown-event");
+        assertJsonString(response.body(), "code", "event_not_found");
+    }
+
     private static void defineEvent(String eventId) throws Exception {
+        defineEvent(eventId, "Registration Event", PRINCIPAL_A, PASSWORD_A);
+    }
+
+    private static void defineEvent(
+            String eventId,
+            String name,
+            String principal,
+            String password) throws Exception {
         String body = "{"
                 + "\"eventId\":\"" + eventId + "\","
-                + "\"name\":\"Registration Event\","
+                + "\"name\":\"" + name + "\","
                 + "\"slug\":\"" + eventId + "\","
                 + "\"startsAt\":\"2026-09-01T08:00:00Z\","
                 + "\"endsAt\":\"2026-09-01T10:00:00Z\","
@@ -682,13 +945,41 @@ class PlatformEventRegistrationHttpE2ETest {
         HttpRequest request = HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"))
                 .header("Content-Type", "application/json")
                 .header(CORRELATION_HEADER, "corr-define-" + eventId)
-                .header("Authorization", basicAuthorization(PRINCIPAL_A, PASSWORD_A))
+                .header("Authorization", basicAuthorization(principal, password))
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
         assertEquals(
                 201,
                 HTTP.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
+    }
+
+    private static HttpResponse<String> updateEvent(
+            String eventId,
+            String name,
+            String correlationId,
+            String principal,
+            String password) throws Exception {
+        String body = "{"
+                + "\"name\":\"" + name + "\","
+                + "\"slug\":\"" + eventId + "\","
+                + "\"startsAt\":\"2026-09-01T08:00:00Z\","
+                + "\"endsAt\":\"2026-09-01T10:00:00Z\","
+                + "\"timezone\":\"Europe/Copenhagen\""
+                + "}";
+
+        HttpRequest.Builder builder = HttpRequest.newBuilder(baseUri.resolve("/api/v1/events/" + eventId))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(body));
+
+        if (principal != null && password != null) {
+            builder.header("Authorization", basicAuthorization(principal, password));
+        }
+        if (correlationId != null) {
+            builder.header(CORRELATION_HEADER, correlationId);
+        }
+
+        return HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
     }
 
     private static void defineAndPublishEvent(String eventId) throws Exception {
@@ -763,6 +1054,21 @@ class PlatformEventRegistrationHttpE2ETest {
             String password) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(
                 baseUri.resolve("/api/v1/event-registrations/" + registrationId));
+
+        addCommonHeaders(builder, correlationId, principal, password);
+
+        return HTTP.send(
+                builder.GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static HttpResponse<String> getEventRegistrations(
+            String eventId,
+            String correlationId,
+            String principal,
+            String password) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(
+                baseUri.resolve("/api/v1/events/" + eventId + "/registrations"));
 
         addCommonHeaders(builder, correlationId, principal, password);
 

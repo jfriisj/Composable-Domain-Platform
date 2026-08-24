@@ -1,6 +1,7 @@
 package composable.domain.platform.app;
 
 import composable.domain.platform.composition.eventmanagement.OrganizerEventManagementService;
+import composable.domain.platform.composition.eventregistration.OrganizerEventRegistrationService;
 import composable.domain.platform.composition.eventregistration.ParticipantEventRegistrationService;
 import composable.domain.platform.event.api.DefineEvent;
 import composable.domain.platform.event.api.DiscoverEvents;
@@ -17,9 +18,11 @@ import composable.domain.platform.event.persistence.JooqEventRepository;
 import composable.domain.platform.registration.api.CancelRegistration;
 import composable.domain.platform.registration.api.CreateRegistration;
 import composable.domain.platform.registration.api.FindRegistration;
+import composable.domain.platform.registration.api.FindRegistrationsByTarget;
 import composable.domain.platform.registration.application.CancelRegistrationService;
 import composable.domain.platform.registration.application.CreateRegistrationService;
 import composable.domain.platform.registration.application.FindRegistrationService;
+import composable.domain.platform.registration.application.FindRegistrationsByTargetService;
 import composable.domain.platform.registration.application.RegistrationRepository;
 import composable.domain.platform.registration.persistence.RegistrationPersistence;
 import composable.domain.platform.security.api.AuthorizeResourceOwnership;
@@ -119,6 +122,11 @@ class PlatformRuntimeConfiguration {
     }
 
     @Bean
+    FindRegistrationsByTarget findRegistrationsByTarget(RegistrationRepository repository) {
+        return new FindRegistrationsByTargetService(repository);
+    }
+
+    @Bean
     CancelRegistration cancelRegistration(RegistrationRepository repository) {
         return new CancelRegistrationService(repository);
     }
@@ -150,6 +158,17 @@ class PlatformRuntimeConfiguration {
                 createRegistration,
                 findRegistration,
                 cancelRegistration,
+                authorizeResourceOwnership);
+    }
+
+    @Bean
+    OrganizerEventRegistrationService organizerEventRegistrationService(
+            FindEvent findEvent,
+            FindRegistrationsByTarget findRegistrationsByTarget,
+            AuthorizeResourceOwnership authorizeResourceOwnership) {
+        return new OrganizerEventRegistrationService(
+                findEvent,
+                findRegistrationsByTarget,
                 authorizeResourceOwnership);
     }
 }

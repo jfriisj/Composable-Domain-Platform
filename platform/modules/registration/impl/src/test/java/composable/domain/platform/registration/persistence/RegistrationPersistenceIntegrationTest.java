@@ -15,6 +15,7 @@ import composable.domain.platform.registration.api.TargetReference;
 import composable.domain.platform.registration.application.CancelRegistrationService;
 import composable.domain.platform.registration.application.CreateRegistrationService;
 import composable.domain.platform.registration.application.FindRegistrationService;
+import composable.domain.platform.registration.application.FindRegistrationsByTargetService;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import javax.sql.DataSource;
@@ -312,6 +313,62 @@ class RegistrationPersistenceIntegrationTest {
                 new FindRegistrationService(new JooqRegistrationRepository(dataSource))
                         .findById(CONTEXT, "persistent-registration-missing")
                         .isEmpty());
+    }
+
+    @Test
+    void findsRegistrationsByTargetExactMatchIncludingActiveAndCancelled() {
+        CreateRegistrationService createService =
+                new CreateRegistrationService(new JooqRegistrationRepository(dataSource));
+        CancelRegistrationService cancelService =
+                new CancelRegistrationService(new JooqRegistrationRepository(dataSource));
+        FindRegistrationsByTargetService findService =
+                new FindRegistrationsByTargetService(new JooqRegistrationRepository(dataSource));
+
+        RegistrationView active = createService.create(
+                CONTEXT,
+                command(
+                        "persistent-target-active",
+                        "participant",
+                        "actor-target-1",
+                        "event",
+                        "target-event-1"));
+
+        RegistrationView toCancel = createService.create(
+                CONTEXT,
+                command(
+                        "persistent-target-cancelled",
+                        "participant",
+                        "actor-target-2",
+                        "event",
+                        "target-event-1"));
+
+        RegistrationView cancelled =
+                cancelService.cancel(CONTEXT, toCancel.registrationId()).orElseThrow();
+
+        createService.create(
+                CONTEXT,
+                command(
+                        "persistent-target-other-event",
+                        "participant",
+                        "actor-target-1",
+                        "event",
+                        "target-event-2"));
+
+        createService.create(
+                CONTEXT,
+                command(
+                        "persistent-target-other-ns",
+                        "participant",
+                        "actor-target-1",
+                        "other-ns",
+                        "target-event-1"));
+
+        java.util.List<RegistrationView> results =
+                findService.findByTarget(CONTEXT, new TargetReference("event", "target-event-1"));
+
+        assertEquals(2, results.size());
+        assertEquals(active, results.get(0));
+        assertEquals(cancelled, results.get(1));
     }
 
     private static void insertPreLifecycleRegistration() throws SQLException {
