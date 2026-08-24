@@ -14,16 +14,20 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Product Goal #182, **Extend published Event lifecycle**, and Use-case Goal #193, **Organizer withdraws published Event**, are complete.
+Product Goal #183, **Control Event registration availability**, with selected Use-case Goal #198, **Organizer closes and reopens Event registration**.
 
 ## In progress
 
-None.
+Scope transition #199 admits manual organizer-controlled new-Registration availability for a published Event while preserving current dependency direction and the existing Registration and Security non-ownership boundaries.
 
 ## Current gaps
 
-None.
+The accepted scope now defines the #198 outcome and semantic ownership, but implementation readiness is not yet resolved.
+
+Post-scope readiness must determine the minimum Event public capability/state and persistence impact, Event-Management authorization flow, Event-Registration eligibility semantics, external contract/failure behavior, validation proof, and whether the Event responsibility expansion is significant enough to require an ADR.
+
+No implementation issue is ready yet.
 
 ## Next action
 
-Select and promote the next roadmap Product Goal under governance.
+Re-read the accepted Event module and architecture boundaries after #199, decide whether an ADR is required, and resolve the remaining #198 implementation readiness. Create one coherent vertical implementation issue only if readiness is fully resolved.
