@@ -28,6 +28,7 @@ openApiApplicationContract {
             "updateEvent",
             "findEventById",
             "publishEvent",
+            "withdrawEvent",
         )
     )
     forbiddenOperationIds.set(

@@ -134,6 +134,33 @@ class ParticipantEventRegistrationServiceTest {
     }
 
     @Test
+    void withdrawnEventDoesNotCreateParticipantRegistration() {
+        AtomicBoolean registrationCalled = new AtomicBoolean();
+
+        CreateRegistration createRegistration = (context, command) -> {
+            registrationCalled.set(true);
+            throw new AssertionError("Registration must not be invoked");
+        };
+
+        ParticipantEventRegistrationService service = service(
+                (context, eventId) -> Optional.of(event(eventId, EventPublicationState.WITHDRAWN)),
+                createRegistration,
+                noRegistrationLookup(),
+                noRegistrationCancellation());
+
+        assertThrows(
+                EventNotPublishedForRegistrationException.class,
+                () -> service.create(
+                        CONTEXT,
+                        ACTOR,
+                        new CreateParticipantEventRegistrationCommand(
+                                "registration-1",
+                                "event-1")));
+
+        assertFalse(registrationCalled.get());
+    }
+
+    @Test
     void unknownEventDoesNotCreateParticipantRegistration() {
         AtomicBoolean registrationCalled = new AtomicBoolean();
 

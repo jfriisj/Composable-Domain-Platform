@@ -52,6 +52,40 @@ class EventHttpErrorHandlerTest {
     }
 
     @Test
+    void rendersNotPublishedFailureWithItsCorrelationAndContractError() {
+        ExecutionContext context =
+                new ExecutionContext(new CorrelationId("corr-not-published"));
+
+        ResponseEntity<ErrorResponse> response =
+                handler.handleEventFailure(EventHttpException.notPublished(context));
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals("corr-not-published", correlation(response));
+
+        ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals(ErrorResponse.CodeEnum.EVENT_NOT_PUBLISHED, body.getCode());
+        assertEquals("Event is not published", body.getMessage());
+    }
+
+    @Test
+    void rendersWithdrawnFailureWithItsCorrelationAndContractError() {
+        ExecutionContext context =
+                new ExecutionContext(new CorrelationId("corr-withdrawn"));
+
+        ResponseEntity<ErrorResponse> response =
+                handler.handleEventFailure(EventHttpException.withdrawn(context));
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals("corr-withdrawn", correlation(response));
+
+        ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals(ErrorResponse.CodeEnum.EVENT_WITHDRAWN, body.getCode());
+        assertEquals("Event is withdrawn", body.getMessage());
+    }
+
+    @Test
     void rendersInvalidTransportFailureWithSuppliedCorrelation() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpCorrelation.HEADER_NAME, "corr-invalid");

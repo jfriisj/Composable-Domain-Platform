@@ -924,6 +924,230 @@ class PlatformEventRegistrationHttpE2ETest {
         assertJsonString(response.body(), "code", "event_not_found");
     }
 
+    @Test
+    void withdrawnEventRejectsNewRegistrationsAndPreservesExistingRegistrationsAcrossProcessRestart()
+            throws Exception {
+        String eventId = "withdrawn-lifecycle-event";
+        String regIdB = "registration-b-lifecycle";
+        String regIdC = "registration-c-lifecycle";
+
+        // 1. Organizer A defines and publishes event
+        defineAndPublishEvent(eventId);
+
+        HttpResponse<String> publishedEvent = getEvent(eventId, "corr-get-published");
+        assertEquals(200, publishedEvent.statusCode());
+        assertCorrelation(publishedEvent, "corr-get-published");
+        assertJsonString(publishedEvent.body(), "publicationState", "published");
+
+        // 1a. Anonymous discovery contains this Event with publicationState=published before withdrawal
+        HttpResponse<String> discoveredBeforeWithdrawal = discoverEvents("corr-discover-before-withdraw");
+        assertEquals(200, discoveredBeforeWithdrawal.statusCode());
+        assertCorrelation(discoveredBeforeWithdrawal, "corr-discover-before-withdraw");
+        assertTrue(discoveredBeforeWithdrawal.body().contains("\"eventId\":\"" + eventId + "\""));
+        assertJsonString(discoveredBeforeWithdrawal.body(), "publicationState", "published");
+
+        // 1b. Missing credentials on withdrawal return 401 authentication_required with preserved correlation
+        HttpResponse<String> unauthWithdraw = withdrawEvent(
+                eventId,
+                "corr-unauth-withdraw",
+                null,
+                null);
+        assertEquals(401, unauthWithdraw.statusCode());
+        assertCorrelation(unauthWithdraw, "corr-unauth-withdraw");
+        assertJsonString(unauthWithdraw.body(), "code", "authentication_required");
+
+        // 1c. Invalid credentials on withdrawal return 401 authentication_required with preserved correlation
+        HttpResponse<String> invalidCredsWithdraw = withdrawEvent(
+                eventId,
+                "corr-invalid-withdraw",
+                PRINCIPAL_A,
+                "wrong-secret");
+        assertEquals(401, invalidCredsWithdraw.statusCode());
+        assertCorrelation(invalidCredsWithdraw, "corr-invalid-withdraw");
+        assertJsonString(invalidCredsWithdraw.body(), "code", "authentication_required");
+
+        // 2. Participant B registers for published event -> 201 active
+        HttpResponse<String> createdB = postRegistration(
+                registrationJson(regIdB, eventId),
+                "corr-reg-b",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(201, createdB.statusCode());
+        assertCorrelation(createdB, "corr-reg-b");
+        assertRegistrationBody(createdB.body(), regIdB, eventId, "active");
+
+        // 3. Organizer A views registrations for event -> 200 containing B as active
+        HttpResponse<String> orgRegistrations = getEventRegistrations(
+                eventId,
+                "corr-org-regs",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, orgRegistrations.statusCode());
+        assertCorrelation(orgRegistrations, "corr-org-regs");
+        assertRegistrationBody(orgRegistrations.body(), regIdB, eventId, "active");
+
+        // 4. Participant B (non-owner) is forbidden from withdrawing event -> 403 forbidden with preserved correlation
+        HttpResponse<String> nonOwnerWithdraw = withdrawEvent(
+                eventId,
+                "corr-non-owner-withdraw",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(403, nonOwnerWithdraw.statusCode());
+        assertCorrelation(nonOwnerWithdraw, "corr-non-owner-withdraw");
+        assertJsonString(nonOwnerWithdraw.body(), "code", "forbidden");
+
+        // 4a. Retrieve Event by known ID and prove it is still published after non-owner denial
+        HttpResponse<String> eventAfterDeniedWithdraw = getEvent(eventId, "corr-get-after-denied-withdraw");
+        assertEquals(200, eventAfterDeniedWithdraw.statusCode());
+        assertCorrelation(eventAfterDeniedWithdraw, "corr-get-after-denied-withdraw");
+        assertJsonString(eventAfterDeniedWithdraw.body(), "publicationState", "published");
+
+        // 5. Organizer A withdraws event -> 204 with preserved correlation
+        HttpResponse<String> ownerWithdraw = withdrawEvent(
+                eventId,
+                "corr-owner-withdraw",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(204, ownerWithdraw.statusCode());
+        assertCorrelation(ownerWithdraw, "corr-owner-withdraw");
+
+        // 6. Direct retrieval of withdrawn event -> 200 with publicationState=withdrawn
+        HttpResponse<String> withdrawnEvent = getEvent(eventId, "corr-get-withdrawn");
+        assertEquals(200, withdrawnEvent.statusCode());
+        assertCorrelation(withdrawnEvent, "corr-get-withdrawn");
+        assertJsonString(withdrawnEvent.body(), "publicationState", "withdrawn");
+
+        // 7. Discovery excludes withdrawn event
+        HttpResponse<String> discovered = discoverEvents("corr-discover-withdrawn");
+        assertEquals(200, discovered.statusCode());
+        assertCorrelation(discovered, "corr-discover-withdrawn");
+        assertFalse(discovered.body().contains("\"eventId\":\"" + eventId + "\""));
+
+        // 7a. Immediately after owner withdrawal, Organizer retrieves Event registrations and sees existing Registration as active
+        HttpResponse<String> orgRegistrationsAfterWithdrawal = getEventRegistrations(
+                eventId,
+                "corr-org-regs-after-withdrawal",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, orgRegistrationsAfterWithdrawal.statusCode());
+        assertCorrelation(orgRegistrationsAfterWithdrawal, "corr-org-regs-after-withdrawal");
+        assertRegistrationBody(orgRegistrationsAfterWithdrawal.body(), regIdB, eventId, "active");
+
+        // 8. Participant C attempts registration against withdrawn event -> 409 event_not_published
+        HttpResponse<String> createdC = postRegistration(
+                registrationJson(regIdC, eventId),
+                "corr-reg-c",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(409, createdC.statusCode());
+        assertCorrelation(createdC, "corr-reg-c");
+        assertJsonString(createdC.body(), "code", "event_not_published");
+        assertEquals(0, registrationCount(regIdC));
+        assertEquals(1, registrationCount(regIdB));
+
+        // 9. Organizer attempts update, publication, or withdrawal on withdrawn event -> 409 event_withdrawn
+        HttpResponse<String> updateWithdrawn = updateEvent(
+                eventId,
+                "Updated Name",
+                "corr-update-withdrawn",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(409, updateWithdrawn.statusCode());
+        assertCorrelation(updateWithdrawn, "corr-update-withdrawn");
+        assertJsonString(updateWithdrawn.body(), "code", "event_withdrawn");
+
+        HttpResponse<String> republishWithdrawn = publishEvent(eventId, "corr-repub-withdrawn");
+        assertEquals(409, republishWithdrawn.statusCode());
+        assertCorrelation(republishWithdrawn, "corr-repub-withdrawn");
+        assertJsonString(republishWithdrawn.body(), "code", "event_withdrawn");
+
+        HttpResponse<String> rewithdraw = withdrawEvent(
+                eventId,
+                "corr-re-withdraw",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(409, rewithdraw.statusCode());
+        assertCorrelation(rewithdraw, "corr-re-withdraw");
+        assertJsonString(rewithdraw.body(), "code", "event_withdrawn");
+
+        // 10. Existing participant registration for B remains intact and can be cancelled
+        HttpResponse<String> retrievedB = getRegistration(
+                regIdB,
+                "corr-get-reg-b",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, retrievedB.statusCode());
+        assertCorrelation(retrievedB, "corr-get-reg-b");
+        assertRegistrationBody(retrievedB.body(), regIdB, eventId, "active");
+
+        HttpResponse<String> cancelledB = cancelRegistration(
+                regIdB,
+                "corr-cancel-b",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, cancelledB.statusCode());
+        assertCorrelation(cancelledB, "corr-cancel-b");
+        assertRegistrationBody(cancelledB.body(), regIdB, eventId, "cancelled");
+
+        // 10a. After participant cancellation, before restart: Organizer views registrations and sees Registration as cancelled
+        HttpResponse<String> orgRegistrationsAfterCancellation = getEventRegistrations(
+                eventId,
+                "corr-org-regs-after-cancellation",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, orgRegistrationsAfterCancellation.statusCode());
+        assertCorrelation(orgRegistrationsAfterCancellation, "corr-org-regs-after-cancellation");
+        assertRegistrationBody(orgRegistrationsAfterCancellation.body(), regIdB, eventId, "cancelled");
+
+        // 11. Application restart against PostgreSQL to prove durability across process restart
+        application.close();
+        startApplication();
+
+        // 12. Direct retrieval after restart -> 200 with publicationState=withdrawn
+        HttpResponse<String> eventAfterRestart = getEvent(eventId, "corr-get-event-restart");
+        assertEquals(200, eventAfterRestart.statusCode());
+        assertCorrelation(eventAfterRestart, "corr-get-event-restart");
+        assertJsonString(eventAfterRestart.body(), "publicationState", "withdrawn");
+
+        // 13. Discovery after restart still excludes withdrawn event
+        HttpResponse<String> discoverAfterRestart = discoverEvents("corr-discover-restart");
+        assertEquals(200, discoverAfterRestart.statusCode());
+        assertCorrelation(discoverAfterRestart, "corr-discover-restart");
+        assertFalse(discoverAfterRestart.body().contains("\"eventId\":\"" + eventId + "\""));
+
+        // 14. Registration against withdrawn event after restart is still rejected -> 409 event_not_published
+        HttpResponse<String> createdCAfterRestart = postRegistration(
+                registrationJson(regIdC, eventId),
+                "corr-reg-c-restart",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(409, createdCAfterRestart.statusCode());
+        assertCorrelation(createdCAfterRestart, "corr-reg-c-restart");
+        assertJsonString(createdCAfterRestart.body(), "code", "event_not_published");
+        assertEquals(0, registrationCount(regIdC));
+        assertEquals(1, registrationCount(regIdB));
+
+        // 15. Existing registration state after restart remains cancelled
+        HttpResponse<String> retrievedBAfterRestart = getRegistration(
+                regIdB,
+                "corr-get-reg-b-restart",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, retrievedBAfterRestart.statusCode());
+        assertCorrelation(retrievedBAfterRestart, "corr-get-reg-b-restart");
+        assertRegistrationBody(retrievedBAfterRestart.body(), regIdB, eventId, "cancelled");
+
+        // 16. Organizer registration view after restart returns the existing registration as cancelled
+        HttpResponse<String> orgRegistrationsAfterRestart = getEventRegistrations(
+                eventId,
+                "corr-org-regs-restart",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, orgRegistrationsAfterRestart.statusCode());
+        assertCorrelation(orgRegistrationsAfterRestart, "corr-org-regs-restart");
+        assertRegistrationBody(orgRegistrationsAfterRestart.body(), regIdB, eventId, "cancelled");
+    }
+
     private static void defineEvent(String eventId) throws Exception {
         defineEvent(eventId, "Registration Event", PRINCIPAL_A, PASSWORD_A);
     }
@@ -1028,6 +1252,21 @@ class PlatformEventRegistrationHttpE2ETest {
 
         return HTTP.send(
                 builder.POST(HttpRequest.BodyPublishers.noBody()).build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static HttpResponse<String> withdrawEvent(
+            String eventId,
+            String correlationId,
+            String principal,
+            String password) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(
+                baseUri.resolve("/api/v1/events/" + eventId + "/publication"));
+
+        addCommonHeaders(builder, correlationId, principal, password);
+
+        return HTTP.send(
+                builder.DELETE().build(),
                 HttpResponse.BodyHandlers.ofString());
     }
 

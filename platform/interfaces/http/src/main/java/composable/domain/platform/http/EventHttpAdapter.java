@@ -9,7 +9,10 @@ import composable.domain.platform.event.api.DiscoverEvents;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
 import composable.domain.platform.event.api.EventAlreadyPublishedException;
 import composable.domain.platform.event.api.EventNotFoundException;
+import composable.domain.platform.event.api.EventNotPublishedException;
+import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
+import composable.domain.platform.event.api.EventWithdrawnException;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.InvalidEventDefinitionException;
 import composable.domain.platform.http.event.generated.api.EventApi;
@@ -92,6 +95,8 @@ public class EventHttpAdapter implements EventApi {
             throw EventHttpException.forbidden(context);
         } catch (EventAlreadyPublishedException exception) {
             throw EventHttpException.alreadyPublished(context);
+        } catch (EventWithdrawnException exception) {
+            throw EventHttpException.withdrawn(context);
         } catch (RuntimeException exception) {
             throw EventHttpException.internal(context, exception);
         }
@@ -147,6 +152,34 @@ public class EventHttpAdapter implements EventApi {
             throw EventHttpException.forbidden(context);
         } catch (EventAlreadyPublishedException exception) {
             throw EventHttpException.alreadyPublished(context);
+        } catch (EventWithdrawnException exception) {
+            throw EventHttpException.withdrawn(context);
+        } catch (RuntimeException exception) {
+            throw EventHttpException.internal(context, exception);
+        }
+    }
+
+    @Override
+    public ResponseEntity<Void> withdrawEvent(
+            String eventId,
+            String suppliedCorrelationId) {
+        ExecutionContext context = HttpCorrelation.establish(suppliedCorrelationId);
+
+        try {
+            AuthenticatedActorReference actorReference =
+                    authenticatedActorProvider.authenticatedActor();
+            organizerEventManagement.withdraw(context, actorReference, eventId);
+            return ResponseEntity.noContent()
+                    .header(HttpCorrelation.HEADER_NAME, HttpCorrelation.value(context))
+                    .build();
+        } catch (EventNotFoundException exception) {
+            throw EventHttpException.notFound(context);
+        } catch (EventManagementAuthorizationDeniedException exception) {
+            throw EventHttpException.forbidden(context);
+        } catch (EventNotPublishedException exception) {
+            throw EventHttpException.notPublished(context);
+        } catch (EventWithdrawnException exception) {
+            throw EventHttpException.withdrawn(context);
         } catch (RuntimeException exception) {
             throw EventHttpException.internal(context, exception);
         }
@@ -187,7 +220,17 @@ public class EventHttpAdapter implements EventApi {
                 event.slug(),
                 event.startsAt().atOffset(ZoneOffset.UTC),
                 event.endsAt().atOffset(ZoneOffset.UTC),
-                event.timezone().getId());
+                event.timezone().getId(),
+                toPublicationState(event.publicationState()));
+    }
+
+    private static EventResponse.PublicationStateEnum toPublicationState(
+            EventPublicationState state) {
+        return switch (state) {
+            case UNPUBLISHED -> EventResponse.PublicationStateEnum.UNPUBLISHED;
+            case PUBLISHED -> EventResponse.PublicationStateEnum.PUBLISHED;
+            case WITHDRAWN -> EventResponse.PublicationStateEnum.WITHDRAWN;
+        };
     }
 
     private static <T> ResponseEntity<T> response(

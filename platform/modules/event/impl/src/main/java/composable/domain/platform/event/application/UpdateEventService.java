@@ -4,6 +4,7 @@ import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.EventAlreadyPublishedException;
 import composable.domain.platform.event.api.EventNotFoundException;
 import composable.domain.platform.event.api.EventView;
+import composable.domain.platform.event.api.EventWithdrawnException;
 import composable.domain.platform.event.api.InvalidEventDefinitionException;
 import composable.domain.platform.event.api.UpdateEvent;
 import composable.domain.platform.event.api.UpdateEventCommand;
@@ -33,6 +34,9 @@ public final class UpdateEventService implements UpdateEvent {
         if (existing.publicationState() == PublicationState.PUBLISHED) {
             throw new EventAlreadyPublishedException(command.eventId());
         }
+        if (existing.publicationState() == PublicationState.WITHDRAWN) {
+            throw new EventWithdrawnException(command.eventId());
+        }
 
         Event updated;
         try {
@@ -47,6 +51,10 @@ public final class UpdateEventService implements UpdateEvent {
         }
 
         if (!repository.updateDefinition(updated)) {
+            Event current = repository.findById(command.eventId()).orElse(null);
+            if (current != null && current.publicationState() == PublicationState.WITHDRAWN) {
+                throw new EventWithdrawnException(command.eventId());
+            }
             throw new EventAlreadyPublishedException(command.eventId());
         }
 

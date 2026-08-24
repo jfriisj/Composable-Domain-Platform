@@ -57,6 +57,9 @@ public record Event(
         if (publicationState == PublicationState.PUBLISHED) {
             throw new IllegalStateException("Event is already published");
         }
+        if (publicationState == PublicationState.WITHDRAWN) {
+            throw new IllegalStateException("Event is already withdrawn");
+        }
 
         return new Event(
                 id,
@@ -69,6 +72,25 @@ public record Event(
                 owner);
     }
 
+    public Event withdraw() {
+        if (publicationState == PublicationState.UNPUBLISHED) {
+            throw new IllegalStateException("Event is not published");
+        }
+        if (publicationState == PublicationState.WITHDRAWN) {
+            throw new IllegalStateException("Event is already withdrawn");
+        }
+
+        return new Event(
+                id,
+                name,
+                slug,
+                startsAt,
+                endsAt,
+                timezone,
+                PublicationState.WITHDRAWN,
+                owner);
+    }
+
     public Event updateDefinition(
             String newName,
             String newSlug,
@@ -77,6 +99,9 @@ public record Event(
             ZoneId newTimezone) {
         if (publicationState == PublicationState.PUBLISHED) {
             throw new IllegalStateException("Event is already published");
+        }
+        if (publicationState == PublicationState.WITHDRAWN) {
+            throw new IllegalStateException("Event is already withdrawn");
         }
 
         return new Event(

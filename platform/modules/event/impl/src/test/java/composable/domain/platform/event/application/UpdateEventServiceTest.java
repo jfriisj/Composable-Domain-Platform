@@ -118,6 +118,37 @@ class UpdateEventServiceTest {
     }
 
     @Test
+    void updateFailsIfEventWithdrawn() {
+        InMemoryEventRepository repository = new InMemoryEventRepository();
+        Event event = new Event(
+                "event-1",
+                "Original Event",
+                "original-event",
+                Instant.parse("2026-09-01T08:00:00Z"),
+                Instant.parse("2026-09-01T10:00:00Z"),
+                ZoneId.of("Europe/Copenhagen"),
+                "organizer-1");
+        repository.addIfAbsent(event);
+        repository.updatePublicationState(event.publish().withdraw(), event.publicationState());
+
+        UpdateEventService service = new UpdateEventService(repository);
+
+        composable.domain.platform.event.api.EventWithdrawnException error = assertThrows(
+                composable.domain.platform.event.api.EventWithdrawnException.class,
+                () -> service.update(
+                        CONTEXT,
+                        new UpdateEventCommand(
+                                "event-1",
+                                "Updated Event",
+                                "updated-event",
+                                Instant.parse("2026-10-01T09:00:00Z"),
+                                Instant.parse("2026-10-01T11:00:00Z"),
+                                ZoneId.of("Europe/Oslo"))));
+
+        assertEquals("event-1", error.eventId());
+    }
+
+    @Test
     void updateFailsIfInvalidDefinition() {
         InMemoryEventRepository repository = new InMemoryEventRepository();
         Event event = new Event(

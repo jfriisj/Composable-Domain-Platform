@@ -9,6 +9,7 @@ public interface UpdateEvent {
      *
      * @throws EventNotFoundException if the Event does not exist
      * @throws EventAlreadyPublishedException if the Event is already published
+     * @throws EventWithdrawnException if the Event is withdrawn
      * @throws InvalidEventDefinitionException if the updated definition is invalid
      */
     EventView update(ExecutionContext context, UpdateEventCommand command);

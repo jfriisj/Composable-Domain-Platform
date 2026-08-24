@@ -51,10 +51,13 @@ class PlatformRuntimeConfigurationTest {
             assertNotNull(context.getBean(EventHttpAdapter.class));
 
             assertNotNull(context.getBean(composable.domain.platform.event.api.UpdateEvent.class));
+            assertNotNull(context.getBean(composable.domain.platform.event.api.WithdrawEvent.class));
             assertNotNull(context.getBean(composable.domain.platform.composition.eventmanagement.OrganizerEventManagementService.class));
-                        DefineEvent defineEvent = context.getBean(DefineEvent.class);
+            DefineEvent defineEvent = context.getBean(DefineEvent.class);
             FindEvent findEvent = context.getBean(FindEvent.class);
             PublishEvent publishEvent = context.getBean(PublishEvent.class);
+            composable.domain.platform.event.api.WithdrawEvent withdrawEvent =
+                    context.getBean(composable.domain.platform.event.api.WithdrawEvent.class);
             DiscoverEvents discoverEvents = context.getBean(DiscoverEvents.class);
             ExecutionContext executionContext =
                     new ExecutionContext(new CorrelationId("runtime-composition-test"));
@@ -80,6 +83,16 @@ class PlatformRuntimeConfigurationTest {
             assertEquals(EventPublicationState.PUBLISHED, published.publicationState());
             assertEquals(published, retrieved);
             assertTrue(discoverEvents.discover(executionContext).contains(published));
+
+            EventView withdrawn = withdrawEvent.withdraw(executionContext, command.eventId());
+            assertEquals(EventPublicationState.WITHDRAWN, withdrawn.publicationState());
+
+            EventView retrievedWithdrawn = findEvent
+                    .findById(executionContext, command.eventId())
+                    .orElseThrow();
+            assertEquals(EventPublicationState.WITHDRAWN, retrievedWithdrawn.publicationState());
+            assertTrue(discoverEvents.discover(executionContext).isEmpty());
+
             assertEquals(command.eventId(), retrieved.eventId());
             assertEquals(command.name(), retrieved.name());
             assertEquals(command.slug(), retrieved.slug());

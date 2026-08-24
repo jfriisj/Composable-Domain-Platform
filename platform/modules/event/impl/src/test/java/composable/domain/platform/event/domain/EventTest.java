@@ -105,6 +105,59 @@ class EventTest {
     }
 
     @Test
+    void withdrawingPublishedEventPreservesDefinitionAndProducesWithdrawnState() {
+        Event published = event().publish();
+
+        Event withdrawn = published.withdraw();
+
+        assertNotSame(published, withdrawn);
+        assertEquals(published.id(), withdrawn.id());
+        assertEquals(published.name(), withdrawn.name());
+        assertEquals(published.slug(), withdrawn.slug());
+        assertEquals(published.startsAt(), withdrawn.startsAt());
+        assertEquals(published.endsAt(), withdrawn.endsAt());
+        assertEquals(published.timezone(), withdrawn.timezone());
+        assertEquals(published.owner(), withdrawn.owner());
+        assertEquals(PublicationState.PUBLISHED, published.publicationState());
+        assertEquals(PublicationState.WITHDRAWN, withdrawn.publicationState());
+    }
+
+    @Test
+    void unpublishedEventCannotBeWithdrawn() {
+        Event unpublished = event();
+
+        assertThrows(IllegalStateException.class, unpublished::withdraw);
+    }
+
+    @Test
+    void alreadyWithdrawnEventCannotBeWithdrawnAgain() {
+        Event withdrawn = event().publish().withdraw();
+
+        assertThrows(IllegalStateException.class, withdrawn::withdraw);
+    }
+
+    @Test
+    void withdrawnEventCannotBePublished() {
+        Event withdrawn = event().publish().withdraw();
+
+        assertThrows(IllegalStateException.class, withdrawn::publish);
+    }
+
+    @Test
+    void withdrawnEventCannotBeUpdated() {
+        Event withdrawn = event().publish().withdraw();
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> withdrawn.updateDefinition(
+                        "Updated",
+                        "updated",
+                        START,
+                        END,
+                        TIMEZONE));
+    }
+
+    @Test
     void restoresLegacyRowWithoutOwnerReference() {
         Event legacy = new Event(
                 "event-legacy",

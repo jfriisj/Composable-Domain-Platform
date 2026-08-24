@@ -267,7 +267,66 @@ class EventPersistenceIntegrationTest {
     }
 
     @Test
-    void knownIdRetrievalWorksForBothPublicationStates() {
+    void persistsWithdrawalExcludesFromDiscoveryAndRejectsModificationOrRepublication() {
+        DefineEventService definition =
+                new DefineEventService(new JooqEventRepository(dataSource));
+        EventView event = definition.define(
+                CONTEXT,
+                command(
+                        "persistent-withdraw",
+                        "Withdrawn Persistent Event",
+                        "withdrawn-persistent-event"));
+
+        new PublishEventService(new JooqEventRepository(dataSource))
+                .publish(CONTEXT, event.eventId());
+
+        EventView withdrawn =
+                new WithdrawEventService(new JooqEventRepository(dataSource))
+                        .withdraw(CONTEXT, event.eventId());
+
+        assertEquals(EventPublicationState.WITHDRAWN, withdrawn.publicationState());
+
+        EventView retrieved =
+                new FindEventService(new JooqEventRepository(dataSource))
+                        .findById(CONTEXT, event.eventId())
+                        .orElseThrow();
+
+        assertEquals(withdrawn, retrieved);
+        assertEquals(EventPublicationState.WITHDRAWN, retrieved.publicationState());
+
+        var discovered =
+                new DiscoverEventsService(new JooqEventRepository(dataSource))
+                        .discover(CONTEXT);
+
+        assertTrue(discovered.stream()
+                .noneMatch(e -> e.eventId().equals(event.eventId())));
+
+        assertThrows(
+                composable.domain.platform.event.api.EventWithdrawnException.class,
+                () -> new PublishEventService(new JooqEventRepository(dataSource))
+                        .publish(CONTEXT, event.eventId()));
+
+        assertThrows(
+                composable.domain.platform.event.api.EventWithdrawnException.class,
+                () -> new UpdateEventService(new JooqEventRepository(dataSource))
+                        .update(
+                                CONTEXT,
+                                new UpdateEventCommand(
+                                        event.eventId(),
+                                        "Updated Name",
+                                        "updated-slug",
+                                        Instant.parse("2026-11-01T09:00:00Z"),
+                                        Instant.parse("2026-11-01T11:00:00Z"),
+                                        ZoneId.of("Europe/Copenhagen"))));
+
+        assertThrows(
+                composable.domain.platform.event.api.EventWithdrawnException.class,
+                () -> new WithdrawEventService(new JooqEventRepository(dataSource))
+                        .withdraw(CONTEXT, event.eventId()));
+    }
+
+    @Test
+    void knownIdRetrievalWorksForAllPublicationStates() {
         DefineEventService definition =
                 new DefineEventService(new JooqEventRepository(dataSource));
         EventView unpublished = definition.define(
@@ -282,9 +341,20 @@ class EventPersistenceIntegrationTest {
                         "persistent-known-published",
                         "Known Published",
                         "known-published"));
+        EventView withdrawn = definition.define(
+                CONTEXT,
+                command(
+                        "persistent-known-withdrawn",
+                        "Known Withdrawn",
+                        "known-withdrawn"));
 
         new PublishEventService(new JooqEventRepository(dataSource))
                 .publish(CONTEXT, published.eventId());
+
+        new PublishEventService(new JooqEventRepository(dataSource))
+                .publish(CONTEXT, withdrawn.eventId());
+        new WithdrawEventService(new JooqEventRepository(dataSource))
+                .withdraw(CONTEXT, withdrawn.eventId());
 
         assertEquals(
                 EventPublicationState.UNPUBLISHED,
@@ -296,6 +366,12 @@ class EventPersistenceIntegrationTest {
                 EventPublicationState.PUBLISHED,
                 new FindEventService(new JooqEventRepository(dataSource))
                         .findById(CONTEXT, published.eventId())
+                        .orElseThrow()
+                        .publicationState());
+        assertEquals(
+                EventPublicationState.WITHDRAWN,
+                new FindEventService(new JooqEventRepository(dataSource))
+                        .findById(CONTEXT, withdrawn.eventId())
                         .orElseThrow()
                         .publicationState());
     }
