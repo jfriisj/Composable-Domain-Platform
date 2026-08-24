@@ -12,18 +12,20 @@ The accepted product experience combines organizer-owned Event management and th
 
 - An authenticated platform actor can create an Event and becomes its durable organizer/owner.
 - An authenticated owner can modify their owned Event while it is `unpublished`; mutable definition values (`name`, `slug`, `startsAt`, `endsAt`, `timezone`) may be changed, while `eventId` remains immutable identity.
-- A new Event is `unpublished`; Event owns the one-way `unpublished -> published` transition, which requires owner authorization through the organizer-management flow.
-- Event ownership, definition state, and publication state are durable across application-process restart against the same PostgreSQL database. Ownership transfer is not supported.
-- Public discovery returns published Events only; known-id retrieval remains publication-independent; the anonymous public representation does not require public disclosure of the organizer reference.
-- Authenticated non-owners cannot modify or publish another actor's Event.
+- A new Event is `unpublished`; Event owns the owner-authorized `unpublished -> published` transition through the organizer-management flow.
+- An authenticated Event owner may deliberately transition their own `published` Event to terminal `withdrawn`. `withdrawn` is distinct from `unpublished`: withdrawal is not an edit-back-to-draft operation, and restore/re-publish is not supported.
+- Event ownership, definition state, and lifecycle state are durable across application-process restart against the same PostgreSQL database. Ownership transfer is not supported.
+- Public discovery returns `published` Events only; `unpublished` and `withdrawn` Events are excluded. Known-id retrieval remains lifecycle-independent and exposes the Event's current lifecycle; the anonymous public representation does not require public disclosure of the organizer reference.
+- Authenticated non-owners cannot modify, publish, or withdraw another actor's Event.
 - For organizer management, Event owns the organizer reference and Event business state, while Security owns Authentication and the final opaque actor-versus-resource-owner Authorization decision; the collaboration mechanism is not selected by scope.
-- An authenticated participant can create an Event Registration only when the referenced Event exists and is `published`; an existing `unpublished` Event is ineligible, and rejected ineligible attempts create no Registration state.
+- An authenticated participant can create an Event Registration only when the referenced Event exists and is `published`; `unpublished` and `withdrawn` Events are ineligible, and rejected ineligible attempts create no Registration state.
+- Withdrawing an Event does not automatically cancel, delete, reactivate, or otherwise mutate existing Registrations. Existing participant-private retrieval/cancellation and organizer Registration-view behavior remain available for Registrations targeting a withdrawn Event.
 - The participant can retrieve their private Event-registration state, cancel it, and later retrieve the same durable Registration as `cancelled`.
 - An authenticated Event owner can retrieve Registrations targeting their owned Event and observe each Registration's current lifecycle, including `active` and `cancelled`; Registrations targeting other Events are excluded from that organizer-private view.
 - Organizer Event-registration access is read-only. An authenticated non-owner cannot access another actor's organizer-private Event-registration view, an unknown Event exposes no Registration information, and participant-private retrieval/cancellation semantics remain unchanged.
 - Registration owns a domain-neutral registrant-to-target relation, uniqueness, the `active -> cancelled` lifecycle, durable retrieval, and idempotent cancellation.
 - Cancellation preserves Registration identity and the complete registrant-target uniqueness relation; a cancelled pair remains occupied.
-- Event-Registration owns Event-specific cross-capability orchestration, including deciding participant Registration eligibility from Event-owned publication state, mapping the authenticated participant to the registrant reference, and presenting Registration state targeting an owned Event to its organizer through public module APIs.
+- Event-Registration owns Event-specific cross-capability orchestration, including deciding participant Registration eligibility from Event-owned lifecycle state, mapping the authenticated participant to the registrant reference, and presenting Registration state targeting an owned Event to its organizer through public module APIs.
 - Security owns Authentication and the final opaque actor-versus-resource-owner Authorization decision. Event-Registration supplies Event/Registration workflow facts and maps denial to its workflow result.
 - Authenticated non-owner access to private Event-registration state uses the same external not-found disclosure as unknown private state; unauthenticated access remains a distinct authentication failure.
 - Participant identity is an opaque stable platform actor reference. Registration persists only its own opaque participant reference. Event organizer identity is also an opaque stable platform actor reference, with Event persisting its own organizer reference as authorization state. Correlation/causation identifiers remain identity-free.
@@ -54,7 +56,8 @@ Current authentication proof uses Spring Security with stateless HTTP Basic, ext
 
 Current scope does not authorize:
 
-- Event unpublish/withdraw or unrelated Event lifecycle expansion;
+- reversible Event unpublish/restore/re-publish or Event lifecycle expansion beyond the accepted terminal `withdrawn` state;
+- automatic Registration cancellation or other Registration lifecycle mutation caused solely by Event withdrawal;
 - same-pair Registration re-registration/reactivation, additional Registration lifecycle policy, capacity, quotas, waitlists, ticketing/payment, notifications, or check-in/attendance;
 - a generic Registration HTTP dispatcher;
 - Person/Account or participant-profile capability, provider-specific identity as platform domain state, durable provider-to-platform identity mapping, credential persistence/enrollment/reset/recovery/admin APIs, or external identity-provider integration;
