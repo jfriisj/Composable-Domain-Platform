@@ -13,14 +13,19 @@ import composable.domain.platform.composition.eventregistration.EventNotPublishe
 import composable.domain.platform.composition.eventregistration.EventRegistrationAuthorizationDeniedException;
 import composable.domain.platform.composition.eventregistration.EventRegistrationLifecycle;
 import composable.domain.platform.composition.eventregistration.EventRegistrationUniquenessConflictException;
+import composable.domain.platform.composition.eventregistration.FindOrganizerEventRegistrations;
 import composable.domain.platform.composition.eventregistration.FindParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.InvalidEventRegistrationDefinitionException;
+import composable.domain.platform.composition.eventregistration.InvalidOrganizerEventRegistrationRequestException;
+import composable.domain.platform.composition.eventregistration.OrganizerEventRegistrationAuthorizationDeniedException;
+import composable.domain.platform.composition.eventregistration.OrganizerEventRegistrationView;
 import composable.domain.platform.composition.eventregistration.ParticipantEventRegistrationView;
 import composable.domain.platform.composition.eventregistration.UnknownEventForRegistrationException;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.http.eventregistration.generated.model.CreateEventRegistrationRequest;
 import composable.domain.platform.http.eventregistration.generated.model.EventRegistrationErrorResponse;
 import composable.domain.platform.http.eventregistration.generated.model.EventRegistrationResponse;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -222,6 +227,120 @@ class EventRegistrationHttpAdapterTest {
                 capturedContext.get().correlationId().value());
     }
 
+    @Test
+    void retrievesEventRegistrationsForOrganizerWithCorrelation() {
+        AtomicReference<ExecutionContext> capturedContext = new AtomicReference<>();
+        AtomicReference<AuthenticatedActorReference> capturedActor = new AtomicReference<>();
+        AtomicReference<String> capturedEventId = new AtomicReference<>();
+
+        FindOrganizerEventRegistrations findOrganizer =
+                (context, actorReference, eventId) -> {
+                    capturedContext.set(context);
+                    capturedActor.set(actorReference);
+                    capturedEventId.set(eventId);
+                    return List.of(
+                            new OrganizerEventRegistrationView(
+                                    "reg-1",
+                                    eventId,
+                                    EventRegistrationLifecycle.ACTIVE),
+                            new OrganizerEventRegistrationView(
+                                    "reg-2",
+                                    eventId,
+                                    EventRegistrationLifecycle.CANCELLED));
+                };
+
+        ResponseEntity<List<EventRegistrationResponse>> response =
+                adapter(unusedCreate(), unusedFind(), unusedCancel(), findOrganizer, "organizer-opaque")
+                        .findOrganizerEventRegistrations("event-1", "corr-organizer-find");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(
+                "corr-organizer-find",
+                response.getHeaders().getFirst(EventRegistrationHttpCorrelation.HEADER_NAME));
+        assertEquals("corr-organizer-find", capturedContext.get().correlationId().value());
+        assertEquals(new AuthenticatedActorReference("organizer-opaque"), capturedActor.get());
+        assertEquals("event-1", capturedEventId.get());
+
+        List<EventRegistrationResponse> body = response.getBody();
+        assertNotNull(body);
+        assertEquals(2, body.size());
+        assertEquals("reg-1", body.get(0).getRegistrationId());
+        assertEquals("event-1", body.get(0).getEventId());
+        assertEquals("active", body.get(0).getLifecycle().toString());
+        assertEquals("reg-2", body.get(1).getRegistrationId());
+        assertEquals("event-1", body.get(1).getEventId());
+        assertEquals("cancelled", body.get(1).getLifecycle().toString());
+    }
+
+    @Test
+    void returnsEmptyListWhenNoRegistrationsExistForEvent() {
+        FindOrganizerEventRegistrations findOrganizer =
+                (context, actorReference, eventId) -> List.of();
+
+        ResponseEntity<List<EventRegistrationResponse>> response =
+                adapter(unusedCreate(), unusedFind(), unusedCancel(), findOrganizer, "organizer-opaque")
+                        .findOrganizerEventRegistrations("event-1", "corr-empty");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().isEmpty());
+    }
+
+    @Test
+    void mapsOrganizerAuthorizationDeniedToForbidden() {
+        FindOrganizerEventRegistrations findOrganizer =
+                (context, actorReference, eventId) -> {
+                    throw new OrganizerEventRegistrationAuthorizationDeniedException("Not owner");
+                };
+
+        EventRegistrationHttpException exception = assertThrows(
+                EventRegistrationHttpException.class,
+                () -> adapter(unusedCreate(), unusedFind(), unusedCancel(), findOrganizer, "non-owner-opaque")
+                        .findOrganizerEventRegistrations("event-1", "corr-forbidden"));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.status());
+        assertEquals(
+                EventRegistrationErrorResponse.CodeEnum.FORBIDDEN,
+                exception.code());
+    }
+
+    @Test
+    void mapsOrganizerUnknownEventToNotFound() {
+        FindOrganizerEventRegistrations findOrganizer =
+                (context, actorReference, eventId) -> {
+                    throw new UnknownEventForRegistrationException();
+                };
+
+        EventRegistrationHttpException exception = assertThrows(
+                EventRegistrationHttpException.class,
+                () -> adapter(unusedCreate(), unusedFind(), unusedCancel(), findOrganizer, "organizer-opaque")
+                        .findOrganizerEventRegistrations("missing-event", "corr-missing"));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.status());
+        assertEquals(
+                EventRegistrationErrorResponse.CodeEnum.EVENT_NOT_FOUND,
+                exception.code());
+    }
+
+    @Test
+    void mapsInvalidOrganizerEventRegistrationRequestToBadRequest() {
+        FindOrganizerEventRegistrations findOrganizer =
+                (context, actorReference, eventId) -> {
+                    throw new InvalidOrganizerEventRegistrationRequestException("eventId must not be blank");
+                };
+
+        EventRegistrationHttpException exception = assertThrows(
+                EventRegistrationHttpException.class,
+                () -> adapter(unusedCreate(), unusedFind(), unusedCancel(), findOrganizer, "organizer-opaque")
+                        .findOrganizerEventRegistrations("   ", "corr-bad-request"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.status());
+        assertEquals(
+                EventRegistrationErrorResponse.CodeEnum.INVALID_REQUEST,
+                exception.code());
+        assertEquals("eventId must not be blank", exception.getMessage());
+    }
+
     private static void assertCreateFailure(
             CreateParticipantEventRegistration create,
             HttpStatus expectedStatus,
@@ -244,10 +363,20 @@ class EventRegistrationHttpAdapterTest {
             FindParticipantEventRegistration find,
             CancelParticipantEventRegistration cancel,
             String actorReference) {
+        return adapter(create, find, cancel, unusedFindOrganizer(), actorReference);
+    }
+
+    private static EventRegistrationHttpAdapter adapter(
+            CreateParticipantEventRegistration create,
+            FindParticipantEventRegistration find,
+            CancelParticipantEventRegistration cancel,
+            FindOrganizerEventRegistrations findOrganizer,
+            String actorReference) {
         return new EventRegistrationHttpAdapter(
                 create,
                 find,
                 cancel,
+                findOrganizer,
                 () -> new AuthenticatedActorReference(actorReference));
     }
 
@@ -269,6 +398,13 @@ class EventRegistrationHttpAdapterTest {
         return (context, actorReference, registrationId) -> {
             throw new AssertionError(
                     "CancelParticipantEventRegistration must not be called");
+        };
+    }
+
+    private static FindOrganizerEventRegistrations unusedFindOrganizer() {
+        return (context, actorReference, eventId) -> {
+            throw new AssertionError(
+                    "FindOrganizerEventRegistrations must not be called");
         };
     }
 }

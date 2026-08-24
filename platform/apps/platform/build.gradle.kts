@@ -32,9 +32,10 @@ openApiApplicationContract {
             "createEventRegistration",
             "findEventRegistrationById",
             "cancelEventRegistration",
+            "findOrganizerEventRegistrations",
         )
     )
-    requiredSecuritySchemes.set(setOf("ParticipantBasicAuth", "PlatformActorBasicAuth"))
+    requiredSecuritySchemes.set(setOf("ParticipantBasicAuth", "PlatformActorBasicAuth", "OrganizerBasicAuth"))
 }
 
 dependencies {

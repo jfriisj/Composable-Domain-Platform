@@ -5,9 +5,14 @@ import composable.domain.platform.composition.eventregistration.CreateParticipan
 import composable.domain.platform.composition.eventregistration.CreateParticipantEventRegistrationCommand;
 import composable.domain.platform.composition.eventregistration.EventNotPublishedForRegistrationException;
 import composable.domain.platform.composition.eventregistration.EventRegistrationAuthorizationDeniedException;
+import composable.domain.platform.composition.eventregistration.EventRegistrationLifecycle;
 import composable.domain.platform.composition.eventregistration.EventRegistrationUniquenessConflictException;
+import composable.domain.platform.composition.eventregistration.FindOrganizerEventRegistrations;
 import composable.domain.platform.composition.eventregistration.FindParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.InvalidEventRegistrationDefinitionException;
+import composable.domain.platform.composition.eventregistration.InvalidOrganizerEventRegistrationRequestException;
+import composable.domain.platform.composition.eventregistration.OrganizerEventRegistrationAuthorizationDeniedException;
+import composable.domain.platform.composition.eventregistration.OrganizerEventRegistrationView;
 import composable.domain.platform.composition.eventregistration.ParticipantEventRegistrationView;
 import composable.domain.platform.composition.eventregistration.UnknownEventForRegistrationException;
 import composable.domain.platform.core.execution.ExecutionContext;
@@ -16,6 +21,7 @@ import composable.domain.platform.http.eventregistration.generated.model.CreateE
 import composable.domain.platform.http.eventregistration.generated.model.EventRegistrationResponse;
 import composable.domain.platform.security.api.AuthenticatedActorProvider;
 import composable.domain.platform.security.api.AuthenticatedActorReference;
+import java.util.List;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,12 +33,14 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
     private final CreateParticipantEventRegistration createEventRegistration;
     private final FindParticipantEventRegistration findEventRegistration;
     private final CancelParticipantEventRegistration cancelEventRegistration;
+    private final FindOrganizerEventRegistrations findOrganizerEventRegistrations;
     private final AuthenticatedActorProvider authenticatedActorProvider;
 
     public EventRegistrationHttpAdapter(
             CreateParticipantEventRegistration createEventRegistration,
             FindParticipantEventRegistration findEventRegistration,
             CancelParticipantEventRegistration cancelEventRegistration,
+            FindOrganizerEventRegistrations findOrganizerEventRegistrations,
             AuthenticatedActorProvider authenticatedActorProvider) {
         this.createEventRegistration =
                 Objects.requireNonNull(
@@ -46,6 +54,10 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
                 Objects.requireNonNull(
                         cancelEventRegistration,
                         "cancelEventRegistration must not be null");
+        this.findOrganizerEventRegistrations =
+                Objects.requireNonNull(
+                        findOrganizerEventRegistrations,
+                        "findOrganizerEventRegistrations must not be null");
         this.authenticatedActorProvider =
                 Objects.requireNonNull(
                         authenticatedActorProvider,
@@ -134,21 +146,74 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
         }
     }
 
+    @Override
+    public ResponseEntity<List<EventRegistrationResponse>> findOrganizerEventRegistrations(
+            String eventId,
+            String suppliedCorrelationId) {
+        ExecutionContext context = EventRegistrationHttpCorrelation.establish(suppliedCorrelationId);
+
+        try {
+            AuthenticatedActorReference actorReference =
+                    authenticatedActorProvider.authenticatedActor();
+            List<EventRegistrationResponse> registrations =
+                    findOrganizerEventRegistrations.findByEventId(
+                                    context,
+                                    actorReference,
+                                    eventId)
+                            .stream()
+                            .map(EventRegistrationHttpAdapter::toOrganizerResponse)
+                            .toList();
+            return response(HttpStatus.OK, context, registrations);
+        } catch (InvalidOrganizerEventRegistrationRequestException exception) {
+            throw EventRegistrationHttpException.invalidRequest(context, exception.getMessage());
+        } catch (OrganizerEventRegistrationAuthorizationDeniedException exception) {
+            throw EventRegistrationHttpException.forbidden(context);
+        } catch (UnknownEventForRegistrationException exception) {
+            throw EventRegistrationHttpException.eventNotFound(context);
+        } catch (EventRegistrationHttpException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw EventRegistrationHttpException.internal(context, exception);
+        }
+    }
+
     private static ResponseEntity<EventRegistrationResponse> response(
             HttpStatus status,
             ExecutionContext context,
             ParticipantEventRegistrationView registration) {
         return ResponseEntity.status(status)
                 .header(EventRegistrationHttpCorrelation.HEADER_NAME, EventRegistrationHttpCorrelation.value(context))
-                .body(new EventRegistrationResponse(
-                        registration.registrationId(),
-                        registration.eventId(),
-                        lifecycle(registration)));
+                .body(toResponse(registration));
+    }
+
+    private static ResponseEntity<List<EventRegistrationResponse>> response(
+            HttpStatus status,
+            ExecutionContext context,
+            List<EventRegistrationResponse> registrations) {
+        return ResponseEntity.status(status)
+                .header(EventRegistrationHttpCorrelation.HEADER_NAME, EventRegistrationHttpCorrelation.value(context))
+                .body(registrations);
+    }
+
+    private static EventRegistrationResponse toResponse(
+            ParticipantEventRegistrationView registration) {
+        return new EventRegistrationResponse(
+                registration.registrationId(),
+                registration.eventId(),
+                lifecycle(registration.lifecycle()));
+    }
+
+    private static EventRegistrationResponse toOrganizerResponse(
+            OrganizerEventRegistrationView registration) {
+        return new EventRegistrationResponse(
+                registration.registrationId(),
+                registration.eventId(),
+                lifecycle(registration.lifecycle()));
     }
 
     private static composable.domain.platform.http.eventregistration.generated.model.EventRegistrationLifecycle lifecycle(
-            ParticipantEventRegistrationView registration) {
-        return switch (registration.lifecycle()) {
+            EventRegistrationLifecycle lifecycle) {
+        return switch (lifecycle) {
             case ACTIVE ->
                     composable.domain.platform.http.eventregistration.generated.model.EventRegistrationLifecycle.ACTIVE;
             case CANCELLED ->

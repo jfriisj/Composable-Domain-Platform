@@ -5,6 +5,7 @@ import composable.domain.platform.registration.domain.RegistrantReference;
 import composable.domain.platform.registration.domain.Registration;
 import composable.domain.platform.registration.domain.RegistrationLifecycle;
 import composable.domain.platform.registration.domain.TargetReference;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.sql.DataSource;
@@ -81,6 +82,25 @@ final class JooqRegistrationRepository implements RegistrationRepository {
                 .fetchOne();
 
         return Optional.ofNullable(record).map(JooqRegistrationRepository::toRegistration);
+    }
+
+    @Override
+    public List<Registration> findByTarget(TargetReference targetReference) {
+        Objects.requireNonNull(targetReference, "targetReference must not be null");
+
+        return dsl()
+                .select(
+                        REGISTRATION_ID,
+                        REGISTRANT_NAMESPACE,
+                        REGISTRANT_REFERENCE,
+                        TARGET_NAMESPACE,
+                        TARGET_REFERENCE,
+                        LIFECYCLE)
+                .from(REGISTRATIONS)
+                .where(TARGET_NAMESPACE.eq(targetReference.namespace())
+                        .and(TARGET_REFERENCE.eq(targetReference.reference())))
+                .orderBy(REGISTRATION_ID.asc())
+                .fetch(JooqRegistrationRepository::toRegistration);
     }
 
     @Override

@@ -14,18 +14,18 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Product Goal #167, **Deliver Event experience v1**, is the active product outcome.
+Product Goal #167, **Deliver Event experience v1**, is complete.
 
-Use-case Goal #168, **Organizer manages own Event**, and Use-case Goal #169, **Participant registers for published Event**, are implemented. Use-case Goal #170, **Organizer views Event registrations**, is the next readiness path.
+Use-case Goal #168, **Organizer manages own Event**, Use-case Goal #169, **Participant registers for published Event**, and Use-case Goal #170, **Organizer views Event registrations**, are complete.
 
 ## In progress
 
-No executable #170 implementation is currently scheduled. Scope #181 admits the organizer read-only Event-registration view; post-scope readiness is the current planning transition.
+None.
 
 ## Current gaps
 
-Organizer viewing of Event registrations remains to be delivered under Use-case Goal #170.
+None.
 
 ## Next action
 
-Evaluate post-scope implementation readiness for Use-case Goal #170: the minimum domain-neutral Registration target-query capability, organizer-facing contract and failure/disclosure semantics, and focused/end-to-end validation. If resolved without a significant architecture choice, create one coherent vertical implementation issue.
+Select and promote the next roadmap Product Goal.
