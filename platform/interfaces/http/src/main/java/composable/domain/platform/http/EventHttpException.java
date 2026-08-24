@@ -58,6 +58,24 @@ final class EventHttpException extends RuntimeException {
                 null);
     }
 
+    static EventHttpException notPublished(ExecutionContext context) {
+        return new EventHttpException(
+                HttpStatus.CONFLICT,
+                ErrorResponse.CodeEnum.EVENT_NOT_PUBLISHED,
+                "Event is not published",
+                context,
+                null);
+    }
+
+    static EventHttpException withdrawn(ExecutionContext context) {
+        return new EventHttpException(
+                HttpStatus.CONFLICT,
+                ErrorResponse.CodeEnum.EVENT_WITHDRAWN,
+                "Event is withdrawn",
+                context,
+                null);
+    }
+
     static EventHttpException forbidden(ExecutionContext context) {
         return new EventHttpException(
                 HttpStatus.FORBIDDEN,

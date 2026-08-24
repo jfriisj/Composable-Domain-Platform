@@ -15,13 +15,16 @@ import composable.domain.platform.event.api.DiscoverEvents;
 import composable.domain.platform.event.api.EventAlreadyDefinedException;
 import composable.domain.platform.event.api.EventAlreadyPublishedException;
 import composable.domain.platform.event.api.EventNotFoundException;
+import composable.domain.platform.event.api.EventNotPublishedException;
 import composable.domain.platform.event.api.EventOwnerReference;
 import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
+import composable.domain.platform.event.api.EventWithdrawnException;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.InvalidEventDefinitionException;
 import composable.domain.platform.event.api.PublishEvent;
 import composable.domain.platform.event.api.UpdateEvent;
+import composable.domain.platform.event.api.WithdrawEvent;
 import composable.domain.platform.http.event.generated.model.DefineEventRequest;
 import composable.domain.platform.http.event.generated.model.ErrorResponse;
 import composable.domain.platform.http.event.generated.model.EventResponse;
@@ -76,6 +79,7 @@ class EventHttpAdapterTest {
                 defineEvent,
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -116,6 +120,7 @@ class EventHttpAdapterTest {
                 defineEvent,
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -146,6 +151,7 @@ class EventHttpAdapterTest {
                 defineEvent,
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -174,6 +180,7 @@ class EventHttpAdapterTest {
                 defineEvent,
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -201,6 +208,7 @@ class EventHttpAdapterTest {
                 defineEvent,
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -231,6 +239,7 @@ class EventHttpAdapterTest {
                 defineEvent,
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -266,6 +275,7 @@ class EventHttpAdapterTest {
                 unusedDefineEvent(),
                 updateEvent,
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 findEvent,
                 authorizedOwnership());
 
@@ -291,6 +301,7 @@ class EventHttpAdapterTest {
                 unusedDefineEvent(),
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 findEvent,
                 deniedOwnership());
 
@@ -316,6 +327,7 @@ class EventHttpAdapterTest {
                 unusedDefineEvent(),
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 findEvent,
                 authorizedOwnership());
 
@@ -354,6 +366,7 @@ class EventHttpAdapterTest {
                 unusedDefineEvent(),
                 updateEvent,
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 findEvent,
                 authorizedOwnership());
 
@@ -441,6 +454,7 @@ class EventHttpAdapterTest {
                 unusedDefineEvent(),
                 unusedUpdateEvent(),
                 publishEvent,
+                unusedWithdrawEvent(),
                 findEvent,
                 authorizedOwnership());
 
@@ -464,6 +478,7 @@ class EventHttpAdapterTest {
                 unusedDefineEvent(),
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 findEvent,
                 deniedOwnership());
 
@@ -489,6 +504,7 @@ class EventHttpAdapterTest {
                 unusedDefineEvent(),
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 findEvent,
                 authorizedOwnership());
 
@@ -528,6 +544,7 @@ class EventHttpAdapterTest {
                 unusedDefineEvent(),
                 unusedUpdateEvent(),
                 publishEvent,
+                unusedWithdrawEvent(),
                 findEvent,
                 authorizedOwnership());
 
@@ -557,6 +574,7 @@ class EventHttpAdapterTest {
                 unusedDefineEvent(),
                 unusedUpdateEvent(),
                 publishEvent,
+                unusedWithdrawEvent(),
                 findEvent,
                 authorizedOwnership());
 
@@ -573,6 +591,232 @@ class EventHttpAdapterTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.status());
         assertEquals(ErrorResponse.CodeEnum.INTERNAL_ERROR, exception.code());
         assertEquals("corr-publish-internal", exception.context().correlationId().value());
+    }
+
+    @Test
+    void withdrawsEventThroughOrganizerManagementWhenAuthorized() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+        WithdrawEvent withdrawEvent = (context, eventId) -> EVENT;
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                withdrawEvent,
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        ResponseEntity<Void> response = adapter.withdrawEvent("event-1", "corr-withdraw");
+
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        assertEquals("corr-withdraw", response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
+    }
+
+    @Test
+    void mapsUnauthorizedWithdrawToForbidden() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                unusedWithdrawEvent(),
+                findEvent,
+                deniedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.withdrawEvent("event-1", "corr-forbidden-withdraw"));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.FORBIDDEN, exception.code());
+    }
+
+    @Test
+    void mapsUnknownWithdrawalTargetToNotFound() {
+        FindEvent findEvent = (context, eventId) -> Optional.empty();
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                unusedWithdrawEvent(),
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.withdrawEvent("missing-event", "corr-withdraw-missing"));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.EVENT_NOT_FOUND, exception.code());
+        assertEquals("corr-withdraw-missing", exception.context().correlationId().value());
+    }
+
+    @Test
+    void mapsUnpublishedWithdrawalToConflict() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+        WithdrawEvent withdrawEvent = (context, eventId) -> {
+            throw new EventNotPublishedException(eventId);
+        };
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                withdrawEvent,
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.withdrawEvent("event-1", "corr-not-published"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.EVENT_NOT_PUBLISHED, exception.code());
+        assertEquals("corr-not-published", exception.context().correlationId().value());
+    }
+
+    @Test
+    void mapsAlreadyWithdrawnWithdrawalToConflict() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+        WithdrawEvent withdrawEvent = (context, eventId) -> {
+            throw new EventWithdrawnException(eventId);
+        };
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                withdrawEvent,
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.withdrawEvent("event-1", "corr-withdrawn"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.EVENT_WITHDRAWN, exception.code());
+        assertEquals("corr-withdrawn", exception.context().correlationId().value());
+    }
+
+    @Test
+    void mapsWithdrawnEventUpdateToConflict() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+        UpdateEvent updateEvent = (context, command) -> {
+            throw new EventWithdrawnException(command.eventId());
+        };
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                updateEvent,
+                unusedPublishEvent(),
+                unusedWithdrawEvent(),
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.updateEvent("event-1", updateRequest(), "corr-update-withdrawn"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.EVENT_WITHDRAWN, exception.code());
+    }
+
+    @Test
+    void mapsWithdrawnEventPublicationToConflict() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+        PublishEvent publishEvent = (context, eventId) -> {
+            throw new EventWithdrawnException(eventId);
+        };
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                publishEvent,
+                unusedWithdrawEvent(),
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.publishEvent("event-1", "corr-pub-withdrawn"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.EVENT_WITHDRAWN, exception.code());
+    }
+
+    @Test
+    void mapsUnexpectedWithdrawalFailureToInternalServerError() {
+        FindEvent findEvent = (context, eventId) -> Optional.of(EVENT);
+        WithdrawEvent withdrawEvent = (context, eventId) -> {
+            throw new IllegalStateException("database-specific detail");
+        };
+
+        OrganizerEventManagementService organizerService = new OrganizerEventManagementService(
+                unusedDefineEvent(),
+                unusedUpdateEvent(),
+                unusedPublishEvent(),
+                withdrawEvent,
+                findEvent,
+                authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.withdrawEvent("event-1", "corr-withdraw-internal"));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.INTERNAL_ERROR, exception.code());
+        assertEquals("corr-withdraw-internal", exception.context().correlationId().value());
     }
 
     @Test
@@ -674,6 +918,7 @@ class EventHttpAdapterTest {
                 unusedDefineEvent(),
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
+                unusedWithdrawEvent(),
                 missingFindEvent(),
                 authorizedOwnership());
     }
@@ -704,6 +949,12 @@ class EventHttpAdapterTest {
         };
     }
 
+    private static WithdrawEvent unusedWithdrawEvent() {
+        return (context, eventId) -> {
+            throw new AssertionError("WithdrawEvent must not be called");
+        };
+    }
+
     private static FindEvent missingFindEvent() {
         return (context, eventId) -> Optional.empty();
     }
@@ -724,5 +975,6 @@ class EventHttpAdapterTest {
                 OffsetDateTime.ofInstant(EVENT.endsAt(), ZoneOffset.UTC),
                 response.getEndsAt());
         assertEquals("Europe/Copenhagen", response.getTimezone());
+        assertEquals(EventResponse.PublicationStateEnum.UNPUBLISHED, response.getPublicationState());
     }
 }

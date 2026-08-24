@@ -9,13 +9,16 @@ import composable.domain.platform.event.api.DefineEvent;
 import composable.domain.platform.event.api.DefineEventCommand;
 import composable.domain.platform.event.api.EventAlreadyPublishedException;
 import composable.domain.platform.event.api.EventNotFoundException;
+import composable.domain.platform.event.api.EventNotPublishedException;
 import composable.domain.platform.event.api.EventOwnerReference;
 import composable.domain.platform.event.api.EventPublicationState;
 import composable.domain.platform.event.api.EventView;
+import composable.domain.platform.event.api.EventWithdrawnException;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.PublishEvent;
 import composable.domain.platform.event.api.UpdateEvent;
 import composable.domain.platform.event.api.UpdateEventCommand;
+import composable.domain.platform.event.api.WithdrawEvent;
 import composable.domain.platform.security.api.AuthenticatedActorReference;
 import composable.domain.platform.security.api.AuthorizationDecision;
 import composable.domain.platform.security.api.AuthorizeResourceOwnership;
@@ -72,6 +75,9 @@ class OrganizerEventManagementServiceTest {
             if (existing.publicationState() == EventPublicationState.PUBLISHED) {
                 throw new EventAlreadyPublishedException(cmd.eventId());
             }
+            if (existing.publicationState() == EventPublicationState.WITHDRAWN) {
+                throw new EventWithdrawnException(cmd.eventId());
+            }
             EventView updated = new EventView(
                     cmd.eventId(),
                     cmd.name(),
@@ -93,6 +99,9 @@ class OrganizerEventManagementServiceTest {
             if (existing.publicationState() == EventPublicationState.PUBLISHED) {
                 throw new EventAlreadyPublishedException(eventId);
             }
+            if (existing.publicationState() == EventPublicationState.WITHDRAWN) {
+                throw new EventWithdrawnException(eventId);
+            }
             EventView published = new EventView(
                     existing.eventId(),
                     existing.name(),
@@ -106,6 +115,30 @@ class OrganizerEventManagementServiceTest {
             return published;
         };
 
+        WithdrawEvent withdrawEvent = (ctx, eventId) -> {
+            EventView existing = eventStore.get(eventId);
+            if (existing == null) {
+                throw new EventNotFoundException(eventId);
+            }
+            if (existing.publicationState() == EventPublicationState.UNPUBLISHED) {
+                throw new EventNotPublishedException(eventId);
+            }
+            if (existing.publicationState() == EventPublicationState.WITHDRAWN) {
+                throw new EventWithdrawnException(eventId);
+            }
+            EventView withdrawn = new EventView(
+                    existing.eventId(),
+                    existing.name(),
+                    existing.slug(),
+                    existing.startsAt(),
+                    existing.endsAt(),
+                    existing.timezone(),
+                    EventPublicationState.WITHDRAWN,
+                    existing.owner());
+            eventStore.put(eventId, withdrawn);
+            return withdrawn;
+        };
+
         AuthorizeResourceOwnership authorizeResourceOwnership = (actor, owner) ->
                 actor.reference().equals(owner.reference())
                         ? AuthorizationDecision.ALLOWED
@@ -115,6 +148,7 @@ class OrganizerEventManagementServiceTest {
                 defineEvent,
                 updateEvent,
                 publishEvent,
+                withdrawEvent,
                 findEvent,
                 authorizeResourceOwnership);
     }
@@ -256,5 +290,83 @@ class OrganizerEventManagementServiceTest {
         assertThrows(
                 EventNotFoundException.class,
                 () -> service.publish(CONTEXT, ACTOR_A, "non-existent"));
+    }
+
+    @Test
+    void withdrawsPublishedEventWhenActorIsOwner() {
+        service.define(
+                CONTEXT,
+                ACTOR_A,
+                new DefineOrganizerEventCommand("evt-1", "Original", "original", START, END, TIMEZONE));
+        service.publish(CONTEXT, ACTOR_A, "evt-1");
+
+        EventView withdrawn = service.withdraw(CONTEXT, ACTOR_A, "evt-1");
+
+        assertEquals(EventPublicationState.WITHDRAWN, withdrawn.publicationState());
+    }
+
+    @Test
+    void withdrawFailsWhenActorIsNotOwner() {
+        service.define(
+                CONTEXT,
+                ACTOR_A,
+                new DefineOrganizerEventCommand("evt-1", "Original", "original", START, END, TIMEZONE));
+        service.publish(CONTEXT, ACTOR_A, "evt-1");
+
+        assertThrows(
+                EventManagementAuthorizationDeniedException.class,
+                () -> service.withdraw(CONTEXT, ACTOR_B, "evt-1"));
+    }
+
+    @Test
+    void withdrawFailsWhenEventHasNoOwner() {
+        eventStore.put(
+                "legacy-evt",
+                new EventView(
+                        "legacy-evt",
+                        "Legacy",
+                        "legacy",
+                        START,
+                        END,
+                        TIMEZONE,
+                        EventPublicationState.PUBLISHED,
+                        Optional.empty()));
+
+        assertThrows(
+                EventManagementAuthorizationDeniedException.class,
+                () -> service.withdraw(CONTEXT, ACTOR_A, "legacy-evt"));
+    }
+
+    @Test
+    void withdrawFailsWhenEventNotFound() {
+        assertThrows(
+                EventNotFoundException.class,
+                () -> service.withdraw(CONTEXT, ACTOR_A, "non-existent"));
+    }
+
+    @Test
+    void withdrawFailsWhenEventNotPublished() {
+        service.define(
+                CONTEXT,
+                ACTOR_A,
+                new DefineOrganizerEventCommand("evt-1", "Original", "original", START, END, TIMEZONE));
+
+        assertThrows(
+                EventNotPublishedException.class,
+                () -> service.withdraw(CONTEXT, ACTOR_A, "evt-1"));
+    }
+
+    @Test
+    void withdrawFailsWhenEventAlreadyWithdrawn() {
+        service.define(
+                CONTEXT,
+                ACTOR_A,
+                new DefineOrganizerEventCommand("evt-1", "Original", "original", START, END, TIMEZONE));
+        service.publish(CONTEXT, ACTOR_A, "evt-1");
+        service.withdraw(CONTEXT, ACTOR_A, "evt-1");
+
+        assertThrows(
+                EventWithdrawnException.class,
+                () -> service.withdraw(CONTEXT, ACTOR_A, "evt-1"));
     }
 }

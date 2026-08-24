@@ -2,14 +2,14 @@
 
 ## Purpose
 
-Own the Event business capability for definition, durable retrieval, modification, publication, and discovery.
+Own the Event business capability for definition, durable retrieval, modification, publication, withdrawal, and discovery.
 
 ## Owns
 
 - Event identity, descriptive state, schedule, timezone, and opaque organizer/owner reference.
 - Invariants required for a valid Event.
 - Unpublished Event definition replacement/modification.
-- The one-way unpublished-to-published lifecycle and discovery of published Events.
+- The one-way unpublished-to-published-to-withdrawn lifecycle and discovery of published Events.
 - Event-owned durable state, persistence boundary, and retrieval semantics.
 
 ## Does not own

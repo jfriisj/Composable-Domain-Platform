@@ -117,6 +117,14 @@ class EventApplicationHttpE2ETest {
                 HttpResponse.BodyHandlers.ofString());
         assertEquals(401, unauthPublish.statusCode());
 
+        // Unauthenticated withdraw -> 401
+        HttpResponse<String> unauthWithdraw = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events/" + eventId + "/publication"))
+                        .DELETE()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(401, unauthWithdraw.statusCode());
+
         // Invalid credentials define -> 401
         HttpResponse<String> invalidCredsDefine = HTTP.send(
                 HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"))
@@ -126,6 +134,15 @@ class EventApplicationHttpE2ETest {
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
         assertEquals(401, invalidCredsDefine.statusCode());
+
+        // Invalid credentials withdraw -> 401
+        HttpResponse<String> invalidCredsWithdraw = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events/" + eventId + "/publication"))
+                        .header("Authorization", basicAuth(PRINCIPAL_OWNER, "wrong-secret"))
+                        .DELETE()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(401, invalidCredsWithdraw.statusCode());
     }
 
     @Test
@@ -293,6 +310,95 @@ class EventApplicationHttpE2ETest {
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
         assertEquals(409, republishAfterRestart.statusCode());
+
+        // 15. actor B attempts withdrawal -> 403
+        HttpResponse<String> nonOwnerWithdraw = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events/" + eventId + "/publication"))
+                        .header("Authorization", basicAuth(PRINCIPAL_OTHER, PASSWORD))
+                        .DELETE()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(403, nonOwnerWithdraw.statusCode());
+
+        // 16. actor A withdraws E -> 204
+        HttpResponse<String> withdrawn = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events/" + eventId + "/publication"))
+                        .header("Authorization", basicAuth(PRINCIPAL_OWNER, PASSWORD))
+                        .DELETE()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(204, withdrawn.statusCode());
+
+        // 17. anonymous retrieval returns 200 with publicationState=withdrawn
+        HttpResponse<String> retrievedWithdrawn = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events/" + eventId))
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, retrievedWithdrawn.statusCode());
+        assertTrue(retrievedWithdrawn.body().contains("\"publicationState\":\"withdrawn\""));
+
+        // 18. anonymous discovery does not contain withdrawn Event
+        HttpResponse<String> discoveredAfterWithdrawal = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"))
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, discoveredAfterWithdrawal.statusCode());
+        assertFalse(discoveredAfterWithdrawal.body().contains("\"eventId\":\"" + eventId + "\""));
+
+        // 19. actor A attempts update of withdrawn Event -> 409 event_withdrawn
+        HttpResponse<String> updateWithdrawn = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events/" + eventId))
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", basicAuth(PRINCIPAL_OWNER, PASSWORD))
+                        .PUT(HttpRequest.BodyPublishers.ofString(updateBody))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(409, updateWithdrawn.statusCode());
+        assertTrue(updateWithdrawn.body().contains("\"code\":\"event_withdrawn\""));
+
+        // 20. actor A attempts publication of withdrawn Event -> 409 event_withdrawn
+        HttpResponse<String> republishWithdrawn = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events/" + eventId + "/publication"))
+                        .header("Authorization", basicAuth(PRINCIPAL_OWNER, PASSWORD))
+                        .POST(HttpRequest.BodyPublishers.noBody())
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(409, republishWithdrawn.statusCode());
+        assertTrue(republishWithdrawn.body().contains("\"code\":\"event_withdrawn\""));
+
+        // 21. actor A attempts withdrawal of already-withdrawn Event -> 409 event_withdrawn
+        HttpResponse<String> repeatWithdraw = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events/" + eventId + "/publication"))
+                        .header("Authorization", basicAuth(PRINCIPAL_OWNER, PASSWORD))
+                        .DELETE()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(409, repeatWithdraw.statusCode());
+        assertTrue(repeatWithdraw.body().contains("\"code\":\"event_withdrawn\""));
+
+        // 22. close and restart again to prove durable withdrawn state
+        application.close();
+        application = startApplication();
+
+        // 23. anonymously retrieve E after second restart -> 200, publicationState=withdrawn
+        HttpResponse<String> retrievedAfterSecondRestart = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events/" + eventId))
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, retrievedAfterSecondRestart.statusCode());
+        assertTrue(retrievedAfterSecondRestart.body().contains("\"publicationState\":\"withdrawn\""));
+
+        // 24. anonymous discovery after second restart still excludes withdrawn Event
+        HttpResponse<String> discoveredAfterSecondRestart = HTTP.send(
+                HttpRequest.newBuilder(baseUri.resolve("/api/v1/events"))
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, discoveredAfterSecondRestart.statusCode());
+        assertFalse(discoveredAfterSecondRestart.body().contains("\"eventId\":\"" + eventId + "\""));
 
         assertSchemaState();
     }

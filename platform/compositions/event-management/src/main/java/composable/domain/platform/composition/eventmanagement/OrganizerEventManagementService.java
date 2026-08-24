@@ -11,6 +11,7 @@ import composable.domain.platform.event.api.InvalidEventDefinitionException;
 import composable.domain.platform.event.api.PublishEvent;
 import composable.domain.platform.event.api.UpdateEvent;
 import composable.domain.platform.event.api.UpdateEventCommand;
+import composable.domain.platform.event.api.WithdrawEvent;
 import composable.domain.platform.security.api.AuthenticatedActorReference;
 import composable.domain.platform.security.api.AuthorizationDecision;
 import composable.domain.platform.security.api.AuthorizeResourceOwnership;
@@ -22,6 +23,7 @@ public final class OrganizerEventManagementService {
     private final DefineEvent defineEvent;
     private final UpdateEvent updateEvent;
     private final PublishEvent publishEvent;
+    private final WithdrawEvent withdrawEvent;
     private final FindEvent findEvent;
     private final AuthorizeResourceOwnership authorizeResourceOwnership;
 
@@ -29,11 +31,13 @@ public final class OrganizerEventManagementService {
             DefineEvent defineEvent,
             UpdateEvent updateEvent,
             PublishEvent publishEvent,
+            WithdrawEvent withdrawEvent,
             FindEvent findEvent,
             AuthorizeResourceOwnership authorizeResourceOwnership) {
         this.defineEvent = Objects.requireNonNull(defineEvent, "defineEvent must not be null");
         this.updateEvent = Objects.requireNonNull(updateEvent, "updateEvent must not be null");
         this.publishEvent = Objects.requireNonNull(publishEvent, "publishEvent must not be null");
+        this.withdrawEvent = Objects.requireNonNull(withdrawEvent, "withdrawEvent must not be null");
         this.findEvent = Objects.requireNonNull(findEvent, "findEvent must not be null");
         this.authorizeResourceOwnership = Objects.requireNonNull(
                 authorizeResourceOwnership,
@@ -108,6 +112,25 @@ public final class OrganizerEventManagementService {
         authorizeOwnership(actorReference, existing);
 
         return publishEvent.publish(context, eventId);
+    }
+
+    public EventView withdraw(
+            ExecutionContext context,
+            AuthenticatedActorReference actorReference,
+            String eventId) {
+        Objects.requireNonNull(context, "context must not be null");
+        Objects.requireNonNull(actorReference, "actorReference must not be null");
+
+        if (eventId == null || eventId.isBlank()) {
+            throw new IllegalArgumentException("eventId must not be blank");
+        }
+
+        EventView existing = findEvent.findById(context, eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
+        authorizeOwnership(actorReference, existing);
+
+        return withdrawEvent.withdraw(context, eventId);
     }
 
     private void authorizeOwnership(

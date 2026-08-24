@@ -21,6 +21,7 @@ final class EventViews {
                 switch (event.publicationState()) {
                     case UNPUBLISHED -> EventPublicationState.UNPUBLISHED;
                     case PUBLISHED -> EventPublicationState.PUBLISHED;
+                    case WITHDRAWN -> EventPublicationState.WITHDRAWN;
                 },
                 event.owner().map(EventOwnerReference::new));
     }

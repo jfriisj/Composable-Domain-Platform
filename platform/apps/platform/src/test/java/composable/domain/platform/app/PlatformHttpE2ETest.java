@@ -229,6 +229,7 @@ application = new SpringApplication(PlatformApplication.class).run(
         assertJsonString(body, "startsAt", startsAt);
         assertJsonString(body, "endsAt", endsAt);
         assertJsonString(body, "timezone", timezone);
+        assertJsonString(body, "publicationState", "unpublished");
     }
 
     private static void assertJsonString(String body, String field, String value) {

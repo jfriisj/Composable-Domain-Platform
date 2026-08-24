@@ -14,18 +14,16 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Product Goal #182, **Extend published Event lifecycle**, is the active product outcome.
-
-Use-case Goal #193, **Organizer withdraws published Event**, is the selected observable journey. Scope transition #194 admits the terminal withdrawn Event lifecycle and its visitor/participant effects.
+Product Goal #182, **Extend published Event lifecycle**, and Use-case Goal #193, **Organizer withdraws published Event**, are complete.
 
 ## In progress
 
-Post-scope implementation readiness for Use-case Goal #193.
+None.
 
 ## Current gaps
 
-Executable withdrawal behavior is not yet implemented. Readiness must resolve only the minimum organizer-facing contract/failure semantics, Event lifecycle public capability and persistence impact, Event-Registration eligibility behavior for withdrawn Events, and focused/end-to-end validation.
+None.
 
 ## Next action
 
-Evaluate post-scope implementation readiness for Use-case Goal #193. If ownership, contract, persistence, dependency, and validation details are resolved without a significant architecture decision, create one coherent vertical implementation issue.
+Select and promote the next roadmap Product Goal under governance.

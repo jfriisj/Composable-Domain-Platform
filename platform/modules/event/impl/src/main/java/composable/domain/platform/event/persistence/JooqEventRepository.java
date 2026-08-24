@@ -179,6 +179,7 @@ public final class JooqEventRepository implements EventRepository {
         return switch (publicationState) {
             case UNPUBLISHED -> "unpublished";
             case PUBLISHED -> "published";
+            case WITHDRAWN -> "withdrawn";
         };
     }
 
@@ -186,6 +187,7 @@ public final class JooqEventRepository implements EventRepository {
         return switch (publicationState) {
             case "unpublished" -> PublicationState.UNPUBLISHED;
             case "published" -> PublicationState.PUBLISHED;
+            case "withdrawn" -> PublicationState.WITHDRAWN;
             default -> throw new IllegalStateException(
                     "Unsupported persisted Event publication state");
         };

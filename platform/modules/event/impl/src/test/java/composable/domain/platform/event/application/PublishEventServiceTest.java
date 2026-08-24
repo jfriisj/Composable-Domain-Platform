@@ -66,6 +66,20 @@ class PublishEventServiceTest {
     }
 
     @Test
+    void withdrawnEventCannotBePublished() {
+        InMemoryEventRepository repository = new InMemoryEventRepository();
+        Event event = event("event-1").publish().withdraw();
+        repository.addIfAbsent(event);
+        PublishEventService service = new PublishEventService(repository);
+
+        composable.domain.platform.event.api.EventWithdrawnException error = assertThrows(
+                composable.domain.platform.event.api.EventWithdrawnException.class,
+                () -> service.publish(CONTEXT, event.id()));
+
+        assertEquals(event.id(), error.eventId());
+    }
+
+    @Test
     void rejectsBlankIdentity() {
         PublishEventService service = new PublishEventService(new InMemoryEventRepository());
 

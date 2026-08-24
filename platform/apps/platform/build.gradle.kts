@@ -29,6 +29,7 @@ openApiApplicationContract {
             "findEventById",
             "publishEvent",
             "updateEvent",
+            "withdrawEvent",
             "createEventRegistration",
             "findEventRegistrationById",
             "cancelEventRegistration",
