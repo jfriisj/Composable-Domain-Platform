@@ -20,7 +20,7 @@ Use-case Goal #168, **Organizer manages own Event**, and Use-case Goal #169, **P
 
 ## In progress
 
-No #170 scope or implementation is yet accepted. Organizer viewing of Event registrations requires the minimum scope transition and post-scope readiness before executable work is scheduled.
+No executable #170 implementation is currently scheduled. Scope #181 admits the organizer read-only Event-registration view; post-scope readiness is the current planning transition.
 
 ## Current gaps
 
@@ -28,4 +28,4 @@ Organizer viewing of Event registrations remains to be delivered under Use-case 
 
 ## Next action
 
-Admit the minimum organizer read-only Event-registration view for Use-case Goal #170 in accepted scope, then evaluate the domain-neutral Registration query, external contract and failure semantics, and validation needed for one coherent vertical implementation.
+Evaluate post-scope implementation readiness for Use-case Goal #170: the minimum domain-neutral Registration target-query capability, organizer-facing contract and failure/disclosure semantics, and focused/end-to-end validation. If resolved without a significant architecture choice, create one coherent vertical implementation issue.
