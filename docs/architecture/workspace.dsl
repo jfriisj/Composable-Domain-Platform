@@ -18,7 +18,7 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         registrationApi = element "Registration API" "Gradle project" "Domain-neutral public application contract for registering and retrieving namespaced opaque registrant-to-target relations." "Current,Registration Module,API"
         registrationImpl = element "Registration Implementation" "Gradle project" "Private domain-neutral Registration domain, application, and persistence-adapter implementation." "Current,Registration Module,Implementation"
         registrationPersistence = element "Registration Persistence" "PostgreSQL schema" "Registration-owned durable namespaced registrant-to-target state with no Event-specific columns or cross-capability persistence coupling." "Current,Registration Module,Persistence"
-        eventRegistrationComposition = element "Event-Registration Composition" "Gradle project" "Event-specific workflow that verifies Event existence and translates Event workflow identities into Registration references through public APIs." "Current,Composition"
+        eventRegistrationComposition = element "Event-Registration Composition" "Gradle project" "Event-specific workflow that verifies Event existence and publication eligibility and translates Event workflow identities into Registration references through public APIs." "Current,Composition"
         eventManagementComposition = element "Event-Management Composition" "Gradle project" "Organizer Event-management workflow that delegates Event creation, modification, and publication to Event while checking owner authorization with Security." "Current,Composition"
 
         securityApi = element "Security API" "Gradle project" "Framework-neutral authenticated-actor Authentication boundary plus opaque resource-ownership Authorization decision selected by decision #99 and recorded by ADR-0014." "Current,Security Module,API"
@@ -51,7 +51,7 @@ workspace "Composable Domain Platform" "Authoritative architecture model for the
         registrationImpl -> registrationApi "Implements and depends on"
         registrationImpl -> registrationPersistence "Persists and retrieves Registration state"
         eventRegistrationComposition -> core "Carries execution context"
-        eventRegistrationComposition -> eventApi "Resolves Event existence"
+        eventRegistrationComposition -> eventApi "Resolves Event existence and publication eligibility"
         eventRegistrationComposition -> registrationApi "Creates and retrieves domain-neutral Registration state"
         platformApp -> eventRegistrationComposition "Wires the cross-capability workflow"
         platformApp -> registrationImpl "Constructs private Registration implementation"

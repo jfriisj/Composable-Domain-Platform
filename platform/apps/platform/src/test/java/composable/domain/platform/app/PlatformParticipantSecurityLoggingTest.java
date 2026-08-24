@@ -84,6 +84,15 @@ class PlatformParticipantSecurityLoggingTest {
                     201,
                     http.send(define, HttpResponse.BodyHandlers.ofString()).statusCode());
 
+            HttpRequest publish = HttpRequest.newBuilder(
+                            baseUri.resolve("/api/v1/events/privacy-event-91/publication"))
+                    .header("Authorization", authorizationA)
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            assertEquals(
+                    204,
+                    http.send(publish, HttpResponse.BodyHandlers.ofString()).statusCode());
+
             String invalidBody = "{"
                     + "\"registrationId\":\"privacy-registration-invalid-91\","
                     + "\"eventId\":\"privacy-event-91\""

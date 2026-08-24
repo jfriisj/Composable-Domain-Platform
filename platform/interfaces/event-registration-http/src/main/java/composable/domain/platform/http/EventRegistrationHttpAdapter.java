@@ -3,6 +3,7 @@ package composable.domain.platform.http;
 import composable.domain.platform.composition.eventregistration.CancelParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.CreateParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.CreateParticipantEventRegistrationCommand;
+import composable.domain.platform.composition.eventregistration.EventNotPublishedForRegistrationException;
 import composable.domain.platform.composition.eventregistration.EventRegistrationAuthorizationDeniedException;
 import composable.domain.platform.composition.eventregistration.EventRegistrationUniquenessConflictException;
 import composable.domain.platform.composition.eventregistration.FindParticipantEventRegistration;
@@ -72,6 +73,8 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
             throw EventRegistrationHttpException.invalidDefinition(context);
         } catch (UnknownEventForRegistrationException exception) {
             throw EventRegistrationHttpException.eventNotFound(context);
+        } catch (EventNotPublishedForRegistrationException exception) {
+            throw EventRegistrationHttpException.eventNotPublished(context);
         } catch (EventRegistrationUniquenessConflictException exception) {
             throw EventRegistrationHttpException.conflict(context);
         } catch (RuntimeException exception) {

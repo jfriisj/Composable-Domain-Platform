@@ -9,6 +9,7 @@ import composable.domain.platform.security.api.AuthenticatedActorReference;
 import composable.domain.platform.composition.eventregistration.CancelParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.CreateParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.CreateParticipantEventRegistrationCommand;
+import composable.domain.platform.composition.eventregistration.EventNotPublishedForRegistrationException;
 import composable.domain.platform.composition.eventregistration.EventRegistrationAuthorizationDeniedException;
 import composable.domain.platform.composition.eventregistration.EventRegistrationLifecycle;
 import composable.domain.platform.composition.eventregistration.EventRegistrationUniquenessConflictException;
@@ -175,6 +176,13 @@ class EventRegistrationHttpAdapterTest {
                 },
                 HttpStatus.NOT_FOUND,
                 EventRegistrationErrorResponse.CodeEnum.EVENT_NOT_FOUND);
+
+        assertCreateFailure(
+                (context, actorReference, command) -> {
+                    throw new EventNotPublishedForRegistrationException();
+                },
+                HttpStatus.CONFLICT,
+                EventRegistrationErrorResponse.CodeEnum.EVENT_NOT_PUBLISHED);
 
         assertCreateFailure(
                 (context, actorReference, command) -> {

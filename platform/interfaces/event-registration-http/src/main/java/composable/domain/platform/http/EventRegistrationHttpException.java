@@ -58,6 +58,15 @@ final class EventRegistrationHttpException extends RuntimeException {
                 null);
     }
 
+    static EventRegistrationHttpException eventNotPublished(ExecutionContext context) {
+        return new EventRegistrationHttpException(
+                HttpStatus.CONFLICT,
+                EventRegistrationErrorResponse.CodeEnum.EVENT_NOT_PUBLISHED,
+                "Referenced Event is not published",
+                context,
+                null);
+    }
+
     static EventRegistrationHttpException internal(
             ExecutionContext context,
             RuntimeException cause) {
