@@ -18,14 +18,21 @@ The accepted product experience combines organizer-owned Event management and th
 - Public discovery returns `published` Events only; `unpublished` and `withdrawn` Events are excluded. Known-id retrieval remains lifecycle-independent and exposes the Event's current lifecycle; the anonymous public representation does not require public disclosure of the organizer reference.
 - Authenticated non-owners cannot modify, publish, or withdraw another actor's Event.
 - For organizer management, Event owns the organizer reference and Event business state, while Security owns Authentication and the final opaque actor-versus-resource-owner Authorization decision; the collaboration mechanism is not selected by scope.
-- An authenticated participant can create an Event Registration only when the referenced Event exists and is `published`; `unpublished` and `withdrawn` Events are ineligible, and rejected ineligible attempts create no Registration state.
-- Withdrawing an Event does not automatically cancel, delete, reactivate, or otherwise mutate existing Registrations. Existing participant-private retrieval/cancellation and organizer Registration-view behavior remain available for Registrations targeting a withdrawn Event.
+- A `published` Event is initially available for new participant Registration unless its authenticated owner explicitly closes new Registration availability.
+- An authenticated Event owner may close and later reopen new Registration availability for their own `published` Event without changing the Event lifecycle. Closing availability does not withdraw the Event: it remains `published`, stays in anonymous discovery, and remains retrievable by known identity.
+- An authenticated non-owner cannot close or reopen another actor's Event Registration availability.
+- Organizer-controlled Registration availability is durable across application-process restart against the same PostgreSQL database.
+- An authenticated participant can create an Event Registration only when the referenced Event exists, is `published`, and its organizer-controlled Registration availability is open. `unpublished`, `withdrawn`, and availability-closed Events are ineligible, and rejected ineligible attempts create no Registration state.
+- A terminal `withdrawn` Event remains ineligible for new Registration regardless of its previous organizer-controlled availability; reopening Registration cannot bypass withdrawal.
+- Closing or reopening Registration availability does not automatically cancel, delete, reactivate, or otherwise mutate existing Registrations. Existing participant-private retrieval/cancellation and organizer Registration-view behavior remain available while new Registration availability is closed.
 - The participant can retrieve their private Event-registration state, cancel it, and later retrieve the same durable Registration as `cancelled`.
 - An authenticated Event owner can retrieve Registrations targeting their owned Event and observe each Registration's current lifecycle, including `active` and `cancelled`; Registrations targeting other Events are excluded from that organizer-private view.
 - Organizer Event-registration access is read-only. An authenticated non-owner cannot access another actor's organizer-private Event-registration view, an unknown Event exposes no Registration information, and participant-private retrieval/cancellation semantics remain unchanged.
 - Registration owns a domain-neutral registrant-to-target relation, uniqueness, the `active -> cancelled` lifecycle, durable retrieval, and idempotent cancellation.
 - Cancellation preserves Registration identity and the complete registrant-target uniqueness relation; a cancelled pair remains occupied.
-- Event-Registration owns Event-specific cross-capability orchestration, including deciding participant Registration eligibility from Event-owned lifecycle state, mapping the authenticated participant to the registrant reference, and presenting Registration state targeting an owned Event to its organizer through public module APIs.
+- Event owns the organizer-controlled new-Registration availability setting as durable organizer-managed Event state, but does not own Registration state, registrant identity, Registration lifecycle, or the final Event-specific Registration eligibility workflow.
+- Event-Management owns the organizer-authorized workflow for changing the Event-owned Registration-availability setting.
+- Event-Registration owns Event-specific cross-capability orchestration, including deciding participant Registration eligibility from Event-owned lifecycle and Registration-availability state, mapping the authenticated participant to the registrant reference, and presenting Registration state targeting an owned Event to its organizer through public module APIs.
 - Security owns Authentication and the final opaque actor-versus-resource-owner Authorization decision. Event-Registration supplies Event/Registration workflow facts and maps denial to its workflow result.
 - Authenticated non-owner access to private Event-registration state uses the same external not-found disclosure as unknown private state; unauthenticated access remains a distinct authentication failure.
 - Participant identity is an opaque stable platform actor reference. Registration persists only its own opaque participant reference. Event organizer identity is also an opaque stable platform actor reference, with Event persisting its own organizer reference as authorization state. Correlation/causation identifiers remain identity-free.
@@ -37,7 +44,7 @@ The authoritative HTTP behavior is defined by the versioned OpenAPI source contr
 
 The accepted platform baseline includes:
 
-- Event as an independently owned module with public API/private implementation and Event-owned PostgreSQL persistence for Event definition, organizer ownership, and publication lifecycle.
+- Event as an independently owned module with public API/private implementation and Event-owned PostgreSQL persistence for Event definition, organizer ownership, publication lifecycle, and organizer-controlled new-Registration availability state.
 - Registration as an independently owned, domain-neutral module with public API/private implementation and Registration-owned PostgreSQL persistence.
 - Security as an independently owned Authentication + Authorization module with framework-neutral public contracts and private Security mechanism implementation.
 - Event-Registration as a non-module composition that collaborates only through Event, Registration, and Security public APIs.
@@ -58,7 +65,7 @@ Current scope does not authorize:
 
 - reversible Event unpublish/restore/re-publish or Event lifecycle expansion beyond the accepted terminal `withdrawn` state;
 - automatic Registration cancellation or other Registration lifecycle mutation caused solely by Event withdrawal;
-- same-pair Registration re-registration/reactivation, additional Registration lifecycle policy, capacity, quotas, waitlists, ticketing/payment, notifications, or check-in/attendance;
+- scheduled or time-window-based Registration opening/closing, same-pair Registration re-registration/reactivation, additional Registration lifecycle policy, capacity, quotas, waitlists, ticketing/payment, notifications, or check-in/attendance;
 - a generic Registration HTTP dispatcher;
 - Person/Account or participant-profile capability, provider-specific identity as platform domain state, durable provider-to-platform identity mapping, credential persistence/enrollment/reset/recovery/admin APIs, or external identity-provider integration;
 - roles/permissions, RBAC/ABAC, or a generic policy engine;
