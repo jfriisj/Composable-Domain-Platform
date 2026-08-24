@@ -1,6 +1,8 @@
 package composable.domain.platform.composition.eventregistration;
 
 import composable.domain.platform.core.execution.ExecutionContext;
+import composable.domain.platform.event.api.EventPublicationState;
+import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.registration.api.CancelRegistration;
 import composable.domain.platform.registration.api.CreateRegistration;
@@ -64,8 +66,11 @@ public final class ParticipantEventRegistrationService
             throw new InvalidEventRegistrationDefinitionException();
         }
 
-        if (findEvent.findById(context, command.eventId()).isEmpty()) {
-            throw new UnknownEventForRegistrationException();
+        EventView event = findEvent.findById(context, command.eventId())
+                .orElseThrow(UnknownEventForRegistrationException::new);
+
+        if (event.publicationState() != EventPublicationState.PUBLISHED) {
+            throw new EventNotPublishedForRegistrationException();
         }
 
         try {

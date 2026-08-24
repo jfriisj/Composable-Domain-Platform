@@ -16,16 +16,16 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 Product Goal #167, **Deliver Event experience v1**, is the active product outcome.
 
-Use-case Goal #168, **Organizer manages own Event**, is implemented. Use-case Goal #169, **Participant registers for published Event**, is the current readiness path. Use-case Goal #170 (*Organizer views Event registrations*) remains scheduled for subsequent delivery.
+Use-case Goal #168, **Organizer manages own Event**, and Use-case Goal #169, **Participant registers for published Event**, are implemented. Use-case Goal #170, **Organizer views Event registrations**, is the next readiness path.
 
 ## In progress
 
-Published-Event eligibility scope (#177) is accepted for Use-case Goal #169. No #169 implementation is yet accepted; implementation remains blocked pending post-scope readiness.
+No #170 scope or implementation is yet accepted. Organizer viewing of Event registrations requires the minimum scope transition and post-scope readiness before executable work is scheduled.
 
 ## Current gaps
 
-Executable Event-Registration creation still accepts an existing Event without requiring it to be `published`. Use-case Goal #169 must close that gap while preserving accepted Registration privacy, lifecycle, uniqueness, and durability semantics. Organizer viewing of Event registrations remains later under #170.
+Organizer viewing of Event registrations remains to be delivered under Use-case Goal #170.
 
 ## Next action
 
-Re-read accepted `development` after #177 and evaluate implementation readiness for Use-case Goal #169. If ownership, failure semantics, contract impact, and validation are resolved without a significant architecture choice, create one coherent vertical implementation issue.
+Admit the minimum organizer read-only Event-registration view for Use-case Goal #170 in accepted scope, then evaluate the domain-neutral Registration query, external contract and failure semantics, and validation needed for one coherent vertical implementation.

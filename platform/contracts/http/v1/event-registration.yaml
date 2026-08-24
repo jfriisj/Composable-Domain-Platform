@@ -15,7 +15,7 @@ paths:
       tags:
         - EventRegistration
       operationId: createEventRegistration
-      summary: Register the authenticated participant in an existing Event
+      summary: Register the authenticated participant in a published Event
       security:
         - ParticipantBasicAuth: []
       parameters:
@@ -64,7 +64,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventRegistrationErrorResponse'
         '409':
-          description: Registration uniqueness conflict
+          description: Registration uniqueness conflict or referenced Event is not published
           headers:
             X-Correlation-Id:
               $ref: '#/components/headers/EventRegistrationCorrelationId'
@@ -276,6 +276,7 @@ components:
             - invalid_request
             - authentication_required
             - event_not_found
+            - event_not_published
             - event_registration_not_found
             - registration_conflict
             - internal_error

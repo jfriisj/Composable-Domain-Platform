@@ -59,14 +59,14 @@ class ParticipantEventRegistrationServiceTest {
     }
 
     @Test
-    void createsForAuthenticatedActorAndMapsActiveLifecycleWithoutPublicationEligibility() {
+    void createsForAuthenticatedActorAndMapsActiveLifecycleWhenEventIsPublished() {
         AtomicReference<ExecutionContext> eventContext = new AtomicReference<>();
         AtomicReference<ExecutionContext> registrationContext = new AtomicReference<>();
         AtomicReference<CreateRegistrationCommand> registrationCommand = new AtomicReference<>();
 
         FindEvent findEvent = (context, eventId) -> {
             eventContext.set(context);
-            return Optional.of(event(eventId, EventPublicationState.UNPUBLISHED));
+            return Optional.of(event(eventId, EventPublicationState.PUBLISHED));
         };
         CreateRegistration createRegistration = (context, command) -> {
             registrationContext.set(context);
@@ -104,6 +104,33 @@ class ParticipantEventRegistrationServiceTest {
                 registrationCommand.get());
         assertSame(CONTEXT, eventContext.get());
         assertSame(CONTEXT, registrationContext.get());
+    }
+
+    @Test
+    void unpublishedEventDoesNotCreateParticipantRegistration() {
+        AtomicBoolean registrationCalled = new AtomicBoolean();
+
+        CreateRegistration createRegistration = (context, command) -> {
+            registrationCalled.set(true);
+            throw new AssertionError("Registration must not be invoked");
+        };
+
+        ParticipantEventRegistrationService service = service(
+                (context, eventId) -> Optional.of(event(eventId, EventPublicationState.UNPUBLISHED)),
+                createRegistration,
+                noRegistrationLookup(),
+                noRegistrationCancellation());
+
+        assertThrows(
+                EventNotPublishedForRegistrationException.class,
+                () -> service.create(
+                        CONTEXT,
+                        ACTOR,
+                        new CreateParticipantEventRegistrationCommand(
+                                "registration-1",
+                                "event-1")));
+
+        assertFalse(registrationCalled.get());
     }
 
     @Test
