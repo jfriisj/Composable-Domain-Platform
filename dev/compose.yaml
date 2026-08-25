@@ -13,6 +13,7 @@ services:
       HOME: /home/developer
       GRADLE_USER_HOME: /home/developer/.gradle
       TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+      TESTCONTAINERS_HOST_OVERRIDE:
     working_dir: "${PROJECT_DIR:?PROJECT_DIR must be supplied by dev/dev.sh}"
     volumes:
       - type: bind

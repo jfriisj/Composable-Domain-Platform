@@ -42,6 +42,18 @@ require_host() {
     docker info >/dev/null 2>&1 ||
         fail "current host user cannot control the accepted local Docker Engine"
 
+    docker_operating_system="$(docker info --format '{{.OperatingSystem}}' 2>/dev/null)" ||
+        fail "could not identify the accepted local Docker Engine"
+
+    case "${docker_operating_system}" in
+        *"Docker Desktop"*)
+            export TESTCONTAINERS_HOST_OVERRIDE="host.docker.internal"
+            ;;
+        *)
+            unset TESTCONTAINERS_HOST_OVERRIDE
+            ;;
+    esac
+
     project_base="$(basename -- "${PROJECT_DIR}" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
     project_base="${project_base#-}"
     project_base="${project_base%-}"
