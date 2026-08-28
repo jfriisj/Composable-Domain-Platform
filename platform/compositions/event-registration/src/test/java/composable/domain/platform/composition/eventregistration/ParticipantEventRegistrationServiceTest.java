@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import composable.domain.platform.core.execution.CorrelationId;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.EventPublicationState;
+import composable.domain.platform.event.api.EventRegistrationAvailability;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.registration.api.CancelRegistration;
@@ -150,6 +151,36 @@ class ParticipantEventRegistrationServiceTest {
 
         assertThrows(
                 EventNotPublishedForRegistrationException.class,
+                () -> service.create(
+                        CONTEXT,
+                        ACTOR,
+                        new CreateParticipantEventRegistrationCommand(
+                                "registration-1",
+                                "event-1")));
+
+        assertFalse(registrationCalled.get());
+    }
+
+    @Test
+    void closedPublishedEventDoesNotCreateParticipantRegistration() {
+        AtomicBoolean registrationCalled = new AtomicBoolean();
+
+        CreateRegistration createRegistration = (context, command) -> {
+            registrationCalled.set(true);
+            throw new AssertionError("Registration must not be invoked");
+        };
+
+        ParticipantEventRegistrationService service = service(
+                (context, eventId) -> Optional.of(event(
+                        eventId,
+                        EventPublicationState.PUBLISHED,
+                        EventRegistrationAvailability.CLOSED)),
+                createRegistration,
+                noRegistrationLookup(),
+                noRegistrationCancellation());
+
+        assertThrows(
+                EventRegistrationClosedException.class,
                 () -> service.create(
                         CONTEXT,
                         ACTOR,
@@ -514,6 +545,16 @@ class ParticipantEventRegistrationServiceTest {
     private static EventView event(
             String eventId,
             EventPublicationState publicationState) {
+        return event(
+                eventId,
+                publicationState,
+                EventRegistrationAvailability.OPEN);
+    }
+
+    private static EventView event(
+            String eventId,
+            EventPublicationState publicationState,
+            EventRegistrationAvailability registrationAvailability) {
         return new EventView(
                 eventId,
                 "Event",
@@ -521,6 +562,7 @@ class ParticipantEventRegistrationServiceTest {
                 Instant.parse("2026-08-10T10:00:00Z"),
                 Instant.parse("2026-08-10T11:00:00Z"),
                 ZoneId.of("Europe/Copenhagen"),
-                publicationState);
+                publicationState,
+                registrationAvailability);
     }
 }

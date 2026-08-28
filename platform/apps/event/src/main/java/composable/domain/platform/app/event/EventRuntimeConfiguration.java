@@ -5,6 +5,7 @@ import composable.domain.platform.event.api.DefineEvent;
 import composable.domain.platform.event.api.DiscoverEvents;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.PublishEvent;
+import composable.domain.platform.event.api.SetEventRegistrationAvailability;
 import composable.domain.platform.event.api.UpdateEvent;
 import composable.domain.platform.event.api.WithdrawEvent;
 import composable.domain.platform.event.application.DefineEventService;
@@ -12,6 +13,7 @@ import composable.domain.platform.event.application.DiscoverEventsService;
 import composable.domain.platform.event.application.EventRepository;
 import composable.domain.platform.event.application.FindEventService;
 import composable.domain.platform.event.application.PublishEventService;
+import composable.domain.platform.event.application.SetEventRegistrationAvailabilityService;
 import composable.domain.platform.event.application.UpdateEventService;
 import composable.domain.platform.event.application.WithdrawEventService;
 import composable.domain.platform.event.persistence.JooqEventRepository;
@@ -82,6 +84,12 @@ class EventRuntimeConfiguration {
     }
 
     @Bean
+    SetEventRegistrationAvailability setEventRegistrationAvailability(
+            EventRepository repository) {
+        return new SetEventRegistrationAvailabilityService(repository);
+    }
+
+    @Bean
     DiscoverEvents discoverEvents(EventRepository repository) {
         return new DiscoverEventsService(repository);
     }
@@ -92,6 +100,7 @@ class EventRuntimeConfiguration {
             UpdateEvent updateEvent,
             PublishEvent publishEvent,
             WithdrawEvent withdrawEvent,
+            SetEventRegistrationAvailability setEventRegistrationAvailability,
             FindEvent findEvent,
             AuthorizeResourceOwnership authorizeResourceOwnership) {
         return new OrganizerEventManagementService(
@@ -99,6 +108,7 @@ class EventRuntimeConfiguration {
                 updateEvent,
                 publishEvent,
                 withdrawEvent,
+                setEventRegistrationAvailability,
                 findEvent,
                 authorizeResourceOwnership);
     }

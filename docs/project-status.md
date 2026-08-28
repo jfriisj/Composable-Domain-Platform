@@ -14,19 +14,15 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Product Goal #183, **Control Event registration availability**, with selected Use-case Goal #198, **Organizer closes and reopens Event registration**.
+Product Goal #183, **Control Event registration availability**, and Use-case Goal #198, **Organizer closes and reopens Event registration**, are complete.
 
 ## In progress
 
-Scope transition #199 admits manual organizer-controlled new-Registration availability for a published Event while preserving current dependency direction and the existing Registration and Security non-ownership boundaries.
+None.
 
 ## Current gaps
 
-The accepted scope now defines the #198 outcome and semantic ownership, but implementation readiness is not yet resolved.
-
-Post-scope readiness must determine the minimum Event public capability/state and persistence impact, Event-Management authorization flow, Event-Registration eligibility semantics, external contract/failure behavior, validation proof, and whether the Event responsibility expansion is significant enough to require an ADR.
-
-No implementation issue is ready yet.
+None.
 
 ## Next action
 

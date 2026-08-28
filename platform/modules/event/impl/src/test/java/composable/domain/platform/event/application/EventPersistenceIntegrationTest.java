@@ -15,6 +15,7 @@ import composable.domain.platform.event.api.EventAlreadyDefinedException;
 import composable.domain.platform.event.api.EventAlreadyPublishedException;
 import composable.domain.platform.event.api.EventOwnerReference;
 import composable.domain.platform.event.api.EventPublicationState;
+import composable.domain.platform.event.api.EventRegistrationAvailability;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.UpdateEventCommand;
 import composable.domain.platform.event.persistence.JooqEventRepository;
@@ -80,6 +81,7 @@ class EventPersistenceIntegrationTest {
                         .orElseThrow();
 
         assertEquals(EventPublicationState.UNPUBLISHED, migrated.publicationState());
+        assertEquals(EventRegistrationAvailability.OPEN, migrated.registrationAvailability());
         assertEquals("Legacy Event", migrated.name());
         assertEquals("legacy-event", migrated.slug());
         assertEquals(Optional.empty(), migrated.owner());
@@ -218,6 +220,56 @@ class EventPersistenceIntegrationTest {
         assertEquals(startsAt, currentInDb.startsAt());
         assertEquals(endsAt, currentInDb.endsAt());
         assertEquals(timezone, currentInDb.timezone());
+    }
+
+    @Test
+    void persistsRegistrationAvailabilityAndGuardsItByPublishedLifecycle() {
+        EventView event = new DefineEventService(new JooqEventRepository(dataSource))
+                .define(
+                        CONTEXT,
+                        command(
+                                "persistent-availability",
+                                "Persistent Availability Event",
+                                "persistent-availability"));
+
+        assertEquals(EventRegistrationAvailability.OPEN, event.registrationAvailability());
+
+        new PublishEventService(new JooqEventRepository(dataSource))
+                .publish(CONTEXT, event.eventId());
+
+        SetEventRegistrationAvailabilityService service =
+                new SetEventRegistrationAvailabilityService(
+                        new JooqEventRepository(dataSource));
+
+        EventView closed = service.setRegistrationAvailability(
+                CONTEXT,
+                event.eventId(),
+                EventRegistrationAvailability.CLOSED);
+
+        assertEquals(EventRegistrationAvailability.CLOSED, closed.registrationAvailability());
+        assertEquals(
+                EventRegistrationAvailability.CLOSED,
+                new FindEventService(new JooqEventRepository(dataSource))
+                        .findById(CONTEXT, event.eventId())
+                        .orElseThrow()
+                        .registrationAvailability());
+
+        new WithdrawEventService(new JooqEventRepository(dataSource))
+                .withdraw(CONTEXT, event.eventId());
+
+        assertThrows(
+                composable.domain.platform.event.api.EventWithdrawnException.class,
+                () -> service.setRegistrationAvailability(
+                        CONTEXT,
+                        event.eventId(),
+                        EventRegistrationAvailability.OPEN));
+
+        assertEquals(
+                EventRegistrationAvailability.CLOSED,
+                new FindEventService(new JooqEventRepository(dataSource))
+                        .findById(CONTEXT, event.eventId())
+                        .orElseThrow()
+                        .registrationAvailability());
     }
 
     @Test

@@ -3,6 +3,7 @@ package composable.domain.platform.event.persistence;
 import composable.domain.platform.event.application.EventRepository;
 import composable.domain.platform.event.domain.Event;
 import composable.domain.platform.event.domain.PublicationState;
+import composable.domain.platform.event.domain.RegistrationAvailability;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -37,6 +38,8 @@ public final class JooqEventRepository implements EventRepository {
             DSL.field(DSL.name("timezone"), String.class);
     private static final Field<String> PUBLICATION_STATE =
             DSL.field(DSL.name("publication_state"), String.class);
+    private static final Field<String> REGISTRATION_AVAILABILITY =
+            DSL.field(DSL.name("registration_availability"), String.class);
     private static final Field<String> OWNER_REFERENCE =
             DSL.field(DSL.name("owner_reference"), String.class);
 
@@ -62,6 +65,7 @@ public final class JooqEventRepository implements EventRepository {
                                 ENDS_AT_NANO,
                                 TIMEZONE,
                                 PUBLICATION_STATE,
+                                REGISTRATION_AVAILABILITY,
                                 OWNER_REFERENCE)
                         .values(
                                 event.id(),
@@ -73,6 +77,7 @@ public final class JooqEventRepository implements EventRepository {
                                 event.endsAt().getNano(),
                                 event.timezone().getId(),
                                 toPersistenceValue(event.publicationState()),
+                                toPersistenceValue(event.registrationAvailability()),
                                 event.owner().orElse(null))
                         .onConflict(EVENT_ID)
                         .doNothing()
@@ -95,6 +100,7 @@ public final class JooqEventRepository implements EventRepository {
                         ENDS_AT_NANO,
                         TIMEZONE,
                         PUBLICATION_STATE,
+                        REGISTRATION_AVAILABILITY,
                         OWNER_REFERENCE)
                 .from(EVENTS)
                 .where(EVENT_ID.eq(eventId))
@@ -113,6 +119,21 @@ public final class JooqEventRepository implements EventRepository {
                         .set(PUBLICATION_STATE, toPersistenceValue(event.publicationState()))
                         .where(EVENT_ID.eq(event.id()))
                         .and(PUBLICATION_STATE.eq(toPersistenceValue(expectedState)))
+                        .execute()
+                == 1;
+    }
+
+    @Override
+    public boolean updateRegistrationAvailability(Event event) {
+        Objects.requireNonNull(event, "event must not be null");
+
+        return dsl()
+                        .update(EVENTS)
+                        .set(
+                                REGISTRATION_AVAILABILITY,
+                                toPersistenceValue(event.registrationAvailability()))
+                        .where(EVENT_ID.eq(event.id()))
+                        .and(PUBLICATION_STATE.eq(toPersistenceValue(PublicationState.PUBLISHED)))
                         .execute()
                 == 1;
     }
@@ -149,6 +170,7 @@ public final class JooqEventRepository implements EventRepository {
                         ENDS_AT_NANO,
                         TIMEZONE,
                         PUBLICATION_STATE,
+                        REGISTRATION_AVAILABILITY,
                         OWNER_REFERENCE)
                 .from(EVENTS)
                 .where(PUBLICATION_STATE.eq(toPersistenceValue(PublicationState.PUBLISHED)))
@@ -171,7 +193,9 @@ public final class JooqEventRepository implements EventRepository {
                         record.get(ENDS_AT_EPOCH_SECOND),
                         record.get(ENDS_AT_NANO)),
                 ZoneId.of(record.get(TIMEZONE)),
-                fromPersistenceValue(record.get(PUBLICATION_STATE)),
+                fromPublicationStatePersistenceValue(record.get(PUBLICATION_STATE)),
+                fromRegistrationAvailabilityPersistenceValue(
+                        record.get(REGISTRATION_AVAILABILITY)),
                 Optional.ofNullable(record.get(OWNER_REFERENCE)));
     }
 
@@ -183,13 +207,32 @@ public final class JooqEventRepository implements EventRepository {
         };
     }
 
-    private static PublicationState fromPersistenceValue(String publicationState) {
+    private static PublicationState fromPublicationStatePersistenceValue(
+            String publicationState) {
         return switch (publicationState) {
             case "unpublished" -> PublicationState.UNPUBLISHED;
             case "published" -> PublicationState.PUBLISHED;
             case "withdrawn" -> PublicationState.WITHDRAWN;
             default -> throw new IllegalStateException(
                     "Unsupported persisted Event publication state");
+        };
+    }
+
+    private static String toPersistenceValue(
+            RegistrationAvailability registrationAvailability) {
+        return switch (registrationAvailability) {
+            case OPEN -> "open";
+            case CLOSED -> "closed";
+        };
+    }
+
+    private static RegistrationAvailability fromRegistrationAvailabilityPersistenceValue(
+            String registrationAvailability) {
+        return switch (registrationAvailability) {
+            case "open" -> RegistrationAvailability.OPEN;
+            case "closed" -> RegistrationAvailability.CLOSED;
+            default -> throw new IllegalStateException(
+                    "Unsupported persisted Event registration availability");
         };
     }
 }

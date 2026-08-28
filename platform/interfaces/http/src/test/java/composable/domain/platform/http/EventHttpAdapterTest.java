@@ -18,16 +18,19 @@ import composable.domain.platform.event.api.EventNotFoundException;
 import composable.domain.platform.event.api.EventNotPublishedException;
 import composable.domain.platform.event.api.EventOwnerReference;
 import composable.domain.platform.event.api.EventPublicationState;
+import composable.domain.platform.event.api.EventRegistrationAvailability;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.EventWithdrawnException;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.InvalidEventDefinitionException;
 import composable.domain.platform.event.api.PublishEvent;
+import composable.domain.platform.event.api.SetEventRegistrationAvailability;
 import composable.domain.platform.event.api.UpdateEvent;
 import composable.domain.platform.event.api.WithdrawEvent;
 import composable.domain.platform.http.event.generated.model.DefineEventRequest;
 import composable.domain.platform.http.event.generated.model.ErrorResponse;
 import composable.domain.platform.http.event.generated.model.EventResponse;
+import composable.domain.platform.http.event.generated.model.SetEventRegistrationAvailabilityRequest;
 import composable.domain.platform.http.event.generated.model.UpdateEventRequest;
 import composable.domain.platform.security.api.AuthenticatedActorReference;
 import composable.domain.platform.security.api.AuthorizationDecision;
@@ -80,6 +83,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -121,6 +125,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -152,6 +157,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -181,6 +187,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -209,6 +216,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -240,6 +248,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 missingFindEvent(),
                 authorizedOwnership());
 
@@ -276,6 +285,7 @@ class EventHttpAdapterTest {
                 updateEvent,
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -302,6 +312,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 deniedOwnership());
 
@@ -328,6 +339,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -367,6 +379,7 @@ class EventHttpAdapterTest {
                 updateEvent,
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -455,6 +468,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 publishEvent,
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -479,6 +493,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 deniedOwnership());
 
@@ -505,6 +520,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -545,6 +561,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 publishEvent,
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -575,6 +592,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 publishEvent,
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -603,6 +621,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 withdrawEvent,
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -627,6 +646,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 deniedOwnership());
 
@@ -653,6 +673,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -683,6 +704,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 withdrawEvent,
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -713,6 +735,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 withdrawEvent,
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -743,6 +766,7 @@ class EventHttpAdapterTest {
                 updateEvent,
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -772,6 +796,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 publishEvent,
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -801,6 +826,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 withdrawEvent,
+                unusedSetEventRegistrationAvailability(),
                 findEvent,
                 authorizedOwnership());
 
@@ -817,6 +843,118 @@ class EventHttpAdapterTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.status());
         assertEquals(ErrorResponse.CodeEnum.INTERNAL_ERROR, exception.code());
         assertEquals("corr-withdraw-internal", exception.context().correlationId().value());
+    }
+
+    @Test
+    void setsRegistrationAvailabilityThroughOrganizerManagement() {
+        EventView published = new EventView(
+                "event-1",
+                "Platform Day",
+                "platform-day",
+                EVENT.startsAt(),
+                EVENT.endsAt(),
+                EVENT.timezone(),
+                EventPublicationState.PUBLISHED,
+                EventRegistrationAvailability.OPEN,
+                new EventOwnerReference("organizer-1"));
+        FindEvent findEvent = (context, eventId) -> Optional.of(published);
+        AtomicReference<EventRegistrationAvailability> capturedAvailability =
+                new AtomicReference<>();
+
+        SetEventRegistrationAvailability setAvailability =
+                (context, eventId, availability) -> {
+                    capturedAvailability.set(availability);
+                    return new EventView(
+                            published.eventId(),
+                            published.name(),
+                            published.slug(),
+                            published.startsAt(),
+                            published.endsAt(),
+                            published.timezone(),
+                            published.publicationState(),
+                            availability,
+                            published.owner());
+                };
+
+        OrganizerEventManagementService organizerService =
+                new OrganizerEventManagementService(
+                        unusedDefineEvent(),
+                        unusedUpdateEvent(),
+                        unusedPublishEvent(),
+                        unusedWithdrawEvent(),
+                        setAvailability,
+                        findEvent,
+                        authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        SetEventRegistrationAvailabilityRequest request =
+                new SetEventRegistrationAvailabilityRequest(
+                        SetEventRegistrationAvailabilityRequest.AvailabilityEnum.CLOSED);
+
+        ResponseEntity<Void> response = adapter.setEventRegistrationAvailability(
+                "event-1",
+                request,
+                "corr-availability");
+
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        assertEquals(
+                "corr-availability",
+                response.getHeaders().getFirst(HttpCorrelation.HEADER_NAME));
+        assertEquals(
+                EventRegistrationAvailability.CLOSED,
+                capturedAvailability.get());
+    }
+
+    @Test
+    void mapsRegistrationAvailabilityLifecycleFailureToConflict() {
+        EventView published = new EventView(
+                "event-1",
+                "Platform Day",
+                "platform-day",
+                EVENT.startsAt(),
+                EVENT.endsAt(),
+                EVENT.timezone(),
+                EventPublicationState.PUBLISHED,
+                EventRegistrationAvailability.OPEN,
+                new EventOwnerReference("organizer-1"));
+        FindEvent findEvent = (context, eventId) -> Optional.of(published);
+
+        SetEventRegistrationAvailability setAvailability =
+                (context, eventId, availability) -> {
+                    throw new EventWithdrawnException(eventId);
+                };
+
+        OrganizerEventManagementService organizerService =
+                new OrganizerEventManagementService(
+                        unusedDefineEvent(),
+                        unusedUpdateEvent(),
+                        unusedPublishEvent(),
+                        unusedWithdrawEvent(),
+                        setAvailability,
+                        findEvent,
+                        authorizedOwnership());
+
+        EventHttpAdapter adapter = new EventHttpAdapter(
+                organizerService,
+                findEvent,
+                emptyDiscoverEvents(),
+                () -> ACTOR);
+
+        EventHttpException exception = assertThrows(
+                EventHttpException.class,
+                () -> adapter.setEventRegistrationAvailability(
+                        "event-1",
+                        new SetEventRegistrationAvailabilityRequest(
+                                SetEventRegistrationAvailabilityRequest.AvailabilityEnum.OPEN),
+                        "corr-availability-conflict"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.status());
+        assertEquals(ErrorResponse.CodeEnum.EVENT_WITHDRAWN, exception.code());
     }
 
     @Test
@@ -919,6 +1057,7 @@ class EventHttpAdapterTest {
                 unusedUpdateEvent(),
                 unusedPublishEvent(),
                 unusedWithdrawEvent(),
+                unusedSetEventRegistrationAvailability(),
                 missingFindEvent(),
                 authorizedOwnership());
     }
@@ -952,6 +1091,14 @@ class EventHttpAdapterTest {
     private static WithdrawEvent unusedWithdrawEvent() {
         return (context, eventId) -> {
             throw new AssertionError("WithdrawEvent must not be called");
+        };
+    }
+
+    private static SetEventRegistrationAvailability
+            unusedSetEventRegistrationAvailability() {
+        return (context, eventId, availability) -> {
+            throw new AssertionError(
+                    "SetEventRegistrationAvailability must not be called");
         };
     }
 

@@ -33,6 +33,17 @@ final class InMemoryEventRepository implements EventRepository {
     }
 
     @Override
+    public boolean updateRegistrationAvailability(Event event) {
+        Event current = events.get(event.id());
+        if (current == null || current.publicationState() != PublicationState.PUBLISHED) {
+            return false;
+        }
+
+        events.put(event.id(), event);
+        return true;
+    }
+
+    @Override
     public boolean updateDefinition(Event event) {
         Event current = events.get(event.id());
         if (current == null || current.publicationState() != PublicationState.UNPUBLISHED) {

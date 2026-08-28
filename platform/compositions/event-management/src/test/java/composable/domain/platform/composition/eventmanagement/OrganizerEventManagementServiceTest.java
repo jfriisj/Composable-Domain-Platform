@@ -12,10 +12,12 @@ import composable.domain.platform.event.api.EventNotFoundException;
 import composable.domain.platform.event.api.EventNotPublishedException;
 import composable.domain.platform.event.api.EventOwnerReference;
 import composable.domain.platform.event.api.EventPublicationState;
+import composable.domain.platform.event.api.EventRegistrationAvailability;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.EventWithdrawnException;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.event.api.PublishEvent;
+import composable.domain.platform.event.api.SetEventRegistrationAvailability;
 import composable.domain.platform.event.api.UpdateEvent;
 import composable.domain.platform.event.api.UpdateEventCommand;
 import composable.domain.platform.event.api.WithdrawEvent;
@@ -139,6 +141,33 @@ class OrganizerEventManagementServiceTest {
             return withdrawn;
         };
 
+        SetEventRegistrationAvailability setEventRegistrationAvailability =
+                (ctx, eventId, availability) -> {
+                    EventView existing = eventStore.get(eventId);
+                    if (existing == null) {
+                        throw new EventNotFoundException(eventId);
+                    }
+                    if (existing.publicationState() == EventPublicationState.UNPUBLISHED) {
+                        throw new EventNotPublishedException(eventId);
+                    }
+                    if (existing.publicationState() == EventPublicationState.WITHDRAWN) {
+                        throw new EventWithdrawnException(eventId);
+                    }
+
+                    EventView updated = new EventView(
+                            existing.eventId(),
+                            existing.name(),
+                            existing.slug(),
+                            existing.startsAt(),
+                            existing.endsAt(),
+                            existing.timezone(),
+                            existing.publicationState(),
+                            availability,
+                            existing.owner());
+                    eventStore.put(eventId, updated);
+                    return updated;
+                };
+
         AuthorizeResourceOwnership authorizeResourceOwnership = (actor, owner) ->
                 actor.reference().equals(owner.reference())
                         ? AuthorizationDecision.ALLOWED
@@ -149,6 +178,7 @@ class OrganizerEventManagementServiceTest {
                 updateEvent,
                 publishEvent,
                 withdrawEvent,
+                setEventRegistrationAvailability,
                 findEvent,
                 authorizeResourceOwnership);
     }
@@ -290,6 +320,58 @@ class OrganizerEventManagementServiceTest {
         assertThrows(
                 EventNotFoundException.class,
                 () -> service.publish(CONTEXT, ACTOR_A, "non-existent"));
+    }
+
+    @Test
+    void ownerClosesAndReopensPublishedEventRegistrationAvailability() {
+        service.define(
+                CONTEXT,
+                ACTOR_A,
+                new DefineOrganizerEventCommand(
+                        "evt-availability",
+                        "Availability Event",
+                        "availability-event",
+                        START,
+                        END,
+                        TIMEZONE));
+        service.publish(CONTEXT, ACTOR_A, "evt-availability");
+
+        EventView closed = service.setRegistrationAvailability(
+                CONTEXT,
+                ACTOR_A,
+                "evt-availability",
+                EventRegistrationAvailability.CLOSED);
+        EventView reopened = service.setRegistrationAvailability(
+                CONTEXT,
+                ACTOR_A,
+                "evt-availability",
+                EventRegistrationAvailability.OPEN);
+
+        assertEquals(EventRegistrationAvailability.CLOSED, closed.registrationAvailability());
+        assertEquals(EventRegistrationAvailability.OPEN, reopened.registrationAvailability());
+    }
+
+    @Test
+    void nonOwnerCannotChangeEventRegistrationAvailability() {
+        service.define(
+                CONTEXT,
+                ACTOR_A,
+                new DefineOrganizerEventCommand(
+                        "evt-availability-denied",
+                        "Availability Event",
+                        "availability-event-denied",
+                        START,
+                        END,
+                        TIMEZONE));
+        service.publish(CONTEXT, ACTOR_A, "evt-availability-denied");
+
+        assertThrows(
+                EventManagementAuthorizationDeniedException.class,
+                () -> service.setRegistrationAvailability(
+                        CONTEXT,
+                        ACTOR_B,
+                        "evt-availability-denied",
+                        EventRegistrationAvailability.CLOSED));
     }
 
     @Test
