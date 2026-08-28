@@ -61,6 +61,7 @@ The accepted platform baseline includes:
 - Spring Boot/JVM executable runtime artifacts. Application runtimes own technical selection, construction, configuration, migration startup, readiness, and wiring only.
 - externally supplied PostgreSQL and runtime configuration. Runtime readiness is machine-checkable and becomes not-ready when PostgreSQL prevents accepted serviceability.
 - a repository-controlled Linux Docker developer environment using JDK 21, the repository Gradle Wrapper, host-Docker/Testcontainers sibling access, and optional disposable Compose PostgreSQL for manual development. Testcontainers-owned PostgreSQL remains the automated-validation dependency.
+- isolated local developer workspaces based on independent Git worktrees in the WSL filesystem, with repository-controlled workspace lifecycle and a loopback-only browser editor over the assigned worktree. Each writable worktree has at most one independent top-level write-capable agent owner at a time; external coding agents remain agent-owned consumers of their assigned worktree and are not repository build/validation dependencies.
 - correlation context propagated from supported external boundaries without becoming business identity or business state.
 
 Current authentication proof uses Spring Security with stateless HTTP Basic, externally supplied encoded credential verifiers, and stable opaque platform principal identifiers. Security implementation details remain private; the public Security boundary remains framework- and transport-neutral.
@@ -78,6 +79,7 @@ Current scope does not authorize:
 - OAuth/OIDC, JWT bearer authentication, browser session/cookie/login flows, or a broader authentication mechanism merely by extension of the current HTTP Basic proof;
 - application OCI/container deployment packaging, Kubernetes, Terraform/OpenTofu, cloud/provider provisioning, production TLS termination, secrets-management products, production PostgreSQL operations, or artifact publication infrastructure;
 - macOS/Windows/Docker Desktop/Podman/Colima/Rancher Desktop/remote or rootless Docker as part of the initial supported developer-environment contract, or Docker-in-Docker for the minimum proof;
+- remote/LAN browser-editor exposure, editor-owned `.devcontainer` lifecycle, central agent/workspace orchestration, shared writable worktrees across independent top-level agents, or repository source stored primarily in Docker-managed volumes;
 - runtime module/contract discovery, dynamic plugins, feature flags, Spring-profile capability selection, service extraction, or speculative shared abstractions.
 
 These exclusions are boundaries, not a prohibition on later accepted scope changes. Use-case-specific non-goals belong with their Goal/issue unless they become durable project exclusions.

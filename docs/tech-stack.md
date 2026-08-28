@@ -38,6 +38,7 @@ Status meanings:
 | Frontend language | TypeScript | Candidate | Typed frontend clients and UI implementation when frontend work enters scope. |
 | Frontend framework | Next.js | Candidate | Possible baseline for administrative and public web interfaces when required. |
 | Developer environment | Docker Engine + Docker Compose | Accepted direction | Reproducible repository developer tooling on the admitted Linux host boundary, including host-Docker Testcontainers access and optional manual-development PostgreSQL 18.4; not application/runtime/deployment packaging. |
+| Browser developer editor | OpenVSCode Server | Accepted direction | Loopback-only browser presentation of an assigned WSL Git worktree inside the repository-controlled developer environment; not application runtime and not a root-validation dependency. |
 | Containerization | Docker | Candidate | Reproducible application and infrastructure runtime packaging when deployment enters scope. |
 | Observability | OpenTelemetry | Conditional | Standardize traces, metrics, and logs when an accepted runtime requirement requires observability. |
 
