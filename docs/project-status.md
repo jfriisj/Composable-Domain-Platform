@@ -26,4 +26,4 @@ None.
 
 ## Next action
 
-Re-read the accepted Event module and architecture boundaries after #199, decide whether an ADR is required, and resolve the remaining #198 implementation readiness. Create one coherent vertical implementation issue only if readiness is fully resolved.
+Select and promote the next roadmap Product Goal under governance.
