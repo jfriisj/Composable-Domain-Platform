@@ -14,16 +14,16 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Product Goal #183, **Control Event registration availability**, and Use-case Goal #198, **Organizer closes and reopens Event registration**, are complete.
+Product Goal #184, **Manage Event waitlist participation**, is the selected next product outcome. Use-case Goal #206, **Participant joins and retrieves own Event waitlist participation**, is the current readiness path.
 
 ## In progress
 
-None.
+Post-scope readiness for Use-case Goal #206 is the current work.
 
 ## Current gaps
 
-None.
+The bounded participant waitlist journey is accepted in scope through #207, but physical capability/module ownership, ADR need, contract/persistence impact, and implementation validation remain unresolved. No waitlist implementation is implementation-ready yet.
 
 ## Next action
 
-Select and promote the next roadmap Product Goal under governance.
+Re-read only the directly relevant architecture/module boundaries and executable Event/Registration/Security truth, then resolve module admission, ADR need, contract/persistence impact, and implementation readiness for #206.
