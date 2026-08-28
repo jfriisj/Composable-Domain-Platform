@@ -8,7 +8,7 @@ Composable Domain Platform provides a modular platform for composing independent
 
 ## Current accepted product boundary
 
-The accepted product experience combines organizer-owned Event management and the participant Event-registration lifecycle:
+The accepted product experience combines organizer-owned Event management, the participant Event-registration lifecycle, and bounded participant Event waitlist participation:
 
 - An authenticated platform actor can create an Event and becomes its durable organizer/owner.
 - An authenticated owner can modify their owned Event while it is `unpublished`; mutable definition values (`name`, `slug`, `startsAt`, `endsAt`, `timezone`) may be changed, while `eventId` remains immutable identity.
@@ -25,6 +25,12 @@ The accepted product experience combines organizer-owned Event management and th
 - An authenticated participant can create an Event Registration only when the referenced Event exists, is `published`, and its organizer-controlled Registration availability is open. `unpublished`, `withdrawn`, and availability-closed Events are ineligible, and rejected ineligible attempts create no Registration state.
 - A terminal `withdrawn` Event remains ineligible for new Registration regardless of its previous organizer-controlled availability; reopening Registration cannot bypass withdrawal.
 - Closing or reopening Registration availability does not automatically cancel, delete, reactivate, or otherwise mutate existing Registrations. Existing participant-private retrieval/cancellation and organizer Registration-view behavior remain available while new Registration availability is closed.
+- While an Event is `published` and organizer-controlled new Registration availability is `closed`, an authenticated participant with no durable Registration for that Event may express durable waitlist participation intent. `unpublished`, `withdrawn`, and Registration-availability-`open` Events do not accept new waitlist participation, and rejected attempts create no waitlist or Registration state.
+- Waitlist participation is distinct from Registration. One participant/Event pair has at most one durable waitlist participation; repeating the same intent is idempotent. A participant with an existing `active` or `cancelled` Registration for the same Event is ineligible for waitlist participation, preserving the accepted Registration uniqueness and cancelled-pair occupancy boundary.
+- A participant can retrieve their own waitlist participation. Another authenticated actor cannot retrieve that participant-private state; unauthenticated access remains a distinct authentication failure. Exact external disclosure mapping is selected during contract readiness.
+- Reopening Event Registration availability does not automatically promote, delete, complete, or otherwise mutate existing waitlist participation. Event withdrawal prevents new waitlist participation but likewise does not mutate existing waitlist state; existing participation remains privately retrievable.
+- Waitlist participation owns its durable participation identity, opaque participant reference, Event target reference, participant/Event uniqueness, and retrieval state as a distinct semantic responsibility. Event and Registration do not own or encode waitlist participation state. Physical capability/module placement and cross-capability collaboration remain post-scope readiness decisions.
+- Waitlist participation remains durable across application-process restart against the same PostgreSQL database.
 - The participant can retrieve their private Event-registration state, cancel it, and later retrieve the same durable Registration as `cancelled`.
 - An authenticated Event owner can retrieve Registrations targeting their owned Event and observe each Registration's current lifecycle, including `active` and `cancelled`; Registrations targeting other Events are excluded from that organizer-private view.
 - Organizer Event-registration access is read-only. An authenticated non-owner cannot access another actor's organizer-private Event-registration view, an unknown Event exposes no Registration information, and participant-private retrieval/cancellation semantics remain unchanged.
@@ -65,7 +71,7 @@ Current scope does not authorize:
 
 - reversible Event unpublish/restore/re-publish or Event lifecycle expansion beyond the accepted terminal `withdrawn` state;
 - automatic Registration cancellation or other Registration lifecycle mutation caused solely by Event withdrawal;
-- scheduled or time-window-based Registration opening/closing, same-pair Registration re-registration/reactivation, additional Registration lifecycle policy, capacity, quotas, waitlists, ticketing/payment, notifications, or check-in/attendance;
+- scheduled or time-window-based Registration opening/closing, same-pair Registration re-registration/reactivation, additional Registration lifecycle policy, capacity, quotas, ordered/ranked waitlists, automatic waitlist promotion or Registration creation, organizer waitlist management/view, participant waitlist cancellation/removal, ticketing/payment, notifications, or check-in/attendance;
 - a generic Registration HTTP dispatcher;
 - Person/Account or participant-profile capability, provider-specific identity as platform domain state, durable provider-to-platform identity mapping, credential persistence/enrollment/reset/recovery/admin APIs, or external identity-provider integration;
 - roles/permissions, RBAC/ABAC, or a generic policy engine;
