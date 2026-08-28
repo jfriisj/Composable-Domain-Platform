@@ -22,7 +22,7 @@ Post-scope implementation readiness for Goal #208 is the current work after #209
 
 ## Current gaps
 
-The developer outcome is accepted, but the minimum worktree-aware `dev.sh`/Compose lifecycle, browser-service packaging and pinning, local port allocation, persistent editor state, and executable isolation proof remain unresolved. No developer-environment implementation is implementation-ready yet. Separately, the bounded participant waitlist journey is accepted through #207 but remains implementation-unready pending its post-scope readiness.
+The developer outcome is accepted, but the minimum worktree-aware `dev.sh`/Compose lifecycle, browser-service packaging and pinning, local port allocation, persistent editor state, and executable isolation proof remain unresolved. No developer-environment implementation is implementation-ready yet. Separately, the bounded participant waitlist journey has accepted architecture direction through #211 / ADR-0018 but remains implementation-unready pending exact API, contract/failure, persistence, runtime, and validation readiness.
 
 ## Next action
 
