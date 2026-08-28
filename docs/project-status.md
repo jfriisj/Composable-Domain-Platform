@@ -14,16 +14,16 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Product Goal #184, **Manage Event waitlist participation**, is the selected next product outcome. Use-case Goal #206, **Participant joins and retrieves own Event waitlist participation**, is the current readiness path.
+Single-level developer Goal #208, **Enable isolated parallel developer workspaces**, is the active `priority: now` workstream. Product Goal #184, **Manage Event waitlist participation**, and Use-case Goal #206 remain the selected `priority: next` roadmap readiness path.
 
 ## In progress
 
-Post-scope readiness for Use-case Goal #206 is the current work.
+Post-scope implementation readiness for Goal #208 is the current work after #209 accepts the isolated local workspace capability and browser-editor technology direction.
 
 ## Current gaps
 
-The bounded participant waitlist journey is accepted in scope through #207, but physical capability/module ownership, ADR need, contract/persistence impact, and implementation validation remain unresolved. No waitlist implementation is implementation-ready yet.
+The developer outcome is accepted, but the minimum worktree-aware `dev.sh`/Compose lifecycle, browser-service packaging and pinning, local port allocation, persistent editor state, and executable isolation proof remain unresolved. No developer-environment implementation is implementation-ready yet. Separately, the bounded participant waitlist journey is accepted through #207 but remains implementation-unready pending its post-scope readiness.
 
 ## Next action
 
-Re-read only the directly relevant architecture/module boundaries and executable Event/Registration/Security truth, then resolve module admission, ADR need, contract/persistence impact, and implementation readiness for #206.
+Re-read only `dev/Dockerfile`, `dev/compose.yaml`, `dev/dev.sh`, and `dev/README.md`, resolve the minimum implementation surface and validation for Goal #208, and create one coherent implementation issue only if readiness is complete; #184/#206 remain the next product readiness path.
