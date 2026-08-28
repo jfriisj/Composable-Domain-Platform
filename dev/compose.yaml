@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: shell
       args:
         USER_UID: "${LOCAL_UID:?LOCAL_UID must be supplied by dev/dev.sh}"
         USER_GID: "${LOCAL_GID:?LOCAL_GID must be supplied by dev/dev.sh}"
@@ -26,7 +27,66 @@ services:
         source: gradle-cache
         target: /home/developer/.gradle
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${APP_HOST_PORT:-8080}:8080"
+
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: workspace
+      args:
+        USER_UID: "${LOCAL_UID:?LOCAL_UID must be supplied by dev/dev.sh}"
+        USER_GID: "${LOCAL_GID:?LOCAL_GID must be supplied by dev/dev.sh}"
+    user: "${LOCAL_UID:?LOCAL_UID must be supplied by dev/dev.sh}:${LOCAL_GID:?LOCAL_GID must be supplied by dev/dev.sh}"
+    group_add:
+      - "${DOCKER_GID:?DOCKER_GID must be supplied by dev/dev.sh}"
+    environment:
+      HOME: /home/developer
+      GRADLE_USER_HOME: /home/developer/.gradle
+      TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+      TESTCONTAINERS_HOST_OVERRIDE:
+    working_dir: "${PROJECT_DIR:?PROJECT_DIR must be supplied by dev/dev.sh}"
+    command:
+      - /opt/openvscode-server/bin/openvscode-server
+      - --host
+      - 0.0.0.0
+      - --port
+      - "3000"
+      - --without-connection-token
+      - --server-data-dir
+      - /home/developer/.openvscode-server/server-data
+      - --user-data-dir
+      - /home/developer/.openvscode-server/user-data
+      - --extensions-dir
+      - /home/developer/.openvscode-server/extensions
+      - --default-folder
+      - "${PROJECT_DIR:?PROJECT_DIR must be supplied by dev/dev.sh}"
+    volumes:
+      - type: bind
+        source: "${PROJECT_DIR:?PROJECT_DIR must be supplied by dev/dev.sh}"
+        target: "${PROJECT_DIR:?PROJECT_DIR must be supplied by dev/dev.sh}"
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: volume
+        source: gradle-cache
+        target: /home/developer/.gradle
+      - type: volume
+        source: openvscode-data
+        target: /home/developer/.openvscode-server
+    ports:
+      - name: browser
+        target: 3000
+        host_ip: 127.0.0.1
+        protocol: tcp
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl --fail --show-error --silent http://127.0.0.1:3000/ >/dev/null
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 2s
 
   postgres:
     image: postgres:18.4@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636
@@ -50,4 +110,5 @@ services:
 
 volumes:
   gradle-cache:
+  openvscode-data:
   postgres-data:

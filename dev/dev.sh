@@ -38,6 +38,13 @@ require_host() {
         ''|*[!0-9]*) fail "could not determine Docker socket group id" ;;
     esac
 
+    APP_HOST_PORT="${APP_HOST_PORT:-8080}"
+    case "${APP_HOST_PORT}" in
+        ''|*[!0-9]*) fail "APP_HOST_PORT must be a numeric TCP port" ;;
+    esac
+    test "${APP_HOST_PORT}" -ge 1 && test "${APP_HOST_PORT}" -le 65535 ||
+        fail "APP_HOST_PORT must be between 1 and 65535"
+
     export DOCKER_HOST="unix://${DOCKER_SOCKET}"
     docker info >/dev/null 2>&1 ||
         fail "current host user cannot control the accepted local Docker Engine"
@@ -59,7 +66,7 @@ require_host() {
     project_base="${project_base%-}"
     test -n "${project_base}" || project_base="cdp"
 
-    export PROJECT_DIR LOCAL_UID LOCAL_GID DOCKER_GID
+    export PROJECT_DIR LOCAL_UID LOCAL_GID DOCKER_GID APP_HOST_PORT
     export COMPOSE_PROJECT_NAME="${project_base}-dev-${LOCAL_UID}"
 }
 
@@ -68,23 +75,63 @@ compose() {
 }
 
 postgres_up() {
-    compose --profile manual-db up -d postgres
+    if ! compose --profile manual-db up -d --wait --wait-timeout 60 postgres; then
+        compose --profile manual-db logs postgres >&2 || true
+        fail "optional development PostgreSQL did not become ready"
+    fi
 
-    for _ in $(seq 1 60); do
-        if compose --profile manual-db exec -T postgres \
-            pg_isready -U platform -d platform >/dev/null 2>&1; then
-            printf 'PASS: optional development PostgreSQL is ready\n'
-            return
-        fi
-        sleep 1
-    done
+    printf 'PASS: optional development PostgreSQL is ready\n'
+}
 
-    compose --profile manual-db logs postgres >&2 || true
-    fail "optional development PostgreSQL did not become ready"
+workspace_url() {
+    local mapping
+    local port
+
+    mapping="$(compose port workspace 3000 2>/dev/null)" ||
+        fail "browser workspace is not running or has no published browser port"
+
+    test -n "${mapping}" ||
+        fail "browser workspace returned an empty browser port mapping"
+
+    case "${mapping}" in
+        127.0.0.1:*)
+            port="${mapping#127.0.0.1:}"
+            ;;
+        *)
+            fail "browser workspace is not loopback-only: ${mapping}"
+            ;;
+    esac
+
+    case "${port}" in
+        ''|*[!0-9]*) fail "could not determine browser workspace host port from ${mapping}" ;;
+    esac
+
+    test "${port}" -ge 1 && test "${port}" -le 65535 ||
+        fail "browser workspace published invalid host port ${port}"
+
+    printf 'http://127.0.0.1:%s\n' "${port}"
+}
+
+workspace_up() {
+    local url
+
+    if ! compose up -d --build --wait --wait-timeout 60 workspace; then
+        compose logs workspace >&2 || true
+        fail "browser workspace did not become ready"
+    fi
+
+    url="$(workspace_url)"
+    printf 'PASS: browser workspace is ready at %s\n' "${url}"
+}
+
+workspace_down() {
+    compose stop workspace
+    compose rm --force workspace
+    printf 'PASS: browser workspace stopped; named editor state retained\n'
 }
 
 usage() {
-    cat <<'EOF'
+    cat <<'EOF_USAGE'
 Usage: ./dev/dev.sh <command>
 
 Commands:
@@ -92,12 +139,16 @@ Commands:
   java-version     Show the Java version inside the developer environment.
   gradle-version   Run the repository Gradle Wrapper version command.
   check            Run the authoritative repository validation inside the environment.
+  workspace-up     Build/start the persistent local browser workspace and print its URL.
+  workspace-url    Print the running browser workspace URL.
+  workspace-shell  Enter a shell in the running browser workspace container.
+  workspace-down   Stop/remove the browser workspace container while retaining editor state.
   postgres-up      Start the optional manual-development PostgreSQL service.
   postgres-down    Stop optional PostgreSQL while retaining its disposable data volume.
   boot-run         Start optional PostgreSQL and run the existing platform bootRun workflow.
   down             Stop/remove developer-environment containers and network; retain named volumes.
-  reset            Stop/remove the environment and delete disposable Gradle/PostgreSQL volumes.
-EOF
+  reset            Stop/remove the environment and delete disposable developer volumes.
+EOF_USAGE
 }
 
 require_host
@@ -114,6 +165,19 @@ case "${1:-}" in
         ;;
     check)
         exec docker compose --file "${COMPOSE_FILE}" run --rm --build -T --interactive=false dev ./gradlew --no-daemon check
+        ;;
+    workspace-up)
+        workspace_up
+        ;;
+    workspace-url)
+        workspace_url
+        ;;
+    workspace-shell)
+        workspace_url >/dev/null
+        exec docker compose --file "${COMPOSE_FILE}" exec workspace bash
+        ;;
+    workspace-down)
+        workspace_down
         ;;
     postgres-up)
         postgres_up

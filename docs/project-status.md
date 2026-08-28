@@ -14,16 +14,16 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Single-level developer Goal #208, **Enable isolated parallel developer workspaces**, is the active `priority: now` workstream. Product Goal #184, **Manage Event waitlist participation**, and Use-case Goal #206 remain the selected `priority: next` roadmap readiness path.
+Single-level developer Goal #208, **Enable isolated parallel developer workspaces**, is complete after implementation #213. Product Goal #184, **Manage Event waitlist participation**, and Use-case Goal #206 remain the selected `priority: next` roadmap readiness path.
 
 ## In progress
 
-Post-scope implementation readiness for Goal #208 is the current work after #209 accepts the isolated local workspace capability and browser-editor technology direction.
+None.
 
 ## Current gaps
 
-The developer outcome is accepted, but the minimum worktree-aware `dev.sh`/Compose lifecycle, browser-service packaging and pinning, local port allocation, persistent editor state, and executable isolation proof remain unresolved. No developer-environment implementation is implementation-ready yet. Separately, the bounded participant waitlist journey has accepted architecture direction through #211 / ADR-0018 but remains implementation-unready pending exact API, contract/failure, persistence, runtime, and validation readiness.
+The bounded participant waitlist journey has accepted architecture direction through #211 / ADR-0018 but remains implementation-unready pending exact API, contract/failure, persistence, runtime, and validation readiness.
 
 ## Next action
 
-Re-read only `dev/Dockerfile`, `dev/compose.yaml`, `dev/dev.sh`, and `dev/README.md`, resolve the minimum implementation surface and validation for Goal #208, and create one coherent implementation issue only if readiness is complete; #184/#206 remain the next product readiness path.
+Resume post-scope readiness for Use-case Goal #206 by resolving exact API, contract/failure, persistence, runtime, and validation readiness from accepted `development`.
