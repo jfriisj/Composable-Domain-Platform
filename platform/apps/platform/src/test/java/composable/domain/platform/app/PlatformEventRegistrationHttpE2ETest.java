@@ -735,6 +735,163 @@ class PlatformEventRegistrationHttpE2ETest {
     }
 
     @Test
+    void organizerControlsNewRegistrationAvailabilityAcrossRestart() throws Exception {
+        String eventId = "availability-e2e-event";
+        String existingRegistrationId = "availability-existing-registration";
+        String rejectedRegistrationId = "availability-rejected-registration";
+        String reopenedRegistrationId = "availability-reopened-registration";
+
+        defineAndPublishEvent(eventId);
+
+        HttpResponse<String> existing = postRegistration(
+                registrationJson(existingRegistrationId, eventId),
+                "corr-availability-existing",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(201, existing.statusCode());
+        assertRegistrationBody(
+                existing.body(),
+                existingRegistrationId,
+                eventId,
+                "active");
+
+        HttpResponse<String> nonOwnerClose = setRegistrationAvailability(
+                eventId,
+                "closed",
+                "corr-availability-non-owner",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(403, nonOwnerClose.statusCode());
+        assertJsonString(nonOwnerClose.body(), "code", "forbidden");
+
+        HttpResponse<String> closed = setRegistrationAvailability(
+                eventId,
+                "closed",
+                "corr-availability-close",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(204, closed.statusCode());
+        assertCorrelation(closed, "corr-availability-close");
+
+        HttpResponse<String> retrievedWhileClosed =
+                getEvent(eventId, "corr-availability-retrieve");
+        assertEquals(200, retrievedWhileClosed.statusCode());
+        assertJsonString(retrievedWhileClosed.body(), "publicationState", "published");
+        assertFalse(retrievedWhileClosed.body().contains("registrationAvailability"));
+
+        HttpResponse<String> discoveredWhileClosed =
+                discoverEvents("corr-availability-discover");
+        assertEquals(200, discoveredWhileClosed.statusCode());
+        assertTrue(discoveredWhileClosed.body().contains(
+                "\"eventId\":\"" + eventId + "\""));
+
+        HttpResponse<String> rejected = postRegistration(
+                registrationJson(rejectedRegistrationId, eventId),
+                "corr-availability-rejected",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(409, rejected.statusCode());
+        assertJsonString(rejected.body(), "code", "event_registration_closed");
+        assertEquals(0, registrationCount(rejectedRegistrationId));
+
+        HttpResponse<String> existingWhileClosed = getRegistration(
+                existingRegistrationId,
+                "corr-availability-existing-read",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, existingWhileClosed.statusCode());
+        assertRegistrationBody(
+                existingWhileClosed.body(),
+                existingRegistrationId,
+                eventId,
+                "active");
+
+        HttpResponse<String> organizerView = getEventRegistrations(
+                eventId,
+                "corr-availability-organizer-view",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, organizerView.statusCode());
+        assertRegistrationBody(
+                organizerView.body(),
+                existingRegistrationId,
+                eventId,
+                "active");
+
+        HttpResponse<String> repeatedClose = setRegistrationAvailability(
+                eventId,
+                "closed",
+                "corr-availability-close-repeat",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(204, repeatedClose.statusCode());
+
+        application.close();
+        application = null;
+        startApplication();
+
+        HttpResponse<String> rejectedAfterRestart = postRegistration(
+                registrationJson(rejectedRegistrationId, eventId),
+                "corr-availability-rejected-restart",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(409, rejectedAfterRestart.statusCode());
+        assertJsonString(
+                rejectedAfterRestart.body(),
+                "code",
+                "event_registration_closed");
+        assertEquals(0, registrationCount(rejectedRegistrationId));
+
+        HttpResponse<String> reopened = setRegistrationAvailability(
+                eventId,
+                "open",
+                "corr-availability-reopen",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(204, reopened.statusCode());
+
+        HttpResponse<String> createdAfterReopen = postRegistration(
+                registrationJson(reopenedRegistrationId, eventId),
+                "corr-availability-created-after-reopen",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(201, createdAfterReopen.statusCode());
+        assertRegistrationBody(
+                createdAfterReopen.body(),
+                reopenedRegistrationId,
+                eventId,
+                "active");
+
+        HttpResponse<String> withdrawn = withdrawEvent(
+                eventId,
+                "corr-availability-withdraw",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(204, withdrawn.statusCode());
+
+        HttpResponse<String> reopenWithdrawn = setRegistrationAvailability(
+                eventId,
+                "open",
+                "corr-availability-reopen-withdrawn",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(409, reopenWithdrawn.statusCode());
+        assertJsonString(reopenWithdrawn.body(), "code", "event_withdrawn");
+
+        HttpResponse<String> registrationAfterWithdrawal = postRegistration(
+                registrationJson("availability-after-withdrawal", eventId),
+                "corr-availability-after-withdrawal",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(409, registrationAfterWithdrawal.statusCode());
+        assertJsonString(
+                registrationAfterWithdrawal.body(),
+                "code",
+                "event_not_published");
+        assertEquals(0, registrationCount("availability-after-withdrawal"));
+    }
+
+    @Test
     void unknownEventReturnsNotFoundAndCreatesNoRegistration() throws Exception {
         HttpResponse<String> create = postRegistration(
                 registrationJson(
@@ -1252,6 +1409,27 @@ class PlatformEventRegistrationHttpE2ETest {
 
         return HTTP.send(
                 builder.POST(HttpRequest.BodyPublishers.noBody()).build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static HttpResponse<String> setRegistrationAvailability(
+            String eventId,
+            String availability,
+            String correlationId,
+            String principal,
+            String password) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(
+                        baseUri.resolve(
+                                "/api/v1/events/"
+                                        + eventId
+                                        + "/registration-availability"))
+                .header("Content-Type", "application/json");
+
+        addCommonHeaders(builder, correlationId, principal, password);
+
+        String body = "{\"availability\":\"" + availability + "\"}";
+        return HTTP.send(
+                builder.PUT(HttpRequest.BodyPublishers.ofString(body)).build(),
                 HttpResponse.BodyHandlers.ofString());
     }
 

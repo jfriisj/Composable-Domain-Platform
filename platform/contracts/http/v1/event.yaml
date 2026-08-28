@@ -367,6 +367,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/events/{eventId}/registration-availability:
+    put:
+      tags:
+        - Event
+      operationId: setEventRegistrationAvailability
+      summary: Set new-Registration availability for a published Event
+      security:
+        - PlatformActorBasicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetEventRegistrationAvailabilityRequest'
+      responses:
+        '204':
+          description: Event Registration availability updated
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '400':
+          description: Structurally invalid availability request
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated actor is not the Event owner
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event identity is unknown
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Event lifecycle does not permit availability changes
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   securitySchemes:
     PlatformActorBasicAuth:
@@ -456,6 +533,17 @@ components:
         timezone:
           type: string
           minLength: 1
+    SetEventRegistrationAvailabilityRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - availability
+      properties:
+        availability:
+          type: string
+          enum:
+            - open
+            - closed
     EventResponse:
       type: object
       additionalProperties: false

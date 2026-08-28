@@ -11,6 +11,7 @@ import composable.domain.platform.event.api.EventAlreadyPublishedException;
 import composable.domain.platform.event.api.EventNotFoundException;
 import composable.domain.platform.event.api.EventNotPublishedException;
 import composable.domain.platform.event.api.EventPublicationState;
+import composable.domain.platform.event.api.EventRegistrationAvailability;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.EventWithdrawnException;
 import composable.domain.platform.event.api.FindEvent;
@@ -18,6 +19,7 @@ import composable.domain.platform.event.api.InvalidEventDefinitionException;
 import composable.domain.platform.http.event.generated.api.EventApi;
 import composable.domain.platform.http.event.generated.model.DefineEventRequest;
 import composable.domain.platform.http.event.generated.model.EventResponse;
+import composable.domain.platform.http.event.generated.model.SetEventRegistrationAvailabilityRequest;
 import composable.domain.platform.http.event.generated.model.UpdateEventRequest;
 import composable.domain.platform.security.api.AuthenticatedActorProvider;
 import composable.domain.platform.security.api.AuthenticatedActorReference;
@@ -172,6 +174,49 @@ public class EventHttpAdapter implements EventApi {
             return ResponseEntity.noContent()
                     .header(HttpCorrelation.HEADER_NAME, HttpCorrelation.value(context))
                     .build();
+        } catch (EventNotFoundException exception) {
+            throw EventHttpException.notFound(context);
+        } catch (EventManagementAuthorizationDeniedException exception) {
+            throw EventHttpException.forbidden(context);
+        } catch (EventNotPublishedException exception) {
+            throw EventHttpException.notPublished(context);
+        } catch (EventWithdrawnException exception) {
+            throw EventHttpException.withdrawn(context);
+        } catch (RuntimeException exception) {
+            throw EventHttpException.internal(context, exception);
+        }
+    }
+
+    @Override
+    public ResponseEntity<Void> setEventRegistrationAvailability(
+            String eventId,
+            SetEventRegistrationAvailabilityRequest request,
+            String suppliedCorrelationId) {
+        ExecutionContext context = HttpCorrelation.establish(suppliedCorrelationId);
+
+        try {
+            if (request == null || request.getAvailability() == null) {
+                throw EventHttpException.invalidRequest(context);
+            }
+
+            AuthenticatedActorReference actorReference =
+                    authenticatedActorProvider.authenticatedActor();
+            EventRegistrationAvailability availability = switch (request.getAvailability()) {
+                case OPEN -> EventRegistrationAvailability.OPEN;
+                case CLOSED -> EventRegistrationAvailability.CLOSED;
+            };
+
+            organizerEventManagement.setRegistrationAvailability(
+                    context,
+                    actorReference,
+                    eventId,
+                    availability);
+
+            return ResponseEntity.noContent()
+                    .header(HttpCorrelation.HEADER_NAME, HttpCorrelation.value(context))
+                    .build();
+        } catch (EventHttpException exception) {
+            throw exception;
         } catch (EventNotFoundException exception) {
             throw EventHttpException.notFound(context);
         } catch (EventManagementAuthorizationDeniedException exception) {

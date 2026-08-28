@@ -13,6 +13,7 @@ public record Event(
         Instant endsAt,
         ZoneId timezone,
         PublicationState publicationState,
+        RegistrationAvailability registrationAvailability,
         Optional<String> owner) {
 
     public Event {
@@ -23,6 +24,9 @@ public record Event(
         Objects.requireNonNull(endsAt, "endsAt must not be null");
         Objects.requireNonNull(timezone, "timezone must not be null");
         Objects.requireNonNull(publicationState, "publicationState must not be null");
+        Objects.requireNonNull(
+                registrationAvailability,
+                "registrationAvailability must not be null");
         Objects.requireNonNull(owner, "owner must not be null");
 
         if (owner.isPresent() && owner.get().isBlank()) {
@@ -41,6 +45,27 @@ public record Event(
             Instant startsAt,
             Instant endsAt,
             ZoneId timezone,
+            PublicationState publicationState,
+            Optional<String> owner) {
+        this(
+                id,
+                name,
+                slug,
+                startsAt,
+                endsAt,
+                timezone,
+                publicationState,
+                RegistrationAvailability.OPEN,
+                owner);
+    }
+
+    public Event(
+            String id,
+            String name,
+            String slug,
+            Instant startsAt,
+            Instant endsAt,
+            ZoneId timezone,
             String owner) {
         this(
                 id,
@@ -50,6 +75,7 @@ public record Event(
                 endsAt,
                 timezone,
                 PublicationState.UNPUBLISHED,
+                RegistrationAvailability.OPEN,
                 Optional.of(requireText(owner, "owner")));
     }
 
@@ -69,6 +95,7 @@ public record Event(
                 endsAt,
                 timezone,
                 PublicationState.PUBLISHED,
+                registrationAvailability,
                 owner);
     }
 
@@ -88,6 +115,32 @@ public record Event(
                 endsAt,
                 timezone,
                 PublicationState.WITHDRAWN,
+                registrationAvailability,
+                owner);
+    }
+
+    public Event setRegistrationAvailability(RegistrationAvailability availability) {
+        Objects.requireNonNull(availability, "availability must not be null");
+
+        if (publicationState == PublicationState.UNPUBLISHED) {
+            throw new IllegalStateException("Event is not published");
+        }
+        if (publicationState == PublicationState.WITHDRAWN) {
+            throw new IllegalStateException("Event is already withdrawn");
+        }
+        if (registrationAvailability == availability) {
+            return this;
+        }
+
+        return new Event(
+                id,
+                name,
+                slug,
+                startsAt,
+                endsAt,
+                timezone,
+                publicationState,
+                availability,
                 owner);
     }
 
@@ -112,6 +165,7 @@ public record Event(
                 newEndsAt,
                 newTimezone,
                 publicationState,
+                registrationAvailability,
                 owner);
     }
 

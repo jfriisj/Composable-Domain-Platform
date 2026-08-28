@@ -110,6 +110,11 @@ class WithdrawEventServiceTest {
             }
 
             @Override
+            public boolean updateRegistrationAvailability(Event event) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
             public boolean updateDefinition(Event event) {
                 throw new UnsupportedOperationException();
             }

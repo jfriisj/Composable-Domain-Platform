@@ -2,6 +2,7 @@ package composable.domain.platform.composition.eventregistration;
 
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.event.api.EventPublicationState;
+import composable.domain.platform.event.api.EventRegistrationAvailability;
 import composable.domain.platform.event.api.EventView;
 import composable.domain.platform.event.api.FindEvent;
 import composable.domain.platform.registration.api.CancelRegistration;
@@ -71,6 +72,9 @@ public final class ParticipantEventRegistrationService
 
         if (event.publicationState() != EventPublicationState.PUBLISHED) {
             throw new EventNotPublishedForRegistrationException();
+        }
+        if (event.registrationAvailability() == EventRegistrationAvailability.CLOSED) {
+            throw new EventRegistrationClosedException();
         }
 
         try {

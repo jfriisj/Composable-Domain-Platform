@@ -10,12 +10,13 @@ Own the Event business capability for definition, durable retrieval, modificatio
 - Invariants required for a valid Event.
 - Unpublished Event definition replacement/modification.
 - The one-way unpublished-to-published-to-withdrawn lifecycle and discovery of published Events.
+- Organizer-controlled open/closed availability for new Registration while an Event is published.
 - Event-owned durable state, persistence boundary, and retrieval semantics.
 
 ## Does not own
 
 - Authentication or Authorization decision logic.
-- Registration or Event-Registration workflow.
+- Registration state, registrant identity, Registration lifecycle, or final Event-specific Registration eligibility workflow.
 - Participant profile, registration eligibility, capacity, waitlists, ticketing, payments, or notifications.
 - HTTP transport mapping, application runtime assembly, or persistence for another module.
 

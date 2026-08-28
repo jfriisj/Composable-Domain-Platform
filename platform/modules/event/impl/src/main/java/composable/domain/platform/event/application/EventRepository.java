@@ -13,6 +13,8 @@ public interface EventRepository {
 
     boolean updatePublicationState(Event event, PublicationState expectedState);
 
+    boolean updateRegistrationAvailability(Event event);
+
     boolean updateDefinition(Event event);
 
     Collection<Event> findPublished();

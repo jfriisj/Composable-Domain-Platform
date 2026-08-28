@@ -3,6 +3,7 @@ package composable.domain.platform.event.domain;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -172,6 +173,36 @@ class EventTest {
         assertTrue(legacy.owner().isEmpty());
         assertEquals("event-legacy", legacy.id());
         assertEquals(PublicationState.UNPUBLISHED, legacy.publicationState());
+    }
+
+    @Test
+    void registrationAvailabilityStartsOpenAndChangesOnlyWhilePublished() {
+        Event unpublished = event();
+
+        assertEquals(RegistrationAvailability.OPEN, unpublished.registrationAvailability());
+        assertThrows(
+                IllegalStateException.class,
+                () -> unpublished.setRegistrationAvailability(
+                        RegistrationAvailability.CLOSED));
+
+        Event published = unpublished.publish();
+        Event closed = published.setRegistrationAvailability(
+                RegistrationAvailability.CLOSED);
+        Event repeatedClosed = closed.setRegistrationAvailability(
+                RegistrationAvailability.CLOSED);
+        Event reopened = closed.setRegistrationAvailability(
+                RegistrationAvailability.OPEN);
+
+        assertEquals(RegistrationAvailability.OPEN, published.registrationAvailability());
+        assertEquals(RegistrationAvailability.CLOSED, closed.registrationAvailability());
+        assertSame(closed, repeatedClosed);
+        assertEquals(RegistrationAvailability.OPEN, reopened.registrationAvailability());
+
+        Event withdrawn = closed.withdraw();
+        assertThrows(
+                IllegalStateException.class,
+                () -> withdrawn.setRegistrationAvailability(
+                        RegistrationAvailability.OPEN));
     }
 
     @Test

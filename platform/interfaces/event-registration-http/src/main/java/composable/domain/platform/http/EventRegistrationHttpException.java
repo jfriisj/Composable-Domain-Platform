@@ -87,6 +87,16 @@ final class EventRegistrationHttpException extends RuntimeException {
                 null);
     }
 
+    static EventRegistrationHttpException eventRegistrationClosed(
+            ExecutionContext context) {
+        return new EventRegistrationHttpException(
+                HttpStatus.CONFLICT,
+                EventRegistrationErrorResponse.CodeEnum.EVENT_REGISTRATION_CLOSED,
+                "Event registration is closed",
+                context,
+                null);
+    }
+
     static EventRegistrationHttpException internal(
             ExecutionContext context,
             RuntimeException cause) {
