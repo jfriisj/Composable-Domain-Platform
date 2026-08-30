@@ -19,6 +19,12 @@ project(":registration-api").projectDir = file("platform/modules/registration/ap
 include(":registration-impl")
 project(":registration-impl").projectDir = file("platform/modules/registration/impl")
 
+include(":waitlist-api")
+project(":waitlist-api").projectDir = file("platform/modules/waitlist/api")
+
+include(":waitlist-impl")
+project(":waitlist-impl").projectDir = file("platform/modules/waitlist/impl")
+
 include(":security-api")
 project(":security-api").projectDir = file("platform/modules/security/api")
 
@@ -26,11 +32,16 @@ include(":security-impl")
 project(":security-impl").projectDir = file("platform/modules/security/impl")
 
 include(":event-registration-composition")
-project(":event-registration-composition").projectDir = file("platform/compositions/event-registration")
+project(":event-registration-composition").projectDir =
+    file("platform/compositions/event-registration")
+
+include(":event-waitlist-composition")
+project(":event-waitlist-composition").projectDir =
+    file("platform/compositions/event-waitlist")
 
 include(":event-management-composition")
-project(":event-management-composition").projectDir = file("platform/compositions/event-management")
-
+project(":event-management-composition").projectDir =
+    file("platform/compositions/event-management")
 
 include(":http-interface")
 project(":http-interface").projectDir = file("platform/interfaces/http")
@@ -38,6 +49,10 @@ project(":http-interface").projectDir = file("platform/interfaces/http")
 include(":event-registration-http-interface")
 project(":event-registration-http-interface").projectDir =
     file("platform/interfaces/event-registration-http")
+
+include(":event-waitlist-http-interface")
+project(":event-waitlist-http-interface").projectDir =
+    file("platform/interfaces/event-waitlist-http")
 
 include(":platform-app")
 project(":platform-app").projectDir = file("platform/apps/platform")

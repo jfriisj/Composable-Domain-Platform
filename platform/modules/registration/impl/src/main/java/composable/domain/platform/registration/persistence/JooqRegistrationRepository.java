@@ -36,12 +36,17 @@ final class JooqRegistrationRepository implements RegistrationRepository {
     private final DataSource dataSource;
 
     JooqRegistrationRepository(DataSource dataSource) {
-        this.dataSource = Objects.requireNonNull(dataSource, "dataSource must not be null");
+        this.dataSource =
+                Objects.requireNonNull(
+                        dataSource,
+                        "dataSource must not be null");
     }
 
     @Override
     public boolean addIfAbsent(Registration registration) {
-        Objects.requireNonNull(registration, "registration must not be null");
+        Objects.requireNonNull(
+                registration,
+                "registration must not be null");
 
         return dsl()
                         .insertInto(REGISTRATIONS)
@@ -67,7 +72,9 @@ final class JooqRegistrationRepository implements RegistrationRepository {
 
     @Override
     public Optional<Registration> findById(String registrationId) {
-        Objects.requireNonNull(registrationId, "registrationId must not be null");
+        Objects.requireNonNull(
+                registrationId,
+                "registrationId must not be null");
 
         Record record = dsl()
                 .select(
@@ -81,12 +88,50 @@ final class JooqRegistrationRepository implements RegistrationRepository {
                 .where(REGISTRATION_ID.eq(registrationId))
                 .fetchOne();
 
-        return Optional.ofNullable(record).map(JooqRegistrationRepository::toRegistration);
+        return Optional.ofNullable(record)
+                .map(JooqRegistrationRepository::toRegistration);
     }
 
     @Override
-    public List<Registration> findByTarget(TargetReference targetReference) {
-        Objects.requireNonNull(targetReference, "targetReference must not be null");
+    public Optional<Registration> findByRegistrantAndTarget(
+            RegistrantReference registrantReference,
+            TargetReference targetReference) {
+        Objects.requireNonNull(
+                registrantReference,
+                "registrantReference must not be null");
+        Objects.requireNonNull(
+                targetReference,
+                "targetReference must not be null");
+
+        Record record = dsl()
+                .select(
+                        REGISTRATION_ID,
+                        REGISTRANT_NAMESPACE,
+                        REGISTRANT_REFERENCE,
+                        TARGET_NAMESPACE,
+                        TARGET_REFERENCE,
+                        LIFECYCLE)
+                .from(REGISTRATIONS)
+                .where(REGISTRANT_NAMESPACE.eq(
+                                registrantReference.namespace())
+                        .and(REGISTRANT_REFERENCE.eq(
+                                registrantReference.reference()))
+                        .and(TARGET_NAMESPACE.eq(
+                                targetReference.namespace()))
+                        .and(TARGET_REFERENCE.eq(
+                                targetReference.reference())))
+                .fetchOne();
+
+        return Optional.ofNullable(record)
+                .map(JooqRegistrationRepository::toRegistration);
+    }
+
+    @Override
+    public List<Registration> findByTarget(
+            TargetReference targetReference) {
+        Objects.requireNonNull(
+                targetReference,
+                "targetReference must not be null");
 
         return dsl()
                 .select(
@@ -98,18 +143,23 @@ final class JooqRegistrationRepository implements RegistrationRepository {
                         LIFECYCLE)
                 .from(REGISTRATIONS)
                 .where(TARGET_NAMESPACE.eq(targetReference.namespace())
-                        .and(TARGET_REFERENCE.eq(targetReference.reference())))
+                        .and(TARGET_REFERENCE.eq(
+                                targetReference.reference())))
                 .orderBy(REGISTRATION_ID.asc())
                 .fetch(JooqRegistrationRepository::toRegistration);
     }
 
     @Override
     public void updateLifecycle(Registration registration) {
-        Objects.requireNonNull(registration, "registration must not be null");
+        Objects.requireNonNull(
+                registration,
+                "registration must not be null");
 
         int updated = dsl()
                 .update(REGISTRATIONS)
-                .set(LIFECYCLE, toPersistenceValue(registration.lifecycle()))
+                .set(
+                        LIFECYCLE,
+                        toPersistenceValue(registration.lifecycle()))
                 .where(REGISTRATION_ID.eq(registration.id()))
                 .execute();
 
@@ -135,14 +185,16 @@ final class JooqRegistrationRepository implements RegistrationRepository {
                 fromPersistenceValue(record.get(LIFECYCLE)));
     }
 
-    private static String toPersistenceValue(RegistrationLifecycle lifecycle) {
+    private static String toPersistenceValue(
+            RegistrationLifecycle lifecycle) {
         return switch (lifecycle) {
             case ACTIVE -> "active";
             case CANCELLED -> "cancelled";
         };
     }
 
-    private static RegistrationLifecycle fromPersistenceValue(String lifecycle) {
+    private static RegistrationLifecycle fromPersistenceValue(
+            String lifecycle) {
         return switch (lifecycle) {
             case "active" -> RegistrationLifecycle.ACTIVE;
             case "cancelled" -> RegistrationLifecycle.CANCELLED;

@@ -6,7 +6,7 @@ This document owns current project state only. Accepted scope is in [`scope.md`]
 
 ## Current state
 
-The accepted executable platform contains the Event, Registration, and Security modules; Event-Management and Event-Registration compositions; independently selectable Event-only and full Platform applications; independently authoritative Event and Event-Registration HTTP source contracts with static application aggregation; PostgreSQL persistence; the executable JVM runtime boundary; and the repository-controlled Docker developer environment.
+The accepted executable platform contains the Event, Registration, Waitlist, and Security modules; Event-Management, Event-Registration, and Event-Waitlist compositions; independently selectable Event-only and full Platform applications; independently authoritative Event, Event-Registration, and Event-Waitlist HTTP source contracts with static application aggregation; module-owned PostgreSQL persistence; the executable JVM runtime boundary; and the repository-controlled Docker developer environment.
 
 Authoritative documentation is bounded by `docs/templates/README.md` and deterministically enforced through root `check`. Routine build-affecting developer validation uses `./dev/dev.sh check`, which runs that root check inside the repository-controlled Docker/JDK 21 developer environment.
 
@@ -14,16 +14,16 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Single-level developer Goal #208, **Enable isolated parallel developer workspaces**, is complete after implementation #213. Product Goal #184, **Manage Event waitlist participation**, and Use-case Goal #206 remain the selected `priority: next` roadmap readiness path.
+Use-case Goal #206, **Participant joins and retrieves own Event waitlist participation**, is complete after implementation #216. Product Goal #184, **Manage Event waitlist participation**, remains the roadmap container pending post-merge acceptance review against its remaining completion boundary.
 
 ## In progress
 
-None.
+None after #216 is accepted into `development`.
 
 ## Current gaps
 
-The bounded participant waitlist journey has accepted architecture direction through #211 / ADR-0018 but remains implementation-unready pending exact API, contract/failure, persistence, runtime, and validation readiness.
+No additional waitlist lifecycle is admitted by #216. Ordered/ranked waitlists, capacity, automatic promotion or Registration creation, organizer waitlist management/view, participant cancellation/removal, notifications, and the other durable exclusions in `docs/scope.md` remain outside accepted scope.
 
 ## Next action
 
-Resume post-scope readiness for Use-case Goal #206 by resolving exact API, contract/failure, persistence, runtime, and validation readiness from accepted `development`.
+After #216 is accepted into `development`, verify #206 completion, reassess Product Goal #184 only against accepted evidence and scope, and then select the next ready roadmap action through the normal governance/readiness flow.

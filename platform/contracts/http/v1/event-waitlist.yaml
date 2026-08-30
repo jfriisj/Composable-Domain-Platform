@@ -1,0 +1,203 @@
+openapi: 3.0.3
+info:
+  title: Composable Domain Platform Event Waitlist API
+  version: 1.0.0
+  description: >
+    Version 1 authoritative HTTP source contract for participant Event waitlist
+    join and private retrieval workflows owned by the Event-Waitlist composition.
+servers:
+  - url: /
+tags:
+  - name: EventWaitlist
+paths:
+  /api/v1/events/{eventId}/waitlist-participation:
+    put:
+      tags:
+        - EventWaitlist
+      operationId: joinEventWaitlist
+      summary: Establish or return the authenticated participant's Event waitlist participation
+      security:
+        - EventWaitlistParticipantBasicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventWaitlistEventId'
+        - $ref: '#/components/parameters/EventWaitlistCorrelationId'
+      responses:
+        '200':
+          description: Waitlist participation established or already present
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistParticipationResponse'
+        '400':
+          description: Structurally invalid waitlist request
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistErrorResponse'
+        '401':
+          description: Participant authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistErrorResponse'
+        '404':
+          description: Referenced Event does not exist
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistErrorResponse'
+        '409':
+          description: Event or Registration state makes new waitlist participation ineligible
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistErrorResponse'
+    get:
+      tags:
+        - EventWaitlist
+      operationId: findEventWaitlistParticipation
+      summary: Retrieve the authenticated participant's Event waitlist participation
+      security:
+        - EventWaitlistParticipantBasicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventWaitlistEventId'
+        - $ref: '#/components/parameters/EventWaitlistCorrelationId'
+      responses:
+        '200':
+          description: Participant waitlist participation found
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistParticipationResponse'
+        '400':
+          description: Structurally invalid Event identity
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistErrorResponse'
+        '401':
+          description: Participant authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistErrorResponse'
+        '404':
+          description: Private waitlist participation is unknown or not visible to this participant
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventWaitlistCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWaitlistErrorResponse'
+components:
+  securitySchemes:
+    EventWaitlistParticipantBasicAuth:
+      type: http
+      scheme: basic
+  parameters:
+    EventWaitlistEventId:
+      name: eventId
+      in: path
+      required: true
+      description: Event identity
+      schema:
+        type: string
+        minLength: 1
+        pattern: '.*\S.*'
+    EventWaitlistCorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: >
+        Opaque correlation identifier. A supplied non-blank value is preserved.
+        When absent, the HTTP boundary creates one.
+      schema:
+        type: string
+        minLength: 1
+        pattern: '.*\S.*'
+  headers:
+    EventWaitlistCorrelationId:
+      description: >
+        Opaque correlation identifier established for the request. Every
+        response returns this header.
+      schema:
+        type: string
+        minLength: 1
+  schemas:
+    EventWaitlistParticipationResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - waitlistParticipationId
+        - eventId
+      properties:
+        waitlistParticipationId:
+          type: string
+          minLength: 1
+        eventId:
+          type: string
+          minLength: 1
+    EventWaitlistErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - invalid_request
+            - authentication_required
+            - event_not_found
+            - event_not_published
+            - event_waitlist_unavailable
+            - event_registration_exists
+            - waitlist_participation_not_found
+            - internal_error
+        message:
+          type: string
+          minLength: 1

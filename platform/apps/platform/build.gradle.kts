@@ -17,6 +17,7 @@ openApiApplicationContract {
         listOf(
             "platform/contracts/http/v1/event.yaml",
             "platform/contracts/http/v1/event-registration.yaml",
+            "platform/contracts/http/v1/event-waitlist.yaml",
         )
     )
     title.set("Composable Domain Platform API")
@@ -34,9 +35,18 @@ openApiApplicationContract {
             "findEventRegistrationById",
             "cancelEventRegistration",
             "findOrganizerEventRegistrations",
+            "joinEventWaitlist",
+            "findEventWaitlistParticipation",
         )
     )
-    requiredSecuritySchemes.set(setOf("ParticipantBasicAuth", "PlatformActorBasicAuth", "OrganizerBasicAuth"))
+    requiredSecuritySchemes.set(
+        setOf(
+            "ParticipantBasicAuth",
+            "PlatformActorBasicAuth",
+            "OrganizerBasicAuth",
+            "EventWaitlistParticipantBasicAuth",
+        )
+    )
 }
 
 dependencies {
@@ -44,12 +54,16 @@ dependencies {
     implementation(project(":event-impl"))
     implementation(project(":registration-api"))
     implementation(project(":registration-impl"))
+    implementation(project(":waitlist-api"))
+    implementation(project(":waitlist-impl"))
     implementation(project(":security-api"))
     implementation(project(":security-impl"))
     implementation(project(":event-management-composition"))
     implementation(project(":event-registration-composition"))
+    implementation(project(":event-waitlist-composition"))
     implementation(project(":http-interface"))
     implementation(project(":event-registration-http-interface"))
+    implementation(project(":event-waitlist-http-interface"))
     implementation(platform(libs.spring.boot.dependencies))
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)
