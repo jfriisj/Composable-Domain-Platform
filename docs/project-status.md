@@ -14,16 +14,18 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Use-case Goal #206, **Participant joins and retrieves own Event waitlist participation**, is complete after implementation #216. Product Goal #184, **Manage Event waitlist participation**, remains the roadmap container pending post-merge acceptance review against its remaining completion boundary.
+None. Product Goal #184, **Manage Event waitlist participation**, and Use-case Goal #206, **Participant joins and retrieves own Event waitlist participation**, are complete after implementation #216 / PR #217.
 
 ## In progress
 
-None after #216 is accepted into `development`.
+None.
 
 ## Current gaps
 
-No additional waitlist lifecycle is admitted by #216. Ordered/ranked waitlists, capacity, automatic promotion or Registration creation, organizer waitlist management/view, participant cancellation/removal, notifications, and the other durable exclusions in `docs/scope.md` remain outside accepted scope.
+No additional waitlist lifecycle is admitted by the completed bounded participant waitlist journey. Ordered/ranked waitlists, capacity, automatic promotion or Registration creation, organizer waitlist management/view, participant cancellation/removal, notifications, and the other durable exclusions in `docs/scope.md` remain outside accepted scope.
+
+The remaining open roadmap Product Goals are deliberately deferred and do not authorize implementation until promoted through the normal scope/readiness flow.
 
 ## Next action
 
-After #216 is accepted into `development`, verify #206 completion, reassess Product Goal #184 only against accepted evidence and scope, and then select the next ready roadmap action through the normal governance/readiness flow.
+Select the next Product Goal through normal governance and readiness. No new Product Goal or executable implementation is currently `priority: now` or `priority: next`.
