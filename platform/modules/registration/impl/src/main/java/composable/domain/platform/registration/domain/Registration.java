@@ -34,6 +34,18 @@ public record Registration(
                 RegistrationLifecycle.CANCELLED);
     }
 
+    public Registration reactivate() {
+        if (lifecycle == RegistrationLifecycle.ACTIVE) {
+            return this;
+        }
+
+        return new Registration(
+                id,
+                registrantReference,
+                targetReference,
+                RegistrationLifecycle.ACTIVE);
+    }
+
     private static String requireText(String value, String field) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(field + " must not be blank");

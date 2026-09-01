@@ -9,14 +9,14 @@ Own a domain-neutral Registration capability representing a durable registrant-t
 - Registration identity.
 - Opaque namespaced registrant and target references.
 - Registration identity and registrant-target uniqueness.
-- The active-to-cancelled Registration lifecycle.
-- Registration-owned durable state, persistence boundary, and retrieval semantics.
+- The Registration lifecycle transitions `active -> cancelled` and `cancelled -> active`, preserving the same durable Registration identity and references.
+- Registration-owned durable state, persistence boundary, lifecycle transition concurrency, and retrieval semantics.
 
 ## Does not own
 
 - Event identity, Event existence, publication, or other Event behavior.
 - Interpretation or resolution of registrant and target namespaces.
-- Event-Registration workflow or Event-specific cancellation policy.
+- Event-Registration workflow or Event-specific cancellation or reactivation eligibility policy.
 - Participant authentication or authorization.
 - HTTP transport mapping or persistence for another module.
 
@@ -42,7 +42,7 @@ Registration has no functional dependency on Event or Security and does not use 
 
 - `docs/modules.md` and ADR-0013 define the universal module invariant.
 - ADR-0008 records the domain-neutral Registration boundary.
-- ADR-0011 records the Registration-owned cancellation lifecycle.
+- ADR-0011 records the Registration-owned lifecycle and identity-preserving cancellation rationale; accepted scope extends the same ownership to reactivation without changing architecture relationships.
 - `platform/modules/registration/api/` owns concrete public Java contract truth.
 - `platform/modules/registration/impl/` owns implementation, tests, and Registration persistence truth.
 - Registration Gradle build files own build dependency truth.

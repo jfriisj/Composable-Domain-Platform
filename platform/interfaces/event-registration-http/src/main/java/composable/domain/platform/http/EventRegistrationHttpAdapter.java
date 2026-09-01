@@ -15,6 +15,7 @@ import composable.domain.platform.composition.eventregistration.InvalidOrganizer
 import composable.domain.platform.composition.eventregistration.OrganizerEventRegistrationAuthorizationDeniedException;
 import composable.domain.platform.composition.eventregistration.OrganizerEventRegistrationView;
 import composable.domain.platform.composition.eventregistration.ParticipantEventRegistrationView;
+import composable.domain.platform.composition.eventregistration.ReactivateParticipantEventRegistration;
 import composable.domain.platform.composition.eventregistration.UnknownEventForRegistrationException;
 import composable.domain.platform.core.execution.ExecutionContext;
 import composable.domain.platform.http.eventregistration.generated.api.EventRegistrationApi;
@@ -34,6 +35,7 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
     private final CreateParticipantEventRegistration createEventRegistration;
     private final FindParticipantEventRegistration findEventRegistration;
     private final CancelParticipantEventRegistration cancelEventRegistration;
+    private final ReactivateParticipantEventRegistration reactivateEventRegistration;
     private final FindOrganizerEventRegistrations findOrganizerEventRegistrations;
     private final AuthenticatedActorProvider authenticatedActorProvider;
 
@@ -41,6 +43,7 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
             CreateParticipantEventRegistration createEventRegistration,
             FindParticipantEventRegistration findEventRegistration,
             CancelParticipantEventRegistration cancelEventRegistration,
+            ReactivateParticipantEventRegistration reactivateEventRegistration,
             FindOrganizerEventRegistrations findOrganizerEventRegistrations,
             AuthenticatedActorProvider authenticatedActorProvider) {
         this.createEventRegistration =
@@ -55,6 +58,10 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
                 Objects.requireNonNull(
                         cancelEventRegistration,
                         "cancelEventRegistration must not be null");
+        this.reactivateEventRegistration =
+                Objects.requireNonNull(
+                        reactivateEventRegistration,
+                        "reactivateEventRegistration must not be null");
         this.findOrganizerEventRegistrations =
                 Objects.requireNonNull(
                         findOrganizerEventRegistrations,
@@ -142,6 +149,46 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
             return response(HttpStatus.OK, context, registration);
         } catch (EventRegistrationAuthorizationDeniedException exception) {
             throw EventRegistrationHttpException.registrationNotFound(context);
+        } catch (EventRegistrationHttpException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw EventRegistrationHttpException.internal(context, exception);
+        }
+    }
+
+    @Override
+    public ResponseEntity<EventRegistrationResponse> reactivateEventRegistration(
+            String registrationId,
+            String suppliedCorrelationId) {
+        ExecutionContext context =
+                EventRegistrationHttpCorrelation.establish(suppliedCorrelationId);
+
+        if (registrationId == null || registrationId.isBlank()) {
+            throw EventRegistrationHttpException.invalidRequest(
+                    context,
+                    "registrationId must not be blank");
+        }
+
+        try {
+            AuthenticatedActorReference actorReference =
+                    authenticatedActorProvider.authenticatedActor();
+            ParticipantEventRegistrationView registration =
+                    reactivateEventRegistration.reactivate(
+                                    context,
+                                    actorReference,
+                                    registrationId)
+                            .orElseThrow(
+                                    () -> EventRegistrationHttpException.registrationNotFound(
+                                            context));
+            return response(HttpStatus.OK, context, registration);
+        } catch (EventRegistrationAuthorizationDeniedException exception) {
+            throw EventRegistrationHttpException.registrationNotFound(context);
+        } catch (UnknownEventForRegistrationException exception) {
+            throw EventRegistrationHttpException.eventNotFound(context);
+        } catch (EventNotPublishedForRegistrationException exception) {
+            throw EventRegistrationHttpException.eventNotPublished(context);
+        } catch (EventRegistrationClosedException exception) {
+            throw EventRegistrationHttpException.eventRegistrationClosed(context);
         } catch (EventRegistrationHttpException exception) {
             throw exception;
         } catch (RuntimeException exception) {

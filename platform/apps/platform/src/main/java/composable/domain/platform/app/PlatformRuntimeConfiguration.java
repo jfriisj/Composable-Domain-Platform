@@ -25,11 +25,13 @@ import composable.domain.platform.registration.api.CreateRegistration;
 import composable.domain.platform.registration.api.FindRegistration;
 import composable.domain.platform.registration.api.FindRegistrationByRegistrantAndTarget;
 import composable.domain.platform.registration.api.FindRegistrationsByTarget;
+import composable.domain.platform.registration.api.ReactivateRegistration;
 import composable.domain.platform.registration.application.CancelRegistrationService;
 import composable.domain.platform.registration.application.CreateRegistrationService;
 import composable.domain.platform.registration.application.FindRegistrationByRegistrantAndTargetService;
 import composable.domain.platform.registration.application.FindRegistrationService;
 import composable.domain.platform.registration.application.FindRegistrationsByTargetService;
+import composable.domain.platform.registration.application.ReactivateRegistrationService;
 import composable.domain.platform.registration.application.RegistrationRepository;
 import composable.domain.platform.registration.persistence.RegistrationPersistence;
 import composable.domain.platform.security.api.AuthorizeResourceOwnership;
@@ -183,6 +185,12 @@ class PlatformRuntimeConfiguration {
     }
 
     @Bean
+    ReactivateRegistration reactivateRegistration(
+            RegistrationRepository repository) {
+        return new ReactivateRegistrationService(repository);
+    }
+
+    @Bean
     JoinWaitlist joinWaitlist(WaitlistParticipationRepository repository) {
         return new JoinWaitlistService(repository);
     }
@@ -218,12 +226,14 @@ class PlatformRuntimeConfiguration {
             CreateRegistration createRegistration,
             FindRegistration findRegistration,
             CancelRegistration cancelRegistration,
+            ReactivateRegistration reactivateRegistration,
             AuthorizeResourceOwnership authorizeResourceOwnership) {
         return new ParticipantEventRegistrationService(
                 findEvent,
                 createRegistration,
                 findRegistration,
                 cancelRegistration,
+                reactivateRegistration,
                 authorizeResourceOwnership);
     }
 
