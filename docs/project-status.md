@@ -14,20 +14,20 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Product Goal #185, **Support participant re-registration lifecycle**, is `priority: next` for readiness preparation.
+Product Goal #185, **Support participant re-registration lifecycle**, is `priority: next`, with Use-case Goal #220, **Participant regains Event participation after cancellation**, selected for bounded participant re-participation.
 
-The Goal does not authorize implementation. Current accepted scope still excludes same-pair Registration re-registration/reactivation.
+The Goal does not authorize implementation. Accepted scope now admits only same-Registration `cancelled -> active` re-participation under normal Event Registration eligibility.
 
 ## In progress
 
-Readiness preparation for Product Goal #185. No executable implementation issue is currently authorized.
+Post-scope readiness for Use-case Goal #220. No executable implementation issue is currently authorized.
 
 ## Current gaps
 
-The participant-visible semantics after cancelling an Event Registration are not yet admitted for same-pair re-registration/reactivation. Identity semantics, lifecycle behavior, uniqueness implications, interaction with Event Registration availability, and interaction with waitlist eligibility must be resolved through scope/readiness before implementation.
+The semantic scope is resolved. Remaining readiness must verify the smallest Registration public capability, Event-Registration orchestration, external failure/disclosure semantics, persistence and concurrency behavior, Waitlist interaction without cross-lifecycle mutation, restart proof, and whether any significant architecture rationale requires an ADR.
 
 The remaining open roadmap Product Goals stay deliberately deferred until separately promoted.
 
 ## Next action
 
-Define the minimum participant-visible Use-case Goal under #185, then make the required scope/readiness transition for same-pair re-registration/reactivation before any implementation design or executable implementation issue.
+Re-read the directly relevant Registration, Event, Event-Registration, contract, persistence, source/test, and architecture authorities for #220; resolve readiness and create one coherent implementation issue only if no separate decision or ADR is required.
