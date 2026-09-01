@@ -16,20 +16,18 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-Product Goal #185, **Support participant re-registration lifecycle**, is `priority: next`, with Use-case Goal #220, **Participant regains Event participation after cancellation**, selected for bounded participant re-participation.
-
-Accepted scope and executable implementation now support same-Registration `cancelled -> active` re-participation under the bounded Event Registration eligibility rules.
+None. Product Goal #185, **Support participant re-registration lifecycle**, and Use-case Goal #220, **Participant regains Event participation after cancellation**, are complete after implementation #223 / PR #224.
 
 ## In progress
 
-Acceptance and Goal-state reconciliation for Use-case Goal #220 after the coherent implementation authorized by #223.
+None.
 
 ## Current gaps
 
-No implementation-readiness gap remains for #220. Acceptance must verify the merged `development` state against the Use-case Goal journey and reconcile #223, #220, and parent Product Goal #185 only where the accepted evidence changes their state.
+No additional Registration lifecycle or participation policy is admitted by the completed bounded participant re-participation journey beyond same-Registration `cancelled -> active` under the accepted Event Registration eligibility rules.
 
-The remaining open roadmap Product Goals stay deliberately deferred until separately promoted.
+The remaining open roadmap Product Goals are deliberately deferred and do not authorize implementation until promoted through the normal scope/readiness flow.
 
 ## Next action
 
-Merge the validated #223 implementation to `development`, re-read accepted remote state, and perform bounded acceptance/reconciliation for Use-case Goal #220 and Product Goal #185.
+Select the next Product Goal through normal governance and readiness. No Product Goal or executable implementation is currently `priority: now` or `priority: next`.
