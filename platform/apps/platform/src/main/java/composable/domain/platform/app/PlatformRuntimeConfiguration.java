@@ -3,6 +3,7 @@ package composable.domain.platform.app;
 import composable.domain.platform.composition.eventmanagement.OrganizerEventManagementService;
 import composable.domain.platform.composition.eventregistration.OrganizerEventRegistrationService;
 import composable.domain.platform.composition.eventregistration.ParticipantEventRegistrationService;
+import composable.domain.platform.composition.eventwaitlist.ParticipantEventWaitlistService;
 import composable.domain.platform.event.api.DefineEvent;
 import composable.domain.platform.event.api.DiscoverEvents;
 import composable.domain.platform.event.api.FindEvent;
@@ -22,14 +23,22 @@ import composable.domain.platform.event.persistence.JooqEventRepository;
 import composable.domain.platform.registration.api.CancelRegistration;
 import composable.domain.platform.registration.api.CreateRegistration;
 import composable.domain.platform.registration.api.FindRegistration;
+import composable.domain.platform.registration.api.FindRegistrationByRegistrantAndTarget;
 import composable.domain.platform.registration.api.FindRegistrationsByTarget;
 import composable.domain.platform.registration.application.CancelRegistrationService;
 import composable.domain.platform.registration.application.CreateRegistrationService;
+import composable.domain.platform.registration.application.FindRegistrationByRegistrantAndTargetService;
 import composable.domain.platform.registration.application.FindRegistrationService;
 import composable.domain.platform.registration.application.FindRegistrationsByTargetService;
 import composable.domain.platform.registration.application.RegistrationRepository;
 import composable.domain.platform.registration.persistence.RegistrationPersistence;
 import composable.domain.platform.security.api.AuthorizeResourceOwnership;
+import composable.domain.platform.waitlist.api.FindWaitlistParticipation;
+import composable.domain.platform.waitlist.api.JoinWaitlist;
+import composable.domain.platform.waitlist.application.FindWaitlistParticipationService;
+import composable.domain.platform.waitlist.application.JoinWaitlistService;
+import composable.domain.platform.waitlist.application.WaitlistParticipationRepository;
+import composable.domain.platform.waitlist.persistence.WaitlistPersistence;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -77,6 +86,19 @@ class PlatformRuntimeConfiguration {
     }
 
     @Bean
+    Flyway waitlistFlyway(DataSource dataSource) {
+        Flyway flyway = Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration/waitlist")
+                .table("flyway_schema_history_waitlist")
+                .baselineOnMigrate(true)
+                .baselineVersion("0")
+                .load();
+        flyway.migrate();
+        return flyway;
+    }
+
+    @Bean
     EventRepository eventRepository(
             DataSource dataSource,
             @Qualifier("eventFlyway") Flyway eventFlyway) {
@@ -88,6 +110,13 @@ class PlatformRuntimeConfiguration {
             DataSource dataSource,
             @Qualifier("registrationFlyway") Flyway registrationFlyway) {
         return RegistrationPersistence.repository(dataSource);
+    }
+
+    @Bean
+    WaitlistParticipationRepository waitlistParticipationRepository(
+            DataSource dataSource,
+            @Qualifier("waitlistFlyway") Flyway waitlistFlyway) {
+        return WaitlistPersistence.repository(dataSource);
     }
 
     @Bean
@@ -137,13 +166,31 @@ class PlatformRuntimeConfiguration {
     }
 
     @Bean
-    FindRegistrationsByTarget findRegistrationsByTarget(RegistrationRepository repository) {
+    FindRegistrationByRegistrantAndTarget findRegistrationByRegistrantAndTarget(
+            RegistrationRepository repository) {
+        return new FindRegistrationByRegistrantAndTargetService(repository);
+    }
+
+    @Bean
+    FindRegistrationsByTarget findRegistrationsByTarget(
+            RegistrationRepository repository) {
         return new FindRegistrationsByTargetService(repository);
     }
 
     @Bean
     CancelRegistration cancelRegistration(RegistrationRepository repository) {
         return new CancelRegistrationService(repository);
+    }
+
+    @Bean
+    JoinWaitlist joinWaitlist(WaitlistParticipationRepository repository) {
+        return new JoinWaitlistService(repository);
+    }
+
+    @Bean
+    FindWaitlistParticipation findWaitlistParticipation(
+            WaitlistParticipationRepository repository) {
+        return new FindWaitlistParticipationService(repository);
     }
 
     @Bean
@@ -189,5 +236,19 @@ class PlatformRuntimeConfiguration {
                 findEvent,
                 findRegistrationsByTarget,
                 authorizeResourceOwnership);
+    }
+
+    @Bean
+    ParticipantEventWaitlistService participantEventWaitlistService(
+            FindEvent findEvent,
+            FindRegistrationByRegistrantAndTarget
+                    findRegistrationByRegistrantAndTarget,
+            JoinWaitlist joinWaitlist,
+            FindWaitlistParticipation findWaitlistParticipation) {
+        return new ParticipantEventWaitlistService(
+                findEvent,
+                findRegistrationByRegistrantAndTarget,
+                joinWaitlist,
+                findWaitlistParticipation);
     }
 }

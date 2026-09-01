@@ -37,10 +37,18 @@ openApiApplicationContract {
             "findEventRegistrationById",
             "cancelEventRegistration",
             "findOrganizerEventRegistrations",
+            "joinEventWaitlist",
+            "findEventWaitlistParticipation",
         )
     )
     requiredSecuritySchemes.set(setOf("PlatformActorBasicAuth"))
-    forbiddenSecuritySchemes.set(setOf("ParticipantBasicAuth", "OrganizerBasicAuth"))
+    forbiddenSecuritySchemes.set(
+        setOf(
+            "ParticipantBasicAuth",
+            "OrganizerBasicAuth",
+            "EventWaitlistParticipantBasicAuth",
+        )
+    )
     forbiddenComponentNames.set(
         setOf(
             "CreateEventRegistrationRequest",
@@ -50,6 +58,10 @@ openApiApplicationContract {
             "EventRegistrationCorrelationId",
             "EventRegistrationEventId",
             "RegistrationId",
+            "EventWaitlistParticipationResponse",
+            "EventWaitlistErrorResponse",
+            "EventWaitlistCorrelationId",
+            "EventWaitlistEventId",
         )
     )
 }
@@ -80,6 +92,10 @@ val forbiddenProjectPaths = setOf(
     ":registration-impl",
     ":event-registration-composition",
     ":event-registration-http-interface",
+    ":waitlist-api",
+    ":waitlist-impl",
+    ":event-waitlist-composition",
+    ":event-waitlist-http-interface",
 )
 
 val verifySelectableComposition by tasks.registering {

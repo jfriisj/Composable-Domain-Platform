@@ -24,8 +24,17 @@ class PlatformArchitectureTest {
             ROOT + ".registration.domain..";
     private static final String REGISTRATION_PERSISTENCE_PACKAGE =
             ROOT + ".registration.persistence..";
+    private static final String WAITLIST_API_PACKAGE = ROOT + ".waitlist.api..";
+    private static final String WAITLIST_APPLICATION_PACKAGE =
+            ROOT + ".waitlist.application..";
+    private static final String WAITLIST_DOMAIN_PACKAGE =
+            ROOT + ".waitlist.domain..";
+    private static final String WAITLIST_PERSISTENCE_PACKAGE =
+            ROOT + ".waitlist.persistence..";
     private static final String EVENT_REGISTRATION_COMPOSITION_PACKAGE =
             ROOT + ".composition.eventregistration..";
+    private static final String EVENT_WAITLIST_COMPOSITION_PACKAGE =
+            ROOT + ".composition.eventwaitlist..";
     private static final String EVENT_MANAGEMENT_COMPOSITION_PACKAGE =
             ROOT + ".composition.eventmanagement..";
     private static final String SECURITY_API_PACKAGE = ROOT + ".security.api..";
@@ -68,6 +77,9 @@ class PlatformArchitectureTest {
                         REGISTRATION_APPLICATION_PACKAGE,
                         REGISTRATION_DOMAIN_PACKAGE,
                         REGISTRATION_PERSISTENCE_PACKAGE,
+                        WAITLIST_APPLICATION_PACKAGE,
+                        WAITLIST_DOMAIN_PACKAGE,
+                        WAITLIST_PERSISTENCE_PACKAGE,
                         "org.flywaydb..",
                         "org.jooq..",
                         "org.postgresql..")
@@ -81,7 +93,9 @@ class PlatformArchitectureTest {
                         EVENT_DOMAIN_PACKAGE,
                         EVENT_APPLICATION_PACKAGE,
                         REGISTRATION_DOMAIN_PACKAGE,
-                        REGISTRATION_APPLICATION_PACKAGE)
+                        REGISTRATION_APPLICATION_PACKAGE,
+                        WAITLIST_DOMAIN_PACKAGE,
+                        WAITLIST_APPLICATION_PACKAGE)
                 .should().dependOnClassesThat().resideInAnyPackage(
                         HTTP_PACKAGE,
                         APP_PACKAGE,
@@ -103,7 +117,12 @@ class PlatformArchitectureTest {
                         REGISTRATION_APPLICATION_PACKAGE,
                         REGISTRATION_DOMAIN_PACKAGE,
                         REGISTRATION_PERSISTENCE_PACKAGE,
+                        WAITLIST_API_PACKAGE,
+                        WAITLIST_APPLICATION_PACKAGE,
+                        WAITLIST_DOMAIN_PACKAGE,
+                        WAITLIST_PERSISTENCE_PACKAGE,
                         EVENT_REGISTRATION_COMPOSITION_PACKAGE,
+                        EVENT_WAITLIST_COMPOSITION_PACKAGE,
                         EVENT_MANAGEMENT_COMPOSITION_PACKAGE,
                         HTTP_PACKAGE,
                         APP_PACKAGE)
@@ -138,7 +157,11 @@ class PlatformArchitectureTest {
                         REGISTRATION_API_PACKAGE,
                         REGISTRATION_APPLICATION_PACKAGE,
                         REGISTRATION_PERSISTENCE_PACKAGE,
+                        WAITLIST_API_PACKAGE,
+                        WAITLIST_APPLICATION_PACKAGE,
+                        WAITLIST_PERSISTENCE_PACKAGE,
                         EVENT_REGISTRATION_COMPOSITION_PACKAGE,
+                        EVENT_WAITLIST_COMPOSITION_PACKAGE,
                         EVENT_MANAGEMENT_COMPOSITION_PACKAGE,
                         SECURITY_API_PACKAGE,
                         SECURITY_IMPL_PACKAGE,
@@ -167,6 +190,7 @@ class PlatformArchitectureTest {
                 .that().resideInAnyPackage(
                         HTTP_PACKAGE,
                         EVENT_REGISTRATION_COMPOSITION_PACKAGE,
+                        EVENT_WAITLIST_COMPOSITION_PACKAGE,
                         EVENT_MANAGEMENT_COMPOSITION_PACKAGE,
                         EVENT_API_PACKAGE,
                         EVENT_APPLICATION_PACKAGE,
@@ -175,7 +199,11 @@ class PlatformArchitectureTest {
                         REGISTRATION_API_PACKAGE,
                         REGISTRATION_APPLICATION_PACKAGE,
                         REGISTRATION_DOMAIN_PACKAGE,
-                        REGISTRATION_PERSISTENCE_PACKAGE)
+                        REGISTRATION_PERSISTENCE_PACKAGE,
+                        WAITLIST_API_PACKAGE,
+                        WAITLIST_APPLICATION_PACKAGE,
+                        WAITLIST_DOMAIN_PACKAGE,
+                        WAITLIST_PERSISTENCE_PACKAGE)
                 .should().dependOnClassesThat().resideInAPackage(
                         SECURITY_IMPL_PACKAGE)
                 .check(PRODUCTION_CLASSES);
@@ -187,7 +215,8 @@ class PlatformArchitectureTest {
                 .that().resideInAPackage(APP_PACKAGE)
                 .should().dependOnClassesThat().resideInAnyPackage(
                         EVENT_DOMAIN_PACKAGE,
-                        REGISTRATION_DOMAIN_PACKAGE)
+                        REGISTRATION_DOMAIN_PACKAGE,
+                        WAITLIST_DOMAIN_PACKAGE)
                 .check(PRODUCTION_CLASSES);
     }
 }
