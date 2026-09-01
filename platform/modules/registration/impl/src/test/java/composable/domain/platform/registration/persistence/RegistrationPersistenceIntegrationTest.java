@@ -1,6 +1,7 @@
 package composable.domain.platform.registration.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,8 +17,13 @@ import composable.domain.platform.registration.application.CancelRegistrationSer
 import composable.domain.platform.registration.application.CreateRegistrationService;
 import composable.domain.platform.registration.application.FindRegistrationService;
 import composable.domain.platform.registration.application.FindRegistrationsByTargetService;
+import composable.domain.platform.registration.application.ReactivateRegistrationService;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationVersion;
@@ -141,6 +147,149 @@ class RegistrationPersistenceIntegrationTest {
                         .orElseThrow();
 
         assertEquals(first, freshRead);
+    }
+
+    @Test
+    void persistsReactivationAndPreservesRegistrationIdentityAndReferences() {
+        CreateRegistrationCommand command = command(
+                "persistent-reactivate",
+                "registrant",
+                "reactivate-owner",
+                "target",
+                "reactivate-target");
+
+        RegistrationView created =
+                new CreateRegistrationService(new JooqRegistrationRepository(dataSource))
+                        .create(CONTEXT, command);
+
+        RegistrationView cancelled =
+                new CancelRegistrationService(new JooqRegistrationRepository(dataSource))
+                        .cancel(CONTEXT, created.registrationId())
+                        .orElseThrow();
+
+        ReactivateRegistrationService reactivation =
+                new ReactivateRegistrationService(
+                        new JooqRegistrationRepository(dataSource));
+
+        RegistrationView first =
+                reactivation.reactivate(CONTEXT, cancelled.registrationId())
+                        .orElseThrow();
+        RegistrationView second =
+                reactivation.reactivate(CONTEXT, cancelled.registrationId())
+                        .orElseThrow();
+
+        assertEquals(created.registrationId(), first.registrationId());
+        assertEquals(created.registrantReference(), first.registrantReference());
+        assertEquals(created.targetReference(), first.targetReference());
+        assertEquals(RegistrationLifecycle.ACTIVE, first.lifecycle());
+        assertEquals(first, second);
+
+        assertEquals(
+                first,
+                new FindRegistrationService(new JooqRegistrationRepository(dataSource))
+                        .findById(CONTEXT, created.registrationId())
+                        .orElseThrow());
+    }
+
+    @Test
+    void lifecyclePersistenceRejectsStaleExpectedStateInBothDirections() {
+        CreateRegistrationCommand command = command(
+                "persistent-expected-state",
+                "registrant",
+                "expected-state-owner",
+                "target",
+                "expected-state-target");
+
+        new CreateRegistrationService(new JooqRegistrationRepository(dataSource))
+                .create(CONTEXT, command);
+
+        JooqRegistrationRepository repository =
+                new JooqRegistrationRepository(dataSource);
+        var active = repository.findById(command.registrationId()).orElseThrow();
+        var cancelled = active.cancel();
+
+        assertTrue(repository.updateLifecycle(cancelled, active.lifecycle()));
+        assertFalse(repository.updateLifecycle(active, active.lifecycle()));
+
+        var persistedCancelled =
+                repository.findById(command.registrationId()).orElseThrow();
+        assertEquals(cancelled, persistedCancelled);
+
+        var reactivated = persistedCancelled.reactivate();
+        assertTrue(repository.updateLifecycle(
+                reactivated,
+                persistedCancelled.lifecycle()));
+        assertFalse(repository.updateLifecycle(
+                persistedCancelled,
+                persistedCancelled.lifecycle()));
+
+        assertEquals(
+                reactivated,
+                repository.findById(command.registrationId()).orElseThrow());
+    }
+
+    @Test
+    void concurrentSameTargetReactivationIsIdempotentAndPreservesSingleIdentity()
+            throws Exception {
+        CreateRegistrationCommand command = command(
+                "persistent-concurrent-reactivate",
+                "registrant",
+                "concurrent-owner",
+                "target",
+                "concurrent-target");
+
+        RegistrationView created =
+                new CreateRegistrationService(new JooqRegistrationRepository(dataSource))
+                        .create(CONTEXT, command);
+        new CancelRegistrationService(new JooqRegistrationRepository(dataSource))
+                .cancel(CONTEXT, created.registrationId())
+                .orElseThrow();
+
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        Callable<RegistrationView> action = () -> {
+            ready.countDown();
+            if (!start.await(10, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Concurrent reactivation start timed out");
+            }
+            return new ReactivateRegistrationService(
+                            new JooqRegistrationRepository(dataSource))
+                    .reactivate(CONTEXT, created.registrationId())
+                    .orElseThrow();
+        };
+
+        RegistrationView first;
+        RegistrationView second;
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var firstFuture = executor.submit(action);
+            var secondFuture = executor.submit(action);
+            assertTrue(ready.await(10, TimeUnit.SECONDS));
+            start.countDown();
+            first = firstFuture.get(10, TimeUnit.SECONDS);
+            second = secondFuture.get(10, TimeUnit.SECONDS);
+        }
+
+        assertEquals(RegistrationLifecycle.ACTIVE, first.lifecycle());
+        assertEquals(first, second);
+        assertEquals(created.registrationId(), first.registrationId());
+
+        assertThrows(
+                RegistrationUniquenessConflictException.class,
+                () -> new CreateRegistrationService(new JooqRegistrationRepository(dataSource))
+                        .create(
+                                CONTEXT,
+                                command(
+                                        "persistent-concurrent-reactivate-conflict",
+                                        "registrant",
+                                        "concurrent-owner",
+                                        "target",
+                                        "concurrent-target")));
+
+        assertEquals(
+                first,
+                new FindRegistrationService(new JooqRegistrationRepository(dataSource))
+                        .findById(CONTEXT, created.registrationId())
+                        .orElseThrow());
     }
 
     @Test

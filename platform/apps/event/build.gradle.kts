@@ -36,6 +36,7 @@ openApiApplicationContract {
             "createEventRegistration",
             "findEventRegistrationById",
             "cancelEventRegistration",
+            "reactivateEventRegistration",
             "findOrganizerEventRegistrations",
             "joinEventWaitlist",
             "findEventWaitlistParticipation",

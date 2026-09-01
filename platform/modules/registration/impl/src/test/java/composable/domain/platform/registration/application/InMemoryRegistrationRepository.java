@@ -2,6 +2,7 @@ package composable.domain.platform.registration.application;
 
 import composable.domain.platform.registration.domain.RegistrantReference;
 import composable.domain.platform.registration.domain.Registration;
+import composable.domain.platform.registration.domain.RegistrationLifecycle;
 import composable.domain.platform.registration.domain.TargetReference;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,13 +81,13 @@ final class InMemoryRegistrationRepository
     }
 
     @Override
-    public synchronized void updateLifecycle(
-            Registration registration) {
+    public synchronized boolean updateLifecycle(
+            Registration registration,
+            RegistrationLifecycle expectedLifecycle) {
         Registration existing = registrations.get(registration.id());
 
         if (existing == null) {
-            throw new IllegalStateException(
-                    "Expected Registration to exist before lifecycle update");
+            return false;
         }
 
         if (!ReferencePair.from(existing)
@@ -95,7 +96,12 @@ final class InMemoryRegistrationRepository
                     "Registration lifecycle update must preserve registrant and target references");
         }
 
+        if (existing.lifecycle() != expectedLifecycle) {
+            return false;
+        }
+
         registrations.put(registration.id(), registration);
+        return true;
     }
 
     private record ReferencePair(

@@ -350,6 +350,192 @@ class PlatformEventRegistrationHttpE2ETest {
     }
 
     @Test
+    void participantReactivationPreservesIdentityEligibilityPrivacyAndRestartState()
+            throws Exception {
+        String eventId = "reregistration-e2e-event";
+        String registrationId = "reregistration-e2e-registration";
+
+        defineAndPublishEvent(eventId);
+
+        HttpResponse<String> created = postRegistration(
+                registrationJson(registrationId, eventId),
+                "corr-rereg-create",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(201, created.statusCode());
+        assertRegistrationBody(created.body(), registrationId, eventId, "active");
+
+        HttpResponse<String> cancelled = cancelRegistration(
+                registrationId,
+                "corr-rereg-cancel",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, cancelled.statusCode());
+        assertRegistrationBody(cancelled.body(), registrationId, eventId, "cancelled");
+
+        HttpResponse<String> privateAttempt = reactivateRegistration(
+                registrationId,
+                "corr-rereg-private",
+                PRINCIPAL_C,
+                PASSWORD_C);
+        assertEquals(404, privateAttempt.statusCode());
+        assertJsonString(
+                privateAttempt.body(),
+                "code",
+                "event_registration_not_found");
+
+        HttpResponse<String> unauthenticated = reactivateRegistration(
+                registrationId,
+                "corr-rereg-unauthenticated",
+                null,
+                null);
+        assertEquals(401, unauthenticated.statusCode());
+        assertJsonString(
+                unauthenticated.body(),
+                "code",
+                "authentication_required");
+
+        HttpResponse<String> reactivated = reactivateRegistration(
+                registrationId,
+                "corr-rereg-reactivate",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, reactivated.statusCode());
+        assertCorrelation(reactivated, "corr-rereg-reactivate");
+        assertRegistrationBody(reactivated.body(), registrationId, eventId, "active");
+        assertEquals(1, registrationCount(registrationId));
+        assertEquals(1, registrationPairCount(PRINCIPAL_B, eventId));
+
+        HttpResponse<String> participantView = getRegistration(
+                registrationId,
+                "corr-rereg-participant-view",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, participantView.statusCode());
+        assertRegistrationBody(
+                participantView.body(),
+                registrationId,
+                eventId,
+                "active");
+
+        HttpResponse<String> organizerView = getEventRegistrations(
+                eventId,
+                "corr-rereg-organizer-view",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, organizerView.statusCode());
+        assertRegistrationBody(
+                organizerView.body(),
+                registrationId,
+                eventId,
+                "active");
+
+        HttpResponse<String> closed = setRegistrationAvailability(
+                eventId,
+                "closed",
+                "corr-rereg-close",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(204, closed.statusCode());
+
+        HttpResponse<String> activeWhileClosed = reactivateRegistration(
+                registrationId,
+                "corr-rereg-active-closed",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, activeWhileClosed.statusCode());
+        assertRegistrationBody(
+                activeWhileClosed.body(),
+                registrationId,
+                eventId,
+                "active");
+
+        assertEquals(
+                200,
+                cancelRegistration(
+                                registrationId,
+                                "corr-rereg-cancel-closed",
+                                PRINCIPAL_B,
+                                PASSWORD_B)
+                        .statusCode());
+
+        HttpResponse<String> rejectedWhileClosed = reactivateRegistration(
+                registrationId,
+                "corr-rereg-rejected-closed",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(409, rejectedWhileClosed.statusCode());
+        assertJsonString(
+                rejectedWhileClosed.body(),
+                "code",
+                "event_registration_closed");
+
+        HttpResponse<String> stillCancelled = getRegistration(
+                registrationId,
+                "corr-rereg-still-cancelled",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, stillCancelled.statusCode());
+        assertRegistrationBody(
+                stillCancelled.body(),
+                registrationId,
+                eventId,
+                "cancelled");
+
+        assertEquals(
+                204,
+                setRegistrationAvailability(
+                                eventId,
+                                "open",
+                                "corr-rereg-reopen",
+                                PRINCIPAL_A,
+                                PASSWORD_A)
+                        .statusCode());
+
+        HttpResponse<String> reactivatedAgain = reactivateRegistration(
+                registrationId,
+                "corr-rereg-reactivate-again",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, reactivatedAgain.statusCode());
+        assertRegistrationBody(
+                reactivatedAgain.body(),
+                registrationId,
+                eventId,
+                "active");
+
+        application.close();
+        application = null;
+        startApplication();
+
+        HttpResponse<String> afterRestart = getRegistration(
+                registrationId,
+                "corr-rereg-after-restart",
+                PRINCIPAL_B,
+                PASSWORD_B);
+        assertEquals(200, afterRestart.statusCode());
+        assertRegistrationBody(
+                afterRestart.body(),
+                registrationId,
+                eventId,
+                "active");
+
+        HttpResponse<String> organizerAfterRestart = getEventRegistrations(
+                eventId,
+                "corr-rereg-organizer-restart",
+                PRINCIPAL_A,
+                PASSWORD_A);
+        assertEquals(200, organizerAfterRestart.statusCode());
+        assertRegistrationBody(
+                organizerAfterRestart.body(),
+                registrationId,
+                eventId,
+                "active");
+        assertEquals(1, registrationCount(registrationId));
+        assertEquals(1, registrationPairCount(PRINCIPAL_B, eventId));
+    }
+
+    @Test
     void eventDefineRequiresAuthenticationWhileRetrieveRemainsAnonymous()
             throws Exception {
         String eventId = "registration-event-public-security-isolation";
@@ -1509,6 +1695,21 @@ class PlatformEventRegistrationHttpE2ETest {
                 HttpResponse.BodyHandlers.ofString());
     }
 
+    private static HttpResponse<String> reactivateRegistration(
+            String registrationId,
+            String correlationId,
+            String principal,
+            String password) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(
+                baseUri.resolve("/api/v1/event-registrations/" + registrationId));
+
+        addCommonHeaders(builder, correlationId, principal, password);
+
+        return HTTP.send(
+                builder.PUT(HttpRequest.BodyPublishers.noBody()).build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
     private static void addCommonHeaders(
             HttpRequest.Builder builder,
             String correlationId,
@@ -1570,6 +1771,28 @@ class PlatformEventRegistrationHttpE2ETest {
                 PreparedStatement statement = connection.prepareStatement(
                         "select count(*) from registration.registrations where registration_id = ?")) {
             statement.setString(1, registrationId);
+            try (ResultSet result = statement.executeQuery()) {
+                result.next();
+                return result.getInt(1);
+            }
+        }
+    }
+
+    private static int registrationPairCount(
+            String registrantReference,
+            String eventId) throws Exception {
+        String sql = """
+                select count(*)
+                from registration.registrations
+                where registrant_namespace = 'participant'
+                  and registrant_reference = ?
+                  and target_namespace = 'event'
+                  and target_reference = ?
+                """;
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, registrantReference);
+            statement.setString(2, eventId);
             try (ResultSet result = statement.executeQuery()) {
                 result.next();
                 return result.getInt(1);

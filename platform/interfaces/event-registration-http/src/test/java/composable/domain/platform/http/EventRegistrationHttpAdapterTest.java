@@ -384,6 +384,10 @@ class EventRegistrationHttpAdapterTest {
                 create,
                 find,
                 cancel,
+                (context, ignoredActorReference, registrationId) -> {
+                    throw new AssertionError(
+                            "ReactivateParticipantEventRegistration must not be called");
+                },
                 findOrganizer,
                 () -> new AuthenticatedActorReference(actorReference));
     }

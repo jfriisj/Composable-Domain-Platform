@@ -10,6 +10,7 @@ import composable.domain.platform.registration.api.CreateRegistration;
 import composable.domain.platform.registration.api.CreateRegistrationCommand;
 import composable.domain.platform.registration.api.FindRegistration;
 import composable.domain.platform.registration.api.InvalidRegistrationDefinitionException;
+import composable.domain.platform.registration.api.ReactivateRegistration;
 import composable.domain.platform.registration.api.RegistrantReference;
 import composable.domain.platform.registration.api.RegistrationLifecycle;
 import composable.domain.platform.registration.api.RegistrationUniquenessConflictException;
@@ -25,7 +26,8 @@ import java.util.Optional;
 public final class ParticipantEventRegistrationService
         implements CreateParticipantEventRegistration,
                 FindParticipantEventRegistration,
-                CancelParticipantEventRegistration {
+                CancelParticipantEventRegistration,
+                ReactivateParticipantEventRegistration {
 
     static final String PARTICIPANT_NAMESPACE = "participant";
     static final String EVENT_NAMESPACE = "event";
@@ -34,6 +36,7 @@ public final class ParticipantEventRegistrationService
     private final CreateRegistration createRegistration;
     private final FindRegistration findRegistration;
     private final CancelRegistration cancelRegistration;
+    private final ReactivateRegistration reactivateRegistration;
     private final AuthorizeResourceOwnership authorizeResourceOwnership;
 
     public ParticipantEventRegistrationService(
@@ -41,6 +44,7 @@ public final class ParticipantEventRegistrationService
             CreateRegistration createRegistration,
             FindRegistration findRegistration,
             CancelRegistration cancelRegistration,
+            ReactivateRegistration reactivateRegistration,
             AuthorizeResourceOwnership authorizeResourceOwnership) {
         this.findEvent = Objects.requireNonNull(findEvent, "findEvent must not be null");
         this.createRegistration =
@@ -49,6 +53,10 @@ public final class ParticipantEventRegistrationService
                 Objects.requireNonNull(findRegistration, "findRegistration must not be null");
         this.cancelRegistration =
                 Objects.requireNonNull(cancelRegistration, "cancelRegistration must not be null");
+        this.reactivateRegistration =
+                Objects.requireNonNull(
+                        reactivateRegistration,
+                        "reactivateRegistration must not be null");
         this.authorizeResourceOwnership =
                 Objects.requireNonNull(
                         authorizeResourceOwnership,
@@ -120,6 +128,41 @@ public final class ParticipantEventRegistrationService
         }
 
         return cancelRegistration.cancel(context, registrationId)
+                .map(ParticipantEventRegistrationService::toView);
+    }
+
+    @Override
+    public Optional<ParticipantEventRegistrationView> reactivate(
+            ExecutionContext context,
+            AuthenticatedActorReference actorReference,
+            String registrationId) {
+        Objects.requireNonNull(context, "context must not be null");
+        requireActorReference(actorReference);
+
+        Optional<RegistrationView> ownedRegistration =
+                findOwnedRegistration(context, actorReference, registrationId);
+        if (ownedRegistration.isEmpty()) {
+            return Optional.empty();
+        }
+
+        RegistrationView registration = ownedRegistration.orElseThrow();
+        if (registration.lifecycle() == RegistrationLifecycle.ACTIVE) {
+            return Optional.of(toView(registration));
+        }
+
+        EventView event = findEvent.findById(
+                        context,
+                        registration.targetReference().reference())
+                .orElseThrow(UnknownEventForRegistrationException::new);
+
+        if (event.publicationState() != EventPublicationState.PUBLISHED) {
+            throw new EventNotPublishedForRegistrationException();
+        }
+        if (event.registrationAvailability() == EventRegistrationAvailability.CLOSED) {
+            throw new EventRegistrationClosedException();
+        }
+
+        return reactivateRegistration.reactivate(context, registrationId)
                 .map(ParticipantEventRegistrationService::toView);
     }
 

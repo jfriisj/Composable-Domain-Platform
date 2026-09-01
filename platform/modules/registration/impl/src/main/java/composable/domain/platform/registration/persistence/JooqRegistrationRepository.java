@@ -150,23 +150,26 @@ final class JooqRegistrationRepository implements RegistrationRepository {
     }
 
     @Override
-    public void updateLifecycle(Registration registration) {
+    public boolean updateLifecycle(
+            Registration registration,
+            RegistrationLifecycle expectedLifecycle) {
         Objects.requireNonNull(
                 registration,
                 "registration must not be null");
+        Objects.requireNonNull(
+                expectedLifecycle,
+                "expectedLifecycle must not be null");
 
-        int updated = dsl()
-                .update(REGISTRATIONS)
-                .set(
-                        LIFECYCLE,
-                        toPersistenceValue(registration.lifecycle()))
-                .where(REGISTRATION_ID.eq(registration.id()))
-                .execute();
-
-        if (updated != 1) {
-            throw new IllegalStateException(
-                    "Expected exactly one Registration lifecycle row to be updated");
-        }
+        return dsl()
+                        .update(REGISTRATIONS)
+                        .set(
+                                LIFECYCLE,
+                                toPersistenceValue(registration.lifecycle()))
+                        .where(REGISTRATION_ID.eq(registration.id())
+                                .and(LIFECYCLE.eq(
+                                        toPersistenceValue(expectedLifecycle))))
+                        .execute()
+                == 1;
     }
 
     private DSLContext dsl() {

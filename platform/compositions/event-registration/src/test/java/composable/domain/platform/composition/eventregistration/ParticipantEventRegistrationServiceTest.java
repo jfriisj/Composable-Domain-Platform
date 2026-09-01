@@ -358,6 +358,10 @@ class ParticipantEventRegistrationServiceTest {
                         noRegistrationCreate(),
                         (context, registrationId) -> Optional.of(registration),
                         noRegistrationCancellation(),
+                        (context, registrationId) -> {
+                            throw new AssertionError(
+                                    "Registration reactivation must not be invoked");
+                        },
                         authorization);
 
         assertThrows(
@@ -384,6 +388,10 @@ class ParticipantEventRegistrationServiceTest {
                         noRegistrationCreate(),
                         (context, registrationId) -> Optional.of(registration),
                         noRegistrationCancellation(),
+                        (context, registrationId) -> {
+                            throw new AssertionError(
+                                    "Registration reactivation must not be invoked");
+                        },
                         (actor, owner) -> {
                             authorizationCalled.set(true);
                             return AuthorizationDecision.ALLOWED;
@@ -496,6 +504,10 @@ class ParticipantEventRegistrationServiceTest {
                 createRegistration,
                 findRegistration,
                 cancelRegistration,
+                (context, registrationId) -> {
+                    throw new AssertionError(
+                            "Registration reactivation must not be invoked");
+                },
                 ownershipByOpaqueEquality());
     }
 

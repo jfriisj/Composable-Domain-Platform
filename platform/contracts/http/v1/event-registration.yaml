@@ -138,6 +138,71 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventRegistrationErrorResponse'
+    put:
+      tags:
+        - EventRegistration
+      operationId: reactivateEventRegistration
+      summary: Reactivate the authenticated participant's cancelled Event registration
+      security:
+        - ParticipantBasicAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RegistrationId'
+        - $ref: '#/components/parameters/EventRegistrationCorrelationId'
+      responses:
+        '200':
+          description: Event registration is active
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationResponse'
+        '400':
+          description: Structurally invalid Registration identity
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '401':
+          description: Participant authentication is required or credentials are invalid
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '404':
+          description: Private Event registration is unknown or its referenced Event does not exist
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '409':
+          description: Referenced Event is not eligible for participant Registration
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
+        '500':
+          description: Unexpected internal failure
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/EventRegistrationCorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistrationErrorResponse'
     delete:
       tags:
         - EventRegistration
