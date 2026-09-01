@@ -8,7 +8,7 @@ Composable Domain Platform provides a modular platform for composing independent
 
 ## Current accepted product boundary
 
-The accepted product experience combines organizer-owned Event management, the participant Event-registration lifecycle, and bounded participant Event waitlist participation:
+The accepted product experience combines organizer-owned Event management, the participant Event-registration lifecycle, bounded participant Event waitlist participation, and bounded organizer-recorded Event attendance:
 
 - An authenticated platform actor can create an Event and becomes its durable organizer/owner.
 - An authenticated owner can modify their owned Event while it is `unpublished`; mutable definition values (`name`, `slug`, `startsAt`, `endsAt`, `timezone`) may be changed, while `eventId` remains immutable identity.
@@ -46,6 +46,12 @@ The accepted product experience combines organizer-owned Event management, the p
 - Authenticated non-owner access to private Event-registration state uses the same external not-found disclosure as unknown private state; unauthenticated access remains a distinct authentication failure.
 - Participant identity is an opaque stable platform actor reference. Registration persists only its own opaque participant reference. Event organizer identity is also an opaque stable platform actor reference, with Event persisting its own organizer reference as authorization state. Correlation/causation identifiers remain identity-free.
 - Registration lifecycle state remains durable across application-process restart against the same PostgreSQL database.
+- An authenticated Event owner may first record one explicit Attendance outcome, `attended` or `not_attended`, for an existing Registration targeting their owned Event only when the Event is `published` and that Registration is currently `active`.
+- Absence of Attendance state means attendance has not been recorded; it does not mean `not_attended`. At most one durable Attendance state exists for a Registration. Repeating the same recorded outcome is idempotent; changing an already-recorded outcome is not admitted by this bounded scope and creates no replacement state.
+- Unknown Event, unknown Registration, a Registration targeting another Event, authenticated non-owner access, an `unpublished` or `withdrawn` Event, or a currently `cancelled` Registration is ineligible for first Attendance recording and creates no Attendance state.
+- Recorded Attendance remains organizer-private and retrievable after later Event or Registration lifecycle changes. Event withdrawal, Registration cancellation, or Registration reactivation does not automatically mutate or delete recorded Attendance. Participant-visible Attendance retrieval is not admitted.
+- Attendance owns the recorded outcome associated with a Registration reference, one-per-Registration uniqueness, and retrieval of that durable state as a distinct semantic responsibility. Event does not own or encode Attendance state; Registration remains domain-neutral and does not own or encode Attendance state. Physical capability/module placement and cross-capability collaboration remain post-scope readiness decisions.
+- Attendance state remains durable across application-process restart against the same PostgreSQL database.
 
 The authoritative HTTP behavior is defined by the versioned OpenAPI source contracts under `platform/contracts/http/v1/`. Current contract allocation follows externally addressable behavior ownership: Event-owned behavior and the Event-Registration participant workflow have independent authoritative source units, while concrete applications statically aggregate only the units they select.
 
@@ -75,7 +81,8 @@ Current scope does not authorize:
 
 - reversible Event unpublish/restore/re-publish or Event lifecycle expansion beyond the accepted terminal `withdrawn` state;
 - automatic Registration cancellation or other Registration lifecycle mutation caused solely by Event withdrawal;
-- scheduled or time-window-based Registration opening/closing, creation of a new Registration identity for a registrant/target pair that already has a cancelled Registration, automatic Registration reactivation caused solely by Event lifecycle, Registration availability, Waitlist state, timers, or background processing, additional Registration lifecycle policy beyond the accepted same-identity `cancelled -> active` transition, capacity, quotas, ordered/ranked waitlists, automatic waitlist promotion or Registration creation, organizer waitlist management/view, participant waitlist cancellation/removal, ticketing/payment, notifications, or check-in/attendance;
+- scheduled or time-window-based Registration opening/closing, creation of a new Registration identity for a registrant/target pair that already has a cancelled Registration, automatic Registration reactivation caused solely by Event lifecycle, Registration availability, Waitlist state, timers, or background processing, additional Registration lifecycle policy beyond the accepted same-identity `cancelled -> active` transition, capacity, quotas, ordered/ranked waitlists, automatic waitlist promotion or Registration creation, organizer waitlist management/view, participant waitlist cancellation/removal, ticketing/payment, notifications;
+- Attendance correction/change after a different outcome is recorded, participant-visible Attendance retrieval, attendance timestamps/history/audit trails, multiple Attendance records per Registration, automatic Attendance derived from Event or Registration lifecycle changes, check-in credentials, QR codes, scanners, devices, geolocation, physical check-in infrastructure, or attendance reporting/analytics;
 - a generic Registration HTTP dispatcher;
 - Person/Account or participant-profile capability, provider-specific identity as platform domain state, durable provider-to-platform identity mapping, credential persistence/enrollment/reset/recovery/admin APIs, or external identity-provider integration;
 - roles/permissions, RBAC/ABAC, or a generic policy engine;
