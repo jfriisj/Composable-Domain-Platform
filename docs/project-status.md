@@ -14,18 +14,20 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-None. Product Goal #184, **Manage Event waitlist participation**, and Use-case Goal #206, **Participant joins and retrieves own Event waitlist participation**, are complete after implementation #216 / PR #217.
+Product Goal #185, **Support participant re-registration lifecycle**, is `priority: next` for readiness preparation.
+
+The Goal does not authorize implementation. Current accepted scope still excludes same-pair Registration re-registration/reactivation.
 
 ## In progress
 
-None.
+Readiness preparation for Product Goal #185. No executable implementation issue is currently authorized.
 
 ## Current gaps
 
-No additional waitlist lifecycle is admitted by the completed bounded participant waitlist journey. Ordered/ranked waitlists, capacity, automatic promotion or Registration creation, organizer waitlist management/view, participant cancellation/removal, notifications, and the other durable exclusions in `docs/scope.md` remain outside accepted scope.
+The participant-visible semantics after cancelling an Event Registration are not yet admitted for same-pair re-registration/reactivation. Identity semantics, lifecycle behavior, uniqueness implications, interaction with Event Registration availability, and interaction with waitlist eligibility must be resolved through scope/readiness before implementation.
 
-The remaining open roadmap Product Goals are deliberately deferred and do not authorize implementation until promoted through the normal scope/readiness flow.
+The remaining open roadmap Product Goals stay deliberately deferred until separately promoted.
 
 ## Next action
 
-Select the next Product Goal through normal governance and readiness. No new Product Goal or executable implementation is currently `priority: now` or `priority: next`.
+Define the minimum participant-visible Use-case Goal under #185, then make the required scope/readiness transition for same-pair re-registration/reactivation before any implementation design or executable implementation issue.
