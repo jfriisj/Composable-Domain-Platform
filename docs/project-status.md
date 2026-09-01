@@ -16,18 +16,20 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 ## Active goal
 
-None. Product Goal #185, **Support participant re-registration lifecycle**, and Use-case Goal #220, **Participant regains Event participation after cancellation**, are complete after implementation #223 / PR #224.
+Product Goal #186, **Deliver Event attendance experience**, is `priority: next`, with Use-case Goal #226, **Organizer records and retrieves Event attendance**, selected for the bounded organizer attendance journey.
+
+Attendance remains outside accepted scope until scope transition #227 is accepted into `development`.
 
 ## In progress
 
-None.
+Scope transition #227, **Admit organizer-recorded Event attendance**, proposes the minimum semantic Attendance responsibility and organizer recording/retrieval boundary. No implementation is authorized.
 
 ## Current gaps
 
-No additional Registration lifecycle or participation policy is admitted by the completed bounded participant re-participation journey beyond same-Registration `cancelled -> active` under the accepted Event Registration eligibility rules.
+Implementation is blocked pending acceptance of #227 and post-merge readiness. Physical module placement, cross-capability collaboration, persistence ownership, external contract behavior, deterministic failure mapping, runtime wiring, and any required ADR remain deliberately unresolved until the scope transition is accepted.
 
-The remaining open roadmap Product Goals are deliberately deferred and do not authorize implementation until promoted through the normal scope/readiness flow.
+The other open roadmap Product Goals remain deliberately deferred.
 
 ## Next action
 
-Select the next Product Goal through normal governance and readiness. No Product Goal or executable implementation is currently `priority: now` or `priority: next`.
+Accept or reject scope transition #227 through one documentation-only PR. After acceptance, re-read the directly relevant architecture/module and executable Event/Registration/Security boundaries and resolve post-scope readiness before creating implementation work.
