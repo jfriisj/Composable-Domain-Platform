@@ -18,18 +18,18 @@ Routine GitHub issue and pull-request forms capture change-specific evidence wit
 
 Product Goal #186, **Deliver Event attendance experience**, is `priority: next`, with Use-case Goal #226, **Organizer records and retrieves Event attendance**, selected for the bounded organizer attendance journey.
 
-Attendance remains outside accepted scope until scope transition #227 is accepted into `development`.
+The bounded organizer-recorded Attendance semantics are accepted through scope transition #227 / PR #228.
 
 ## In progress
 
-Scope transition #227, **Admit organizer-recorded Event attendance**, proposes the minimum semantic Attendance responsibility and organizer recording/retrieval boundary. No implementation is authorized.
+Post-scope readiness for Use-case Goal #226. No Attendance implementation issue is authorized or in progress yet.
 
 ## Current gaps
 
-Implementation is blocked pending acceptance of #227 and post-merge readiness. Physical module placement, cross-capability collaboration, persistence ownership, external contract behavior, deterministic failure mapping, runtime wiring, and any required ADR remain deliberately unresolved until the scope transition is accepted.
+Attendance semantic scope is accepted. Implementation remains blocked until post-scope readiness resolves physical module placement, cross-capability collaboration through public APIs, persistence ownership and one-per-Registration uniqueness, organizer-private authorization/disclosure and deterministic failure semantics, external contract shape, runtime wiring/restart proof, and whether the durable responsibility requires an ADR.
 
 The other open roadmap Product Goals remain deliberately deferred.
 
 ## Next action
 
-Accept or reject scope transition #227 through one documentation-only PR. After acceptance, re-read the directly relevant architecture/module and executable Event/Registration/Security boundaries and resolve post-scope readiness before creating implementation work.
+Re-read the directly relevant architecture/module boundaries and executable Event/Registration/Security contract, source, and persistence truth. Decide whether Attendance requires a distinct module and ADR, then create one coherent implementation issue only if readiness is fully resolved.
