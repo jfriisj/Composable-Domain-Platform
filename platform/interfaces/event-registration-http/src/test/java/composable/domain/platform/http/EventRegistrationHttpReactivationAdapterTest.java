@@ -53,6 +53,27 @@ class EventRegistrationHttpReactivationAdapterTest {
     }
 
     @Test
+    void invalidRegistrationIdentityMapsToBadRequestWithoutCallingReactivation() {
+        ReactivateParticipantEventRegistration reactivate =
+                (context, actorReference, registrationId) -> {
+                    throw new AssertionError(
+                            "Reactivation must not be invoked for invalid input");
+                };
+
+        EventRegistrationHttpException exception = assertThrows(
+                EventRegistrationHttpException.class,
+                () -> adapter(reactivate, "opaque-actor-a")
+                        .reactivateEventRegistration(
+                                " ",
+                                "corr-invalid-reactivate"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.status());
+        assertEquals(
+                EventRegistrationErrorResponse.CodeEnum.INVALID_REQUEST,
+                exception.code());
+    }
+
+    @Test
     void mapsUnknownOrPrivateRegistrationToPrivacyPreservingNotFound() {
         EventRegistrationHttpException unknown = assertThrows(
                 EventRegistrationHttpException.class,

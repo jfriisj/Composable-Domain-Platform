@@ -163,6 +163,12 @@ public class EventRegistrationHttpAdapter implements EventRegistrationApi {
         ExecutionContext context =
                 EventRegistrationHttpCorrelation.establish(suppliedCorrelationId);
 
+        if (registrationId == null || registrationId.isBlank()) {
+            throw EventRegistrationHttpException.invalidRequest(
+                    context,
+                    "registrationId must not be blank");
+        }
+
         try {
             AuthenticatedActorReference actorReference =
                     authenticatedActorProvider.authenticatedActor();
