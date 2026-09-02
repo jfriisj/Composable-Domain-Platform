@@ -22,14 +22,14 @@ The bounded organizer-recorded Attendance semantics are accepted through scope t
 
 ## In progress
 
-Post-scope readiness for Use-case Goal #226. No Attendance implementation issue is authorized or in progress yet.
+Architecture decision #231 is accepted through ADR-0019: Attendance is selected as a distinct business module and Event-Attendance as the non-module organizer workflow composition. No Attendance implementation issue is authorized or in progress yet.
 
 ## Current gaps
 
-Attendance semantic scope is accepted. Implementation remains blocked until post-scope readiness resolves physical module placement, cross-capability collaboration through public APIs, persistence ownership and one-per-Registration uniqueness, organizer-private authorization/disclosure and deterministic failure semantics, external contract shape, runtime wiring/restart proof, and whether the durable responsibility requires an ADR.
+Attendance semantic scope and architecture placement are accepted. Implementation remains blocked until readiness resolves the exact Attendance public API, deterministic organizer-private authorization/disclosure and failure semantics, Event-Attendance OpenAPI contract shape, Attendance persistence schema/one-per-Registration enforcement, full-Platform runtime wiring, restart proof, and objective validation.
 
 The other open roadmap Product Goals remain deliberately deferred.
 
 ## Next action
 
-Re-read the directly relevant architecture/module boundaries and executable Event/Registration/Security contract, source, and persistence truth. Decide whether Attendance requires a distinct module and ADR, then create one coherent implementation issue only if readiness is fully resolved.
+Resolve the remaining executable Attendance public API, external contract/failure mapping, persistence, runtime wiring, and validation details from existing module/contract/source/persistence truth. Create one coherent vertical implementation issue only when those remaining readiness points are fully resolved.
